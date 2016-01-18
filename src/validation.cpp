@@ -89,6 +89,9 @@ bool fCheckpointsEnabled = DEFAULT_CHECKPOINTS_ENABLED;
 size_t nCoinCacheUsage = 5000 * 300;
 uint64_t nPruneTarget = 0;
 bool fAlerts = DEFAULT_ALERTS;
+/* If the tip is older than this (in seconds), the node is considered to be in initial block download.
+ */
+int64_t nMaxTipAge = DEFAULT_MAX_TIP_AGE;
 bool fEnableReplacement = DEFAULT_ENABLE_REPLACEMENT;
 const int validationBlocksCount = 1000;
 
@@ -1264,7 +1267,7 @@ bool IsInitialBlockDownload()
         return true;
     if (chainActive.Tip()->nChainWork < UintToArith256(chainParams.GetConsensus().nMinimumChainWork))
         return true;
-    if (chainActive.Tip()->GetBlockTime() < (GetTime() - chainParams.MaxTipAge()))
+    if (chainActive.Tip()->GetBlockTime() < (GetTime() - nMaxTipAge))
         return true;
     lockIBDState = true;
     return false;
