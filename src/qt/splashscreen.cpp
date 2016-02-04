@@ -3,6 +3,10 @@
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
+#if defined(HAVE_CONFIG_H)
+#include "config/energi-config.h"
+#endif
+
 #include "splashscreen.h"
 
 #include "guiutil.h"
@@ -42,10 +46,9 @@ SplashScreen::SplashScreen(Qt::WindowFlags f, const NetworkStyle *networkStyle) 
     float fontFactor            = 1.0;
 
     // define text to place
-    QString titleText       = tr("Energi Core");
+    QString titleText       = tr(PACKAGE_NAME);
     QString versionText     = QString(tr("Version %1")).arg(QString::fromStdString(FormatFullVersion()));
-    QString copyrightTextBtc   = QChar(0xA9)+QString(" 2009-%1 ").arg(COPYRIGHT_YEAR) + QString(tr("The Bitcoin Core developers"));
-    QString copyrightTextDash   = QChar(0xA9)+QString(" 2014-%1 ").arg(COPYRIGHT_YEAR) + QString(tr("The Dash Core developers"));
+    QString copyrightText   = QString::fromUtf8(CopyrightHolders(strprintf("\xc2\xA9 %u-%u ", 2009, COPYRIGHT_YEAR)).c_str());
     QString copyrightTextEnergi   = QChar(0xA9)+QString(" %1 ").arg(COPYRIGHT_YEAR) + QString(tr("The Energi Core developers"));
     QString titleAddText    = networkStyle->getTitleAddText();
     // networkstyle.cpp can't (yet) read themes, so we do it here to get the correct Splash-screen
@@ -70,9 +73,8 @@ SplashScreen::SplashScreen(Qt::WindowFlags f, const NetworkStyle *networkStyle) 
     // check font size and drawing with
     pixPaint.setFont(QFont(font, 26*fontFactor));
     QFontMetrics fm = pixPaint.fontMetrics();
-    int titleTextWidth  = fm.width(titleText);
-    if(titleTextWidth > 160) {
-        // strange font rendering, Arial probably not found
+    int titleTextWidth = fm.width(titleText);
+    if (titleTextWidth > 160) {
         fontFactor = 0.75;
     }
 
@@ -85,10 +87,13 @@ SplashScreen::SplashScreen(Qt::WindowFlags f, const NetworkStyle *networkStyle) 
     pixPaint.drawText(paddingLeft,paddingTop+titleVersionVSpace,versionText);
 
     // draw copyright stuff
-    pixPaint.setFont(QFont(font, 10*fontFactor));
-    pixPaint.drawText(paddingLeft,paddingTop+titleCopyrightVSpace,copyrightTextBtc);
-    pixPaint.drawText(paddingLeft,paddingTop+titleCopyrightVSpace+12,copyrightTextDash);
-    pixPaint.drawText(paddingLeft,paddingTop+titleCopyrightVSpace+24,copyrightTextEnergi);
+    {
+        pixPaint.setFont(QFont(font, 10*fontFactor));
+        const int x = paddingLeft;
+        const int y = paddingTop+titleCopyrightVSpace;
+        QRect copyrightRect(x, y, pixmap.width() - x, pixmap.height() - y);
+        pixPaint.drawText(copyrightRect, Qt::AlignLeft | Qt::AlignTop | Qt::TextWordWrap, copyrightText);
+    }
 
     // draw additional text if special network
     if(!titleAddText.isEmpty()) {

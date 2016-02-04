@@ -2,6 +2,10 @@
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
+#if defined(HAVE_CONFIG_H)
+#include "config/energi-config.h"
+#endif
+
 #include "base58.h"
 #include "clientversion.h"
 #include "coins.h"
@@ -52,7 +56,7 @@ static int AppInitRawTx(int argc, char* argv[])
     if (argc<2 || mapArgs.count("-?") || mapArgs.count("-h") || mapArgs.count("-help"))
     {
         // First part of help message is specific to this utility
-        std::string strUsage = _("Energi Core energi-tx utility version") + " " + FormatFullVersion() + "\n\n" +
+        std::string strUsage = strprintf(_("%s dash-tx utility version"), _(PACKAGE_NAME)) + " " + FormatFullVersion() + "\n\n" +
             _("Usage:") + "\n" +
               "  energi-tx [options] <hex-tx> [commands]  " + _("Update hex-encoded energi transaction") + "\n" +
               "  energi-tx [options] -create [commands]   " + _("Create hex-encoded energi transaction") + "\n" +

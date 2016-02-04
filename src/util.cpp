@@ -976,6 +976,20 @@ int GetNumCores()
 #endif
 }
 
+std::string CopyrightHolders(const std::string& strPrefix)
+{
+    std::string strCopyrightHolders = strPrefix + _(COPYRIGHT_HOLDERS);
+    if (strCopyrightHolders.find("%s") != strCopyrightHolders.npos) {
+        strCopyrightHolders = strprintf(strCopyrightHolders, _(COPYRIGHT_HOLDERS_SUBSTITUTION));
+    }
+    if (strCopyrightHolders.find("Dash Core developers") == strCopyrightHolders.npos) {
+        strCopyrightHolders += "\n" + strPrefix + "The Dash Core developers";
+    }
+    if (strCopyrightHolders.find("Bitcoin Core developers") == strCopyrightHolders.npos) {
+        strCopyrightHolders += "\n" + strPrefix + "The Bitcoin Core developers";
+    }
+    return strCopyrightHolders;
+}
 
 uint32_t StringVersionToInt(const std::string& strVersion)
 {

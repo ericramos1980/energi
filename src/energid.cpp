@@ -5,6 +5,10 @@
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
+#if defined(HAVE_CONFIG_H)
+#include "config/energi-config.h"
+#endif
+
 #include "chainparams.h"
 #include "clientversion.h"
 #include "rpc/server.h"
@@ -15,6 +19,7 @@
 #include "masternodeconfig.h"
 #include "httpserver.h"
 #include "httprpc.h"
+#include "utilstrencodings.h"
 
 #include "boost_workaround.hpp"
 #include <boost/algorithm/string/predicate.hpp>
@@ -75,13 +80,13 @@ bool AppInit(int argc, char* argv[])
 
     // Process help and version before taking care about datadir
     if (mapArgs.count("-?") || mapArgs.count("-h") ||  mapArgs.count("-help") || mapArgs.count("-version")) {
-        std::string strUsage = _("Energi Core Daemon") + " " + _("version") + " " + FormatFullVersion() + "\n";
+        std::string strUsage = strprintf(_("%s Daemon"), _(PACKAGE_NAME)) + " " + _("version") + " " + FormatFullVersion() + "\n";
 
         if (mapArgs.count("-version")) {
-            strUsage += LicenseInfo();
+            strUsage += FormatParagraph(LicenseInfo());
         } else {
             strUsage += "\n" + _("Usage:") + "\n" +
-                  "  energid [options]                     " + _("Start Energi Core Daemon") + "\n";
+                  "  energid [options]                     " + strprintf(_("Start %s Daemon"), _(PACKAGE_NAME)) + "\n";
 
             strUsage += "\n" + HelpMessage(HMM_BITCOIND);
         }
