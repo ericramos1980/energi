@@ -393,7 +393,8 @@ private:
     static void reconnect_cb(evutil_socket_t fd, short what, void *arg);
 };
 
-TorController::TorController(struct event_base* base, const std::string& target):
+TorController::TorController(struct event_base* baseIn, const std::string& target):
+    base(baseIn),
     target(target), conn(base), reconnect(true), reconnect_ev(0),
     reconnect_timeout(RECONNECT_TIMEOUT_START)
 {
