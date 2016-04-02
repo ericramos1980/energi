@@ -33,7 +33,6 @@
 #include <boost/thread.hpp>
 
 CClientUIInterface uiInterface; // Declared but not defined in ui_interface.h
-CWallet* pwalletMain;
 
 std::unique_ptr<CConnman> g_connman;
 
