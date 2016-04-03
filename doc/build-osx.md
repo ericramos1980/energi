@@ -123,3 +123,13 @@ Other commands:
     ./energid -daemon # to start the energi daemon.
     ./energi-cli --help  # for a list of command-line options.
     ./energi-cli help    # When the daemon is running, to get a list of RPC commands
+
+Using Qt official installer while building
+------------------------------------------
+
+If you prefer to use the latest Qt installed from the official binary
+installer over the brew version, you have to make several changes to
+the installed tree and its binaries (all these changes are contained
+in the brew version already). The changes needed are described in
+[#7714](https://github.com/bitcoin/bitcoin/issues/7714). We do not
+support building Dash Core this way though.
