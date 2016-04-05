@@ -957,8 +957,6 @@ public:
         assert(valid_genesis_pow);
         assert(consensus.hashGenesisBlock == expectedGenesisHash);
         assert(genesis.hashMerkleRoot == expectedGenesisMerkleRoot);
-        vFixedSeeds.clear(); //! Regtest mode doesn't have any fixed seeds.
-        vSeeds.clear();  //! Regtest mode doesn't have any DNS seeds.
 
         fMiningRequiresPeers = false;
         fDefaultConsistencyChecks = true;
