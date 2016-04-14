@@ -508,7 +508,6 @@ class RawTransactionsTest(BitcoinTestFramework):
         # make sure funds are received at node1
         assert_equal(oldBalance+Decimal('13.2800000'), self.nodes[0].getbalance())
 
-
         ###############################################
         # multiple (~19) inputs tx test | Compare fee #
         ###############################################
