@@ -10,11 +10,11 @@ pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = libenergiconsensus.pc
 endif
 
-ENERGI_LINUX_TAR=$(PACKAGE)-$(PACKAGE_VERSION)-linux.tar.gz
+BITCOIND_BIN=$(top_builddir)/src/$(BITCOIN_DAEMON_NAME)$(EXEEXT)
+BITCOIN_QT_BIN=$(top_builddir)/src/qt/$(BITCOIN_GUI_NAME)$(EXEEXT)
+BITCOIN_CLI_BIN=$(top_builddir)/src/$(BITCOIN_CLI_NAME)$(EXEEXT)
 
-BITCOIND_BIN=$(top_builddir)/src/energid$(EXEEXT)
-BITCOIN_QT_BIN=$(top_builddir)/src/qt/energi-qt$(EXEEXT)
-BITCOIN_CLI_BIN=$(top_builddir)/src/energi-cli$(EXEEXT)
+ENERGI_LINUX_TAR=$(PACKAGE)-$(PACKAGE_VERSION)-linux.tar.gz
 BITCOIN_WIN_INSTALLER=$(PACKAGE)-$(PACKAGE_VERSION)-win$(WINDOWS_BITS)-setup$(EXEEXT)
 
 empty :=
