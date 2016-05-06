@@ -1,5 +1,5 @@
-#!/usr/bin/env python2
-# Copyright (c) 2014-2015 The Bitcoin Core developers
+#!/usr/bin/env python3
+# Copyright (c) 2014-2016 The Bitcoin Core developers
 # Distributed under the MIT software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -97,7 +97,7 @@ if not (ENABLE_WALLET == 1 and ENABLE_UTILS == 1 and ENABLE_BITCOIND == 1):
     print("No rpc tests to run. Wallet, utils, and bitcoind must all be enabled")
     sys.exit(0)
 
-# python-zmq may not be installed. Handle this gracefully and with some helpful info
+# python3-zmq may not be installed. Handle this gracefully and with some helpful info
 if ENABLE_ZMQ:
     try:
         import zmq

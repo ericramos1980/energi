@@ -1,7 +1,12 @@
-# mininode.py - Energi P2P network half-a-node
+#!/usr/bin/env python3
+# Copyright (c) 2010 ArtForz -- public domain half-a-node
+# Copyright (c) 2012 Jeff Garzik
+# Copyright (c) 2010-2016 The Bitcoin Core developers
+# Distributed under the MIT software license, see the accompanying
+# file COPYING or http://www.opensource.org/licenses/mit-license.pEnergihp.
+
 #
-# Distributed under the MIT/X11 software license, see the accompanying
-# file COPYING or http://www.opensource.org/licenses/mit-license.php.
+# mininode.py - Energi P2P network half-a-node
 #
 # This python code was modified from ArtForz' public domain  half-a-node, as
 # found in the mini-node branch of http://github.com/jgarzik/pynode.
@@ -78,7 +83,6 @@ def deser_string(f):
         nit = struct.unpack("<Q", f.read(8))[0]
     return f.read(nit)
 
-
 def ser_string(s):
     if len(s) < 253:
         return struct.pack("B", len(s)) + s
@@ -87,7 +91,6 @@ def ser_string(s):
     elif len(s) < 0x100000000:
         return struct.pack("<BI", 254, len(s)) + s
     return struct.pack("<BQ", 255, len(s)) + s
-
 
 def deser_uint256(f):
     r = 0
@@ -1059,7 +1062,7 @@ def wait_until(predicate, attempts=float('inf'), timeout=float('inf')):
 class msg_feefilter(object):
     command = b"feefilter"
 
-    def __init__(self, feerate=0L):
+    def __init__(self, feerate=0):
         self.feerate = feerate
 
     def deserialize(self, f):
@@ -1108,7 +1111,7 @@ class NodeConnCB(object):
             time.sleep(deliver_sleep)
         with mininode_lock:
             try:
-                getattr(self, 'on_' + message.command)(conn, message)
+                getattr(self, 'on_' + message.command.decode('ascii'))(conn, message)
             except:
                 print("ERROR delivering %s (%s)" % (repr(message),
                                                     sys.exc_info()[0]))
@@ -1325,6 +1328,8 @@ class NodeConn(asyncore.dispatcher):
                                         repr(msg))
         except Exception as e:
             print('got_data:', repr(e))
+            # import  traceback
+            # traceback.print_tb(sys.exc_info()[2])
 
     def send_message(self, message, pushbuf=False):
         if self.state != "connected" and not pushbuf:

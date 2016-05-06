@@ -1,8 +1,7 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python3
 # Copyright (c) 2015 The Bitcoin Core developers
-# Distributed under the MIT/X11 software license, see the accompanying
+# Distributed under the MIT software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
-#
 
 from test_framework.test_framework import ComparisonTestFramework
 from test_framework.util import *
@@ -212,7 +211,7 @@ class BIP68_112_113Test(ComparisonTestFramework):
         self.nodes[0].setmocktime(0) # set time back to present so yielded blocks aren't in the future as we advance last_block_time
         self.tipheight = 82 # height of the next block to build
         self.last_block_time = long_past_time
-        self.tip = int ("0x" + self.nodes[0].getbestblockhash() + "L", 0)
+        self.tip = int("0x" + self.nodes[0].getbestblockhash(), 0)
         self.nodeaddress = self.nodes[0].getnewaddress()
 
         assert_equal(get_bip9_status(self.nodes[0], 'csv')['status'], 'defined')
@@ -274,7 +273,7 @@ class BIP68_112_113Test(ComparisonTestFramework):
         self.nodes[0].setmocktime(self.last_block_time + 600)
         inputblockhash = self.nodes[0].generate(1)[0] # 1 block generated for inputs to be in chain at height 572
         self.nodes[0].setmocktime(0)
-        self.tip = int("0x" + inputblockhash + "L", 0)
+        self.tip = int("0x" + inputblockhash, 0)
         self.tipheight += 1
         self.last_block_time += 600
         assert_equal(len(self.nodes[0].getblock(inputblockhash,True)["tx"]), 82+1)

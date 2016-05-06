@@ -1,5 +1,5 @@
-#!/usr/bin/env python2
-# Copyright (c) 2014-2015 The Bitcoin Core developers
+#!/usr/bin/env python3
+# Copyright (c) 2014-2016 The Bitcoin Core developers
 # Distributed under the MIT software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -208,7 +208,7 @@ class RawTransactionsTest(BitcoinTestFramework):
         try:
             self.nodes[2].fundrawtransaction(rawtx, {'foo': 'bar'})
             raise AssertionError("Accepted invalid option foo")
-        except JSONRPCException,e:
+        except JSONRPCException as e:
             assert("Unexpected key foo" in e.error['message'])
 
 
@@ -233,7 +233,7 @@ class RawTransactionsTest(BitcoinTestFramework):
         try:
             self.nodes[2].fundrawtransaction(rawtx, {'changeAddress': 'foobar'})
             raise AssertionError("Accepted invalid Energi address")
-        except JSONRPCException,e:
+        except JSONRPCException as e:
             assert("changeAddress must be a valid Energi address" in e.error['message'])
 
 
