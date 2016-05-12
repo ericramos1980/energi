@@ -31,6 +31,10 @@
 #include <boost/signals2/signal.hpp>
 #include <boost/thread/exceptions.hpp>
 
+#ifndef WIN32
+#include <signal.h>
+#endif
+
 // Debugging macros
 
 // Uncomment the following line to enable debugging messages
@@ -72,7 +76,7 @@ extern bool fLogTimestamps;
 extern bool fLogTimeMicros;
 extern bool fLogThreadNames;
 extern bool fLogIPs;
-extern volatile bool fReopenDebugLog;
+extern volatile sig_atomic_t fReopenDebugLog;
 extern CTranslationInterface translationInterface;
 
 extern const char * const BITCOIN_CONF_FILENAME;
