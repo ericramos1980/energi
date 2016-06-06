@@ -43,6 +43,7 @@
 #include "masternodeman.h"
 #include "masternode-payments.h"
 
+#include <atomic>
 #include <sstream>
 
 #ifdef WIN32
@@ -1251,12 +1252,17 @@ CAmount GetMasternodePayment(int nHeight, CAmount blockReward)
 
 bool IsInitialBlockDownload()
 {
-    static bool lockIBDState = false;
-    if (lockIBDState)
+    // Once this function has returned false, it must remain false.
+    static std::atomic<bool> latchToFalse{false};
+    // Optimization: pre-test latch before taking the lock.
+    if (latchToFalse.load(std::memory_order_relaxed))
+        return false;
+
+    LOCK(cs_main);
+    if (latchToFalse.load(std::memory_order_relaxed))
         return false;
     if (fImporting || fReindex)
         return true;
-    LOCK(cs_main);
     const CChainParams& chainParams = Params();
     if (chainActive.Tip() == NULL)
         return true;
@@ -1264,7 +1270,7 @@ bool IsInitialBlockDownload()
         return true;
     if (chainActive.Tip()->GetBlockTime() < (GetTime() - nMaxTipAge))
         return true;
-    lockIBDState = true;
+    latchToFalse.store(true, std::memory_order_relaxed);
     return false;
 }
 
