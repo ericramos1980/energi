@@ -134,7 +134,10 @@ CLEAN_BITCOIN_TEST = test/*.gcda test/*.gcno $(GENERATED_TEST_FILES)
 
 CLEANFILES += $(CLEAN_BITCOIN_TEST)
 
-energi_test: $(TEST_BINARY)
+# This file is problematic for out-of-tree builds if it exists.
+DISTCLEANFILES += test/buildenv.pyc
+
+energi_test: $(TEST_BINARY)_test: $(TEST_BINARY)
 
 energi_test_check: $(TEST_BINARY) FORCE
 	$(MAKE) check-TESTS TESTS=$^
