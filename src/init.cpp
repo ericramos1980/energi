@@ -912,7 +912,7 @@ void InitLogging()
     fLogIPs = GetBoolArg("-logips", DEFAULT_LOGIPS);
 
     LogPrintf("\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n");
-    LogPrintf("Energi Core version %s (%s)\n", FormatFullVersion(), CLIENT_DATE);
+    LogPrintf("Energi Core version %s\n", FormatFullVersion());
 }
 
 /** Initialize Energi Core.
