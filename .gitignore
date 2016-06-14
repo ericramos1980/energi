@@ -153,7 +153,7 @@ test_results/
 
 libenergiconsensus.pc
 src/qt/energi-qt.bash
-src/qt/dash-qt.bash
+contrib/devtools/split-debug.sh
 qa/pull-tester/tests-config.sh
 
 #development symlinks
