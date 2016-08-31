@@ -431,6 +431,7 @@ case $host in
      ;;
    *)
      AC_MSG_ERROR(Cannot build leveldb for $host. Please file a bug report.)
+     AC_MSG_WARN([Guessing LevelDB OS as OS_${OTHER_OS}, please check whether this is correct, if not add an entry to configure.ac.])
      ;;
 esac
 
