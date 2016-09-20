@@ -1,4 +1,4 @@
-// Copyright (c) 2009-2015 The Bitcoin Core developers
+// Copyright (c) 2009-2016 The Bitcoin Core developers
 // Copyright (c) 2014-2017 The Dash Core developers
 // Copyright (c) 2017 The Energi Core developers
 // Distributed under the MIT software license, see the accompanying
@@ -8,6 +8,9 @@
 #include "config/energi-config.h"
 #endif
 
+#include "chainparams.h"
+#include "key.h"
+#include "rpcnestedtests.h"
 #include "util.h"
 #include "uritests.h"
 #include "compattests.h"
@@ -31,6 +34,8 @@ Q_IMPORT_PLUGIN(qtwcodecs)
 Q_IMPORT_PLUGIN(qkrcodecs)
 #endif
 
+extern void noui_connect();
+
 // append the test case name to the output file name to allow running multiple test suites without overwriting the output file
 QStringList getArguments(QStringList const & app_args, QString objectName)
 {
@@ -42,7 +47,12 @@ QStringList getArguments(QStringList const & app_args, QString objectName)
 // This is all you need to run all the tests
 int main(int argc, char *argv[])
 {
+    ECC_Start();
     SetupEnvironment();
+    SetupNetworking();
+    SelectParams(CBaseChainParams::MAIN);
+    noui_connect();
+
     bool fInvalid = false;
 
     // Don't remove this, it's needed to access
@@ -64,6 +74,10 @@ int main(int argc, char *argv[])
     if (QTest::qExec(&test2, getArguments(app_args, test2.objectName())) != 0)
         fInvalid = true;
 #endif
+    RPCNestedTests test3;
+    if (QTest::qExec(&test3) != 0)
+        fInvalid = true;
+
     CompatTests test4;
     test4.setObjectName("CompatTests");
     if (QTest::qExec(&test4, getArguments(app_args, test4.objectName())) != 0)
@@ -73,6 +87,6 @@ int main(int argc, char *argv[])
     test5.setObjectName("TrafficGraphDataTests");
     if (QTest::qExec(&test5, getArguments(app_args, test5.objectName())) != 0)
         fInvalid = true;
-
+    ECC_Stop();
     return fInvalid;
 }
