@@ -170,6 +170,7 @@ testScripts = [
     'preciousblock.py',
     'importprunedfunds.py',
     'signmessages.py',
+    'nulldummy.py',
     'import-rescan.py',
     'rpcnamedargs.py',
     'listsinceblock.py',
