@@ -5,9 +5,6 @@
 #build/energid::
 #	$(if $(filter nocheck,$(DEB_BUILD_OPTIONS)),,src/test_energi)
 
-DEB_INSTALL_EXAMPLES_energid += debian/examples/*
-DEB_INSTALL_MANPAGES_energid += debian/manpages/*
-
 %:
 	dh --with bash-completion $@
 
