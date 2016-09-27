@@ -1755,9 +1755,9 @@ bool static ProcessMessage(CNode* pfrom, string strCommand, CDataStream& vRecv, 
             }
             if (!fRejectedParents) {
                 BOOST_FOREACH(const CTxIn& txin, tx.vin) {
-                    CInv inv(MSG_TX, txin.prevout.hash);
-                    pfrom->AddInventoryKnown(inv);
-                    if (!AlreadyHave(inv)) pfrom->AskFor(inv);
+                    CInv _inv(MSG_TX, txin.prevout.hash);
+                    pfrom->AddInventoryKnown(_inv);
+                    if (!AlreadyHave(_inv)) pfrom->AskFor(_inv);
                 }
                 AddOrphanTx(tx, pfrom->GetId());
 
@@ -2403,9 +2403,9 @@ class CompareInvMempoolOrder
 {
     CTxMemPool *mp;
 public:
-    CompareInvMempoolOrder(CTxMemPool *mempool)
+    CompareInvMempoolOrder(CTxMemPool *_mempool)
     {
-        mp = mempool;
+        mp = _mempool;
     }
 
     bool operator()(std::set<uint256>::iterator a, std::set<uint256>::iterator b)
