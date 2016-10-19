@@ -1566,13 +1566,20 @@ static std::string GetDNSHost(const CDNSSeedData& data, ServiceFlags* requiredSe
 void CConnman::ThreadDNSAddressSeed()
 {
     // goal: only query DNS seeds if address need is acute
+    // Avoiding DNS seeds when we don't need them improves user privacy by
+    //  creating fewer identifying DNS requests, reduces trust by giving seeds
+    //  less influence on the network topology, and reduces traffic to the seeds.
     if ((addrman.size() > 0) &&
         (!GetBoolArg("-forcednsseed", DEFAULT_FORCEDNSSEED))) {
         if (!interruptNet.sleep_for(std::chrono::seconds(11)))
             return;
 
         LOCK(cs_vNodes);
-        if (vNodes.size() >= 2) {
+        int nRelevant = 0;
+        for (auto pnode : vNodes) {
+            nRelevant += pnode->fSuccessfullyConnected && ((pnode->nServices & nRelevantServices) == nRelevantServices);
+        }
+        if (nRelevant >= 2) {
             LogPrintf("P2P peers available. Skipped DNS seeding.\n");
             return;
         }
@@ -1701,6 +1708,7 @@ void CConnman::ThreadOpenConnections()
     bool fast_mode = true;
     const auto ALLOW_RETRY_ATTEMPT = 30;
     const auto ALLOW_NONDEFAULT_ATTEMPT = 50;
+    const auto ALLOW_NONRELEVANT_ATTEMPT = 40;
     const auto MAX_ATTEMPTS = 100;
 
     while (!interruptNet)
@@ -1816,6 +1824,10 @@ void CConnman::ThreadOpenConnections()
 
             // do not allow non-default ports, unless after 50 invalid addresses selected already
             if (addr.GetPort() != Params().GetDefaultPort() && nTries < ALLOW_NONDEFAULT_ATTEMPT)
+                continue;
+
+            // only consider nodes missing relevant services after 40 failed attempts and only if less than half the outbound are up.
+            if ((addr.nServices & nRelevantServices) != nRelevantServices && (nTries < ALLOW_NONRELEVANT_ATTEMPT || nOutbound >= (nMaxOutbound >> 1)))
                 continue;
 
             // Balance between IPv4 and IPv6 candidates to avoid local IPv6 network with
