@@ -1829,7 +1829,8 @@ void CWallet::ReacceptWalletTransactions()
         CWalletTx& wtx = *(item.second);
 
         LOCK(mempool.cs);
-        wtx.AcceptToMemoryPool(maxTxFee);
+        CValidationState state;
+        wtx.AcceptToMemoryPool(maxTxFee, state);
     }
 }
 
@@ -3610,7 +3611,7 @@ bool CWallet::CreateTransaction(const vector<CRecipient>& vecSend, CWalletTx& wt
 /**
  * Call after CreateTransaction unless you want to abort
  */
-bool CWallet::CommitTransaction(CWalletTx& wtxNew, CReserveKey& reservekey, CConnman* connman, std::string strCommand)
+bool CWallet::CommitTransaction(CWalletTx& wtxNew, CReserveKey& reservekey, CConnman* connman,  CValidationState& state, std::string strCommand)
 {
     {
         LOCK2(cs_main, cs_wallet);
@@ -3643,9 +3644,9 @@ bool CWallet::CommitTransaction(CWalletTx& wtxNew, CReserveKey& reservekey, CCon
         if (fBroadcastTransactions)
         {
             // Broadcast
-            if (!wtxNew.AcceptToMemoryPool(maxTxFee)) {
+            if (!wtxNew.AcceptToMemoryPool(maxTxFee, state)) {
                 // This must not fail. The transaction has already been signed and recorded.
-                LogPrintf("CommitTransaction(): Error: Transaction not valid\n");
+                LogPrintf("CommitTransaction(): Error: Transaction not valid, %s\n", state.GetRejectReason());
                 return false;
             }
             wtxNew.RelayWalletTransaction(connman, strCommand);
@@ -5095,8 +5096,7 @@ int CMerkleTx::GetBlocksToMaturity() const
 }
 
 
-bool CMerkleTx::AcceptToMemoryPool(const CAmount& nAbsurdFee)
+bool CMerkleTx::AcceptToMemoryPool(const CAmount& nAbsurdFee, CValidationState& state)
 {
-    CValidationState state;
     return ::AcceptToMemoryPool(mempool, state, *this, true, NULL, false, nAbsurdFee);
 }
