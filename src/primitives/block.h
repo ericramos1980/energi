@@ -93,7 +93,7 @@ class CBlock : public CBlockHeader
 {
 public:
     // network and disk
-    std::vector<CTransaction> vtx;
+    std::vector<CTransactionRef> vtx;
 
     // memory only
     mutable CTxOut txoutBackbone; // Energi Backbone payment
