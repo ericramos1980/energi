@@ -34,6 +34,7 @@ public:
     PeerLogicValidation(CConnman* connmanIn);
     virtual ~PeerLogicValidation() = default;
 
+    virtual void SyncTransaction(const CTransaction& tx, const CBlockIndex* pindex, int nPosInBlock);
     virtual void UpdatedBlockTip(const CBlockIndex *pindexNew, const CBlockIndex *pindexFork, bool fInitialDownload);
     virtual void BlockChecked(const CBlock& block, const CValidationState& state);
 };
