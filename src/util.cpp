@@ -299,7 +299,7 @@ bool LogAcceptCategory(const char* category)
  * suppress printing of the timestamp when multiple calls are made that don't
  * end in a newline. Initialize it to true, and hold/manage it, in the calling context.
  */
-static std::string LogTimestampStr(const std::string &str, bool *fStartedNewLine)
+static std::string LogTimestampStr(const std::string &str, std::atomic_bool *fStartedNewLine)
 {
     string strStamped;
 
@@ -323,7 +323,7 @@ static std::string LogTimestampStr(const std::string &str, bool *fStartedNewLine
  * suppress printing of the thread name when multiple calls are made that don't
  * end in a newline. Initialize it to true, and hold/manage it, in the calling context.
  */
-static std::string LogThreadNameStr(const std::string &str, bool *fStartedNewLine)
+static std::string LogThreadNameStr(const std::string &str, std::atomic_bool *fStartedNewLine)
 {
     string strThreadLogged;
 
@@ -343,7 +343,7 @@ static std::string LogThreadNameStr(const std::string &str, bool *fStartedNewLin
 int LogPrintStr(const std::string &str)
 {
     int ret = 0; // Returns total number of characters written
-    static bool fStartedNewLine = true;
+    static std::atomic_bool fStartedNewLine(true);
 
     std::string strThreadLogged = LogThreadNameStr(str, &fStartedNewLine);
     std::string strTimestamped = LogTimestampStr(strThreadLogged, &fStartedNewLine);
