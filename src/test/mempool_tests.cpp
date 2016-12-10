@@ -54,17 +54,17 @@ BOOST_AUTO_TEST_CASE(MempoolRemoveTest)
 
 
     CTxMemPool testPool(CFeeRate(0));
-    std::vector<CTransactionRef> removed;
 
     // Nothing in pool, remove should do nothing:
-    testPool.removeRecursive(txParent, &removed);
-    BOOST_CHECK_EQUAL(removed.size(), 0U);
+    unsigned int poolSize = testPool.size();
+    testPool.removeRecursive(txParent);
+    BOOST_CHECK_EQUAL(testPool.size(), poolSize);
 
     // Just the parent:
     testPool.addUnchecked(txParent.GetHash(), entry.FromTx(txParent));
-    testPool.removeRecursive(txParent, &removed);
-    BOOST_CHECK_EQUAL(removed.size(), 1U);
-    removed.clear();
+    poolSize = testPool.size();
+    testPool.removeRecursive(txParent);
+    BOOST_CHECK_EQUAL(testPool.size(), poolSize - 1);
     
     // Parent, children, grandchildren:
     testPool.addUnchecked(txParent.GetHash(), entry.FromTx(txParent));
@@ -74,19 +74,20 @@ BOOST_AUTO_TEST_CASE(MempoolRemoveTest)
         testPool.addUnchecked(txGrandChild[i].GetHash(), entry.FromTx(txGrandChild[i]));
     }
     // Remove Child[0], GrandChild[0] should be removed:
-    testPool.removeRecursive(txChild[0], &removed);
-    BOOST_CHECK_EQUAL(removed.size(), 2U);
-    removed.clear();
+    poolSize = testPool.size();
+    testPool.removeRecursive(txChild[0]);
+    BOOST_CHECK_EQUAL(testPool.size(), poolSize - 2);
     // ... make sure grandchild and child are gone:
-    testPool.removeRecursive(txGrandChild[0], &removed);
-    BOOST_CHECK_EQUAL(removed.size(), 0U);
-    testPool.removeRecursive(txChild[0], &removed);
-    BOOST_CHECK_EQUAL(removed.size(), 0U);
+    poolSize = testPool.size();
+    testPool.removeRecursive(txGrandChild[0]);
+    BOOST_CHECK_EQUAL(testPool.size(), poolSize);
+    poolSize = testPool.size();
+    testPool.removeRecursive(txChild[0]);
+    BOOST_CHECK_EQUAL(testPool.size(), poolSize);
     // Remove parent, all children/grandchildren should go:
-    testPool.removeRecursive(txParent, &removed);
-    BOOST_CHECK_EQUAL(removed.size(), 5U);
-    BOOST_CHECK_EQUAL(testPool.size(), 0U);
-    removed.clear();
+    poolSize = testPool.size();
+    testPool.removeRecursive(txParent);
+    BOOST_CHECK_EQUAL(testPool.size(), poolSize - 5);
 
     // Add children and grandchildren, but NOT the parent (simulate the parent being in a block)
     for (int i = 0; i < 3; i++)
@@ -96,10 +97,9 @@ BOOST_AUTO_TEST_CASE(MempoolRemoveTest)
     }
     // Now remove the parent, as might happen if a block-re-org occurs but the parent cannot be
     // put into the mempool (maybe because it is non-standard):
-    testPool.removeRecursive(txParent, &removed);
-    BOOST_CHECK_EQUAL(removed.size(), 6U);
-    BOOST_CHECK_EQUAL(testPool.size(), 0U);
-    removed.clear();
+    poolSize = testPool.size();
+    testPool.removeRecursive(txParent);
+    BOOST_CHECK_EQUAL(testPool.size(), poolSize - 6);
 }
 
 template<typename name>
@@ -411,7 +411,7 @@ BOOST_AUTO_TEST_CASE(MempoolAncestorIndexingTest)
     /* after tx6 is mined, tx7 should move up in the sort */
     std::vector<CTransactionRef> vtx;
     vtx.push_back(MakeTransactionRef(tx6));
-    pool.removeForBlock(vtx, 1, NULL, false);
+    pool.removeForBlock(vtx, 1);
 
     sortedOrder.erase(sortedOrder.begin()+1);
     sortedOrder.pop_back();
