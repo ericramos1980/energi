@@ -65,6 +65,7 @@
 #endif // ENABLE_WALLET
 #include "privatesend-server.h"
 #include "spork.h"
+#include "warnings.h"
 
 #include <stdint.h>
 #include <stdio.h>

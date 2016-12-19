@@ -17,6 +17,7 @@
 #include "util.h"
 #include "consensus/validation.h"
 #include "validationinterface.h"
+#include "warnings.h"
 #ifdef ENABLE_WALLET
 #include "wallet/wallet.h"
 #endif // ENABLE_WALLET
@@ -775,7 +776,7 @@ bool CInstantSend::GetTxLockVote(const uint256& hash, CTxLockVote& txLockVoteRet
 
 bool CInstantSend::IsInstantSendReadyToLock(const uint256& txHash)
 {
-    if(!fEnableInstantSend || fLargeWorkForkFound || fLargeWorkInvalidChainFound ||
+    if(!fEnableInstantSend || GetfLargeWorkForkFound() || GetfLargeWorkInvalidChainFound() ||
         !sporkManager.IsSporkActive(SPORK_2_INSTANTSEND_ENABLED)) return false;
 
     LOCK(cs_instantsend);
@@ -787,7 +788,7 @@ bool CInstantSend::IsInstantSendReadyToLock(const uint256& txHash)
 
 bool CInstantSend::IsLockedInstantSendTransaction(const uint256& txHash)
 {
-    if(!fEnableInstantSend || fLargeWorkForkFound || fLargeWorkInvalidChainFound ||
+    if(!fEnableInstantSend || GetfLargeWorkForkFound() || GetfLargeWorkInvalidChainFound() ||
         !sporkManager.IsSporkActive(SPORK_3_INSTANTSEND_BLOCK_FILTERING)) return false;
 
     LOCK(cs_instantsend);
@@ -813,7 +814,7 @@ bool CInstantSend::IsLockedInstantSendTransaction(const uint256& txHash)
 int CInstantSend::GetTransactionLockSignatures(const uint256& txHash)
 {
     if(!fEnableInstantSend) return -1;
-    if(fLargeWorkForkFound || fLargeWorkInvalidChainFound) return -2;
+    if(GetfLargeWorkForkFound() || GetfLargeWorkInvalidChainFound()) return -2;
     if(!sporkManager.IsSporkActive(SPORK_2_INSTANTSEND_ENABLED)) return -3;
 
     LOCK(cs_instantsend);
