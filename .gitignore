@@ -80,7 +80,6 @@ libconftest.dylib*
 *.o
 *.o-*
 *.patch
-.dash
 .energi
 *.a
 *.pb.cc
