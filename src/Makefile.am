@@ -146,6 +146,7 @@ BITCOIN_CORE_H = \
   consensus/consensus.h \
   core_io.h \
   core_memusage.h \
+  cuckoocache.h \
   energi_all.hpp \
   energi_deps.hpp \
   privatesend.h \
