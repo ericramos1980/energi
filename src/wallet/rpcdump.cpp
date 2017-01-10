@@ -83,7 +83,7 @@ UniValue importprivkey(const JSONRPCRequest& request)
     
     if (request.fHelp || request.params.size() < 1 || request.params.size() > 3)
         throw runtime_error(
-            "importprivkey \"energiprivkey\" ( \"label\" rescan )\n"
+            "importprivkey \"energiprivkey\" ( \"label\" ) ( rescan )\n"
             "\nAdds a private key (as returned by dumpprivkey) to your wallet.\n"
             "\nArguments:\n"
             "1. \"energiprivkey\"   (string, required) The private key (see dumpprivkey)\n"
@@ -655,12 +655,12 @@ UniValue dumpprivkey(const JSONRPCRequest& request)
     
     if (request.fHelp || request.params.size() != 2 || !RPCCheckAuthCode(request.params[1]))
         throw runtime_error(
-            "dumpprivkey \"energiaddress\" \"one_time_code\"\n"
+            "dumpprivkey \"address\" \"one_time_code\"\n"
             + RPCGetAuthCodeHelp() +
             "\nReveals the private key corresponding to 'energiaddress'.\n"
             "Then the importprivkey can be used with this output\n"
             "\nArguments:\n"
-            "1. \"energiaddress\"   (string, required) The energi address for the private key\n"
+            "1. \"address\"         (string, required) The energi address for the private key\n"
             "2. \"one_time_code\"   (string, required) The security code from the previous invocation\n"
             "\nResult:\n"
             "\"key\"                (string) The private key\n"
@@ -1174,10 +1174,10 @@ UniValue importmulti(const JSONRPCRequest& mainRequest)
     // clang-format off
     if (mainRequest.fHelp || mainRequest.params.size() < 1 || mainRequest.params.size() > 2)
         throw runtime_error(
-            "importmulti '[<json import requests>]' '<json options>' \n\n"
+            "importmulti \"requests\" \"options\"\n\n"
             "Import addresses/scripts (with private or public keys, redeem script (P2SH)), rescanning all addresses in one-shot-only (rescan can be disabled via options).\n\n"
             "Arguments:\n"
-            "1. request array     (array, required) Data to be imported\n"
+            "1. requests     (array, required) Data to be imported\n"
             "  [     (array of json objects)\n"
             "    {\n"
             "      \"scriptPubKey\": \"<script>\" | { \"address\":\"<address>\" }, (string / json, required) Type of scriptPubKey (string for script, json for address)\n"
@@ -1191,7 +1191,7 @@ UniValue importmulti(const JSONRPCRequest& mainRequest)
             "    }\n"
             "  ,...\n"
             "  ]\n"
-            "2. json options                 (json, optional)\n"
+            "2. options                 (json, optional)\n"
             "  {\n"
             "     \"rescan\": <false>,         (boolean, optional, default: true) Stating if should rescan the blockchain after all imports\n"
             "  }\n"
