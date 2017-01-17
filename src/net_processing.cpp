@@ -719,6 +719,7 @@ void PeerLogicValidation::UpdatedBlockTip(const CBlockIndex *pindexNew, const CB
                 }
             }
         });
+        connman->WakeMessageHandler();
     }
 
     nTimeBestReceived = GetTime();

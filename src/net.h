@@ -395,6 +395,8 @@ public:
     CSipHasher GetDeterministicRandomizer(uint64_t id);
 
     unsigned int GetReceiveFloodSize() const;
+
+    void WakeMessageHandler();
 private:
     struct ListenSocket {
         SOCKET socket;
@@ -413,8 +415,6 @@ private:
     void ThreadMnbRequestConnections();
 
     uint64_t CalculateKeyedNetGroup(const CAddress& ad);
-
-    void WakeMessageHandler();
 
     CNode* FindNode(const CNetAddr& ip);
     CNode* FindNode(const CSubNet& subNet);
