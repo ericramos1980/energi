@@ -8,16 +8,10 @@
 #
 
 
-try: # Python 3
-    import http.client as httplib
-except ImportError: # Python 2
-    import httplib
-import json
 import struct
 import re
 import os
 import os.path
-import base64
 try :
     import http.client as httplib
 except ImportError:
