@@ -172,6 +172,7 @@ testScripts = [
     'signmessages.py',
     'import-rescan.py',
     'rpcnamedargs.py',
+    'listsinceblock.py',
 ]
 if ENABLE_ZMQ:
     testScripts.append('zmq_test.py')
