@@ -36,15 +36,19 @@ Required configuration file settings:
 * `output`: Output directory for linearized `blocks/blkNNNNN.dat` output.
 
 Optional config file setting for linearize-data:
-* `file_timestamp`: Set each file's last-modified time to that of the most
-recent block in that file.
-* `genesis`: The hash of the genesis block in the blockchain. (default is '00000bafbc94add76cb75e2ec92894837288a481e5c005f6563d91623bf8bc2c', testnet)
-* `input`: bitcoind blocks/ directory containing blkNNNNN.dat
+* `debug_output`: Some printouts may not always be desired. If true, such output
+will be printed.
+* `file_timestamp`: Set each file's last-accessed and last-modified times,
+respectively, to the current time and to the timestamp of the most recent block
+written to the script's blockchain.
 * `hashlist`: text file containing list of block hashes created by
 linearize-hashes.py.
 * `max_out_sz`: Maximum size for files created by the `output_file` option.
 (Default: `1000*1000*1000 bytes`)
 * `netmagic`: Network magic number. (default is 'cee2caff', testnet)
+* `out_of_order_cache_sz`: If out-of-order blocks are being read, the block can
+be written to a cache so that the blockchain doesn't have to be seeked again.
+This option specifies the cache size. (Default: `100*1000*1000 bytes`)
 * `rev_hash_bytes`: If true, the block hash list written by linearize-hashes.py
 will be byte-reversed when read by linearize-data.py. See the linearize-hashes
 entry for more information.
