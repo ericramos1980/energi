@@ -1285,7 +1285,7 @@ UniValue importmulti(const JSONRPCRequest& mainRequest)
         }
     }
 
-    if (fRescan && fRunScan && requests.size() && nLowestTimestamp <= chainActive.Tip()->GetBlockTimeMax()) {
+    if (fRescan && fRunScan && requests.size()) {
         CBlockIndex* pindex = nLowestTimestamp > minimumTimestamp ? chainActive.FindEarliestAtLeast(nLowestTimestamp) : chainActive.Genesis();
 
         if (pindex) {
