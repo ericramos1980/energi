@@ -216,6 +216,20 @@ AC_ARG_ENABLE([debug],
     [enable_debug=$enableval],
     [enable_debug=no])
 
+
+if test x$TARGET_OS != xdarwin; then
+  def_werror=yes
+else
+  def_werror=no
+fi
+
+# Turn warnings into errors
+AC_ARG_ENABLE([werror],
+    [AS_HELP_STRING([--enable-werror],
+                    [Treat certain compiler warnings as errors (default is no)])],
+    [enable_werror=$enableval],
+    [enable_werror=$def_werror])
+
 AC_LANG_PUSH([C++])
 AX_CHECK_COMPILE_FLAG([-Werror],[CXXFLAG_WERROR="-Werror"],[CXXFLAG_WERROR=""])
 
@@ -237,12 +251,23 @@ AC_ARG_ENABLE([pch],
   [use_pch=no])
 AM_CONDITIONAL([ENABLE_PCH],[test x$use_pch = xyes])
 
+
+ERROR_CXXFLAGS=
+if test "x$enable_werror" = "xyes"; then
+  if test "x$CXXFLAG_WERROR" = "x"; then
+    AC_MSG_ERROR("enable-werror set but -Werror is not usable")
+  fi
+  AX_CHECK_COMPILE_FLAG([-Werror=vla],[ERROR_CXXFLAGS="$ERROR_CXXFLAGS -Werror=vla"],,[[$CXXFLAG_WERROR]])
+fi
+
 if test "x$CXXFLAGS_overridden" = "xno"; then
   WARN_CFLAGS=""
   WARN_CXXFLAGS=""
   AX_CHECK_COMPILE_FLAG([-Wall],[WARN_CFLAGS="$WARN_CFLAGS -Wall"],,[[$CXXFLAG_WERROR]])
   AX_CHECK_COMPILE_FLAG([-Wextra],[WARN_CFLAGS="$WARN_CFLAGS -Wextra"],,[[$CXXFLAG_WERROR]])
+  AX_CHECK_COMPILE_FLAG([-Wvla],[CXXFLAGS="$CXXFLAGS -Wvla"],,[[$CXXFLAG_WERROR]])
   #AX_CHECK_COMPILE_FLAG([-Wshadow],[WARN_CFLAGS="$WARN_CFLAGS -Wshadow"],,[[$CXXFLAG_WERROR]])
+  AX_CHECK_COMPILE_FLAG([-Wformat],[WARN_CFLAGS="$WARN_CFLAGS -Wformat"],,[[$CXXFLAG_WERROR]])
   AX_CHECK_COMPILE_FLAG([-Wformat-security],[WARN_CFLAGS="$WARN_CFLAGS -Wformat-security"],,[[$CXXFLAG_WERROR]])
   AX_CHECK_COMPILE_FLAG([-Wdate-time],[WARN_CFLAGS="$WARN_CFLAGS -Wdate-time"],,[[$CXXFLAG_WERROR]])
 
@@ -255,10 +280,8 @@ if test "x$CXXFLAGS_overridden" = "xno"; then
   AX_CHECK_COMPILE_FLAG([-Wdeprecated-register],[WARN_CFLAGS="$WARN_CFLAGS -Wno-deprecated-register"],,[[$CXXFLAG_WERROR]])
   AX_CHECK_COMPILE_FLAG([-Wimplicit-fallthrough],[WARN_CFLAGS="$WARN_CFLAGS -Wno-implicit-fallthrough"],,[[$CXXFLAG_WERROR]])
 
-  if test x$TARGET_OS != xdarwin; then
-    WARN_CFLAGS="$WARN_CFLAGS $CXXFLAG_WERROR"
-    WARN_CXXFLAGS="$WARN_CFLAGS $WARN_CXXFLAGS $CXXFLAG_WERROR"
-  fi
+  WARN_CFLAGS="$WARN_CFLAGS $ERROR_CXXFLAGS"
+  WARN_CXXFLAGS="$WARN_CFLAGS $WARN_CXXFLAGS $ERROR_CXXFLAGS"
 fi
 CPPFLAGS="$CPPFLAGS -DHAVE_BUILD_INFO -D__STDC_FORMAT_MACROS"
 
@@ -1223,6 +1246,7 @@ echo "  with test     = $use_tests"
 echo "  with bench    = $use_bench"
 echo "  with upnp     = $use_upnp"
 echo "  debug enabled = $enable_debug"
+echo "  werror        = $enable_werror"
 echo 
 echo "  target os     = $TARGET_OS"
 echo "  build os      = $BUILD_OS"
