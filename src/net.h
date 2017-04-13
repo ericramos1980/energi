@@ -100,7 +100,7 @@ static const unsigned int DEFAULT_MISBEHAVING_BANTIME = 60 * 60 * 24;  // Defaul
 static const auto DEFAULT_OUTBOUND_INTERVAL = std::chrono::milliseconds(500);
 static const auto MIN_OUTBOUND_INTERVAL = std::chrono::milliseconds(100);
 
-typedef int NodeId;
+typedef int64_t NodeId;
 
 struct AddedNodeInfo
 {
