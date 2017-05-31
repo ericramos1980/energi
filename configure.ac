@@ -251,6 +251,7 @@ if test "x$CXXFLAGS_overridden" = "xno"; then
   AX_CHECK_COMPILE_FLAG([-Wself-assign],[WARN_CFLAGS="$WARN_CFLAGS -Wno-self-assign"],,[[$CXXFLAG_WERROR]])
   AX_CHECK_COMPILE_FLAG([-Wunused-local-typedef],[WARN_CFLAGS="$WARN_CFLAGS -Wno-unused-local-typedef"],,[[$CXXFLAG_WERROR]])
   AX_CHECK_COMPILE_FLAG([-Wdeprecated-register],[WARN_CFLAGS="$WARN_CFLAGS -Wno-deprecated-register"],,[[$CXXFLAG_WERROR]])
+  AX_CHECK_COMPILE_FLAG([-Wimplicit-fallthrough],[WARN_CFLAGS="$WARN_CFLAGS -Wno-implicit-fallthrough"],,[[$CXXFLAG_WERROR]])
 
   if test x$TARGET_OS != xdarwin; then
     WARN_CFLAGS="$WARN_CFLAGS $CXXFLAG_WERROR"
