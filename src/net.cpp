@@ -1751,11 +1751,17 @@ void CConnman::ThreadOpenConnections()
         // Do this here so we don't have to critsect vNodes inside mapAddresses critsect.
         // This is only done for mainnet and testnet
         int nOutbound = 0;
+        int nOutboundRelevant = 0;
         std::set<std::vector<unsigned char> > setConnected;
         if (!Params().AllowMultipleAddressesFromGroup()) {
             LOCK(cs_vNodes);
             BOOST_FOREACH(CNode* pnode, vNodes) {
                 if (!pnode->fInbound && !pnode->fAddnode && !pnode->fMasternode) {
+
+                    // Count the peers that have all relevant services
+                    if (pnode->fSuccessfullyConnected && !pnode->fFeeler && ((pnode->nServices & nRelevantServices) == nRelevantServices)) {
+                        nOutboundRelevant++;
+                    }
                     // Netgroups for inbound and addnode peers are not excluded because our goal here
                     // is to not use multiple of our limited outbound slots on a single netgroup
                     // but inbound and addnode peers do not use our outbound slots.  Inbound peers
@@ -1827,8 +1833,14 @@ void CConnman::ThreadOpenConnections()
                 continue;
 
             // only consider nodes missing relevant services after 40 failed attempts and only if less than half the outbound are up.
-            if ((addr.nServices & nRelevantServices) != nRelevantServices && (nTries < ALLOW_NONRELEVANT_ATTEMPT || nOutbound >= (nMaxOutbound >> 1)))
+            ServiceFlags nRequiredServices = nRelevantServices;
+            if (nTries >= 40 && nOutbound < (nMaxOutbound >> 1)) {
+                nRequiredServices = REQUIRED_SERVICES;
+            }
+
+            if ((addr.nServices & nRequiredServices) != nRequiredServices) {
                 continue;
+            }
 
             // Balance between IPv4 and IPv6 candidates to avoid local IPv6 network with
             // IPv4-only internet cases.
@@ -1839,6 +1851,13 @@ void CConnman::ThreadOpenConnections()
             }
 
             addrConnect = addr;
+
+            // regardless of the services assumed to be available, only require the minimum if half or more outbound have relevant services
+            if (nOutboundRelevant >= (nMaxOutbound >> 1)) {
+                addrConnect.nServices = REQUIRED_SERVICES;
+            } else {
+                addrConnect.nServices = nRequiredServices;
+            }
             break;
         }
 
