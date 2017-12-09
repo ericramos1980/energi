@@ -2778,6 +2778,8 @@ const CRPCCommand vWalletRPCCommands[] =
     { "wallet",             "instantsendtoaddress",     &instantsendtoaddress,     false },
     { "wallet",             "dumphdinfo",               &dumphdinfo,               true  },
     { "wallet",             "importelectrumwallet",     &importelectrumwallet,     true  },
+
+    { "energi",             "privatesend",              &privatesend,              false },
 };
 
 void walletRegisterRPCCommands()

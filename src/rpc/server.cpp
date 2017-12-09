@@ -348,7 +348,6 @@ static const CRPCCommand vRPCCommands[] =
     { "energi",               "spork",                  &spork,                  true  },
     { "energi",               "getpoolinfo",            &getpoolinfo,            true  },
     { "energi",               "sentinelping",           &sentinelping,           true  },
-    { "energi",               "privatesend",            &privatesend,            false },
 
     { "egihash",            "getepoch",               &getepoch,               true  },
     { "egihash",            "getseedhash",            &getseedhash,            true  },
