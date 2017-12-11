@@ -48,7 +48,7 @@ SplashScreen::SplashScreen(Qt::WindowFlags f, const NetworkStyle *networkStyle) 
     // define text to place
     QString titleText       = tr(PACKAGE_NAME);
     QString versionText     = QString(tr("Version %1")).arg(QString::fromStdString(FormatFullVersion()));
-    QString copyrightText   = QString::fromUtf8(CopyrightHolders(strprintf("\xc2\xA9 %u-%u ", 2009, COPYRIGHT_YEAR)).c_str());
+    QString copyrightText   = QString::fromUtf8(CopyrightHolders("\xc2\xA9", 2017, COPYRIGHT_YEAR).c_str());
     QString copyrightTextEnergi   = QChar(0xA9)+QString(" %1 ").arg(COPYRIGHT_YEAR) + QString(tr("The Energi Core developers"));
     QString titleAddText    = networkStyle->getTitleAddText();
     // networkstyle.cpp can't (yet) read themes, so we do it here to get the correct Splash-screen
