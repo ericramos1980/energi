@@ -193,14 +193,14 @@ class RawTransactionsTest(BitcoinTestFramework):
         utx = False
         listunspent = self.nodes[2].listunspent()
         for aUtx in listunspent:
-            if aUtx['amount'] == 5.0:
+            if aUtx['amount'] == 50:
                 utx = aUtx
                 break
 
         assert_equal(utx!=False, True)
 
         inputs  = [ {'txid' : utx['txid'], 'vout' : utx['vout']} ]
-        outputs = { self.nodes[0].getnewaddress() : Decimal(4.0) }
+        outputs = { self.nodes[0].getnewaddress() : Decimal(40) }
         rawtx   = self.nodes[2].createrawtransaction(inputs, outputs)
         dec_tx  = self.nodes[2].decoderawtransaction(rawtx)
         assert_equal(utx['txid'], dec_tx['vin'][0]['txid'])
@@ -218,14 +218,14 @@ class RawTransactionsTest(BitcoinTestFramework):
         utx = False
         listunspent = self.nodes[2].listunspent()
         for aUtx in listunspent:
-            if aUtx['amount'] == 5.0:
+            if aUtx['amount'] == 50:
                 utx = aUtx
                 break
 
         assert_equal(utx!=False, True)
 
         inputs  = [ {'txid' : utx['txid'], 'vout' : utx['vout']} ]
-        outputs = { self.nodes[0].getnewaddress() : Decimal(4.0) }
+        outputs = { self.nodes[0].getnewaddress() : Decimal(40) }
         rawtx   = self.nodes[2].createrawtransaction(inputs, outputs)
         dec_tx  = self.nodes[2].decoderawtransaction(rawtx)
         assert_equal(utx['txid'], dec_tx['vin'][0]['txid'])
@@ -244,14 +244,14 @@ class RawTransactionsTest(BitcoinTestFramework):
         utx = False
         listunspent = self.nodes[2].listunspent()
         for aUtx in listunspent:
-            if aUtx['amount'] == 5.0:
+            if aUtx['amount'] == 50:
                 utx = aUtx
                 break
 
         assert_equal(utx!=False, True)
 
         inputs  = [ {'txid' : utx['txid'], 'vout' : utx['vout']} ]
-        outputs = { self.nodes[0].getnewaddress() : Decimal(4.0) }
+        outputs = { self.nodes[0].getnewaddress() : Decimal(40) }
         rawtx   = self.nodes[2].createrawtransaction(inputs, outputs)
         dec_tx  = self.nodes[2].decoderawtransaction(rawtx)
         assert_equal(utx['txid'], dec_tx['vin'][0]['txid'])
