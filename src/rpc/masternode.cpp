@@ -23,10 +23,10 @@
 #include <iomanip>
 #include <univalue.h>
 
+UniValue masternodelist(const UniValue& params, bool fHelp);
+
 #ifdef ENABLE_WALLET
 void EnsureWalletIsUnlocked();
-
-UniValue masternodelist(const UniValue& params, bool fHelp);
 
 UniValue privatesend(const UniValue& params, bool fHelp)
 {
@@ -876,7 +876,9 @@ static const CRPCCommand commands[] =
     { "energi",             "masternodebroadcast",    &masternodebroadcast,    true  },
     { "energi",             "getpoolinfo",            &getpoolinfo,            true  },
     { "energi",             "sentinelping",           &sentinelping,           true  },
+#ifdef ENABLE_WALLET
     { "energi",             "privatesend",            &privatesend,            false },
+#endif // ENABLE_WALLET
 };
 
 void RegisterMasternodeRPCCommands(CRPCTable &tableRPC)
