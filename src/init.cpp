@@ -1123,7 +1123,6 @@ bool AppInit2(boost::thread_group& threadGroup, CScheduler& scheduler)
 #ifdef ENABLE_WALLET
     if (!CWallet::ParameterInteraction())
         return false;
-    std::string strWalletFile = GetArg("-wallet", DEFAULT_WALLET_DAT);
 #endif // ENABLE_WALLET
 
     fIsBareMultisigStd = GetBoolArg("-permitbaremultisig", DEFAULT_PERMIT_BAREMULTISIG);
@@ -1295,6 +1294,8 @@ bool AppInit2(boost::thread_group& threadGroup, CScheduler& scheduler)
 
         nWalletBackups = GetArg("-createwalletbackups", 10);
         nWalletBackups = std::max(0, std::min(10, nWalletBackups));
+
+        std::string strWalletFile = GetArg("-wallet", DEFAULT_WALLET_DAT);
 
         if(!AutoBackupWallet(NULL, strWalletFile, strWarning, strError)) {
             if (!strWarning.empty())
