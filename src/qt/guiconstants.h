@@ -53,5 +53,6 @@ static const int MAX_URI_LENGTH = 255;
 #define QAPP_ORG_DOMAIN "energi.world"
 #define QAPP_APP_NAME_DEFAULT "Energi-Qt"
 #define QAPP_APP_NAME_TESTNET "Energi-Qt-testnet"
+#define QAPP_APP_NAME_DEVNET "Dash-Qt-%s"
 
 #endif // BITCOIN_QT_GUICONSTANTS_H

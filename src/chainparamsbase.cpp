@@ -16,6 +16,7 @@ const std::string CBaseChainParams::TESTNET = "test";
 #ifdef ENERGI_ENABLE_TESTNET_60X
 const std::string CBaseChainParams::TESTNET60X = "test60";
 #endif
+const std::string CBaseChainParams::DEVNET = "dev";
 const std::string CBaseChainParams::REGTEST = "regtest";
 
 void AppendParamsHelpMessages(std::string& strUsage, bool debugHelp)
@@ -75,6 +76,21 @@ public:
 static CBaseTestNet60xParams testNet60xParams;
 #endif
 
+/**
+ * Devnet
+ */
+class CBaseDevNetParams : public CBaseChainParams
+{
+public:
+    CBaseDevNetParams(const std::string &dataDir)
+    {
+        nRPCPort = 19998;
+        strDataDir = dataDir;
+    }
+};
+static CBaseDevNetParams *devNetParams;
+
+
 /*
  * Regression test
  */
@@ -107,7 +123,10 @@ CBaseChainParams& BaseParams(const std::string& chain)
     else if (chain == CBaseChainParams::TESTNET60X)
         return testNet60xParams;
 #endif
-    else if (chain == CBaseChainParams::REGTEST)
+    else if (chain == CBaseChainParams::DEVNET) {
+        assert(devNetParams);
+        return *devNetParams;
+    } else if (chain == CBaseChainParams::REGTEST)
         return regTestParams;
     else
         throw std::runtime_error(strprintf("%s: Unknown chain %s.", __func__, chain));
@@ -115,13 +134,24 @@ CBaseChainParams& BaseParams(const std::string& chain)
 
 void SelectBaseParams(const std::string& chain)
 {
+    if (chain == CBaseChainParams::DEVNET) {
+        std::string devNetName = GetDevNetName();
+        assert(!devNetName.empty());
+        devNetParams = new CBaseDevNetParams(devNetName);
+    }
+
     pCurrentBaseParams = &BaseParams(chain);
 }
 
 std::string ChainNameFromCommandLine()
 {
     bool fRegTest = GetBoolArg("-regtest", false);
+    bool fDevNet = mapArgs.count("-devnet") != 0;
     bool fTestNet = GetBoolArg("-testnet", false);
+    
+    int nameParamsCount = (fRegTest ? 1 : 0) + (fDevNet ? 1 : 0) + (fTestNet ? 1 : 0);
+    if (nameParamsCount > 1)
+        throw std::runtime_error("Only one of -regtest, -testnet or -devnet can be used.");
 
     #ifdef ENERGI_ENABLE_TESTNET_60X
     bool fTestNet60x = GetBoolArg("-testnet60x", false);
@@ -132,10 +162,11 @@ std::string ChainNameFromCommandLine()
     if (fTestNet60x)
         return CBaseChainParams::TESTNET60X;
     #endif
+    
+    
+    if (fDevNet)
+        return CBaseChainParams::DEVNET;
 
-
-    if (fTestNet && fRegTest)
-        throw std::runtime_error("Invalid combination of -regtest and -testnet. Can't be used together.");
 
     if (fRegTest)
         return CBaseChainParams::REGTEST;
@@ -143,6 +174,14 @@ std::string ChainNameFromCommandLine()
         return CBaseChainParams::TESTNET;
 
     return CBaseChainParams::MAIN;
+}
+
+std::string GetDevNetName()
+{
+    // This function should never be called for non-devnets
+    assert(mapArgs.count("-devnet"));
+    std::string devNetName = GetArg("-devnet", "");
+    return "devnet" + (devNetName.empty() ? "" : "-" + devNetName);
 }
 
 bool AreBaseParamsConfigured()
