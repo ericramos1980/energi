@@ -151,7 +151,8 @@ public:
     enum CollateralStatus {
         COLLATERAL_OK,
         COLLATERAL_UTXO_NOT_FOUND,
-        COLLATERAL_INVALID_AMOUNT
+        COLLATERAL_INVALID_AMOUNT,
+        COLLATERAL_INVALID_PUBKEY
     };
 
 
@@ -205,8 +206,8 @@ public:
 
     bool UpdateFromNewBroadcast(CMasternodeBroadcast& mnb, CConnman& connman);
 
-    static CollateralStatus CheckCollateral(const COutPoint& outpoint);
-    static CollateralStatus CheckCollateral(const COutPoint& outpoint, int& nHeightRet);
+    static CollateralStatus CheckCollateral(const COutPoint& outpoint, const CPubKey& pubkey);
+    static CollateralStatus CheckCollateral(const COutPoint& outpoint, const CPubKey& pubkey, int& nHeightRet);
     void Check(bool fForce = false);
 
     bool IsBroadcastedWithin(int nSeconds) { return GetAdjustedTime() - sigTime < nSeconds; }
@@ -252,9 +253,6 @@ public:
 
         return false;
     }
-
-    /// Is the input associated with collateral public key? (and there is 10000 NRG - checking if valid masternode)
-    bool IsInputAssociatedWithPubkey();
 
     bool IsValidNetAddr();
     static bool IsValidNetAddr(CService addrIn);
