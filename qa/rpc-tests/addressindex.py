@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python3
 # Copyright (c) 2014-2015 The Bitcoin Core developers
 # Distributed under the MIT software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
@@ -111,7 +111,7 @@ class AddressIndexTest(BitcoinTestFramework):
 
         # Check that outputs with the same address will only return one txid
         print("Testing for txid uniqueness...")
-        addressHash = "FE30B718DCF0BF8A2A686BF1820C073F8B2C3B37".decode("hex")
+        addressHash = binascii.unhexlify("FE30B718DCF0BF8A2A686BF1820C073F8B2C3B37")
         scriptPubKey = CScript([OP_HASH160, addressHash, OP_EQUAL])
         unspent = self.nodes[0].listunspent()
         tx = CTransaction()
@@ -138,14 +138,14 @@ class AddressIndexTest(BitcoinTestFramework):
         print("Testing balances after spending...")
         privkey2 = "cU4zhap7nPJAWeMFu4j6jLrfPmqakDAzy8zn8Fhb3oEevdm4e5Lc"
         address2 = "yeMpGzMj3rhtnz48XsfpB8itPHhHtgxLc3"
-        addressHash2 = "C5E4FB9171C22409809A3E8047A29C83886E325D".decode("hex")
+        addressHash2 = binascii.unhexlify("C5E4FB9171C22409809A3E8047A29C83886E325D")
         scriptPubKey2 = CScript([OP_DUP, OP_HASH160, addressHash2, OP_EQUALVERIFY, OP_CHECKSIG])
         self.nodes[0].importprivkey(privkey2)
 
         unspent = self.nodes[0].listunspent()
         tx = CTransaction()
         tx.vin = [CTxIn(COutPoint(int(unspent[0]["txid"], 16), unspent[0]["vout"]))]
-        amount = unspent[0]["amount"] * 100000000
+        amount = int(unspent[0]["amount"] * 100000000)
         tx.vout = [CTxOut(amount, scriptPubKey2)]
         tx.rehash()
         signed_tx = self.nodes[0].signrawtransaction(binascii.hexlify(tx.serialize()).decode("utf-8"))
@@ -232,7 +232,7 @@ class AddressIndexTest(BitcoinTestFramework):
 
         privKey3 = "cRyrMvvqi1dmpiCmjmmATqjAwo6Wu7QTjKu1ABMYW5aFG4VXW99K"
         address3 = "yWB15aAdpeKuSaQHFVJpBDPbNSLZJSnDLA"
-        addressHash3 = "6C186B3A308A77C779A9BB71C3B5A7EC28232A13".decode("hex")
+        addressHash3 = binascii.unhexlify("6C186B3A308A77C779A9BB71C3B5A7EC28232A13")
         scriptPubKey3 = CScript([OP_DUP, OP_HASH160, addressHash3, OP_EQUALVERIFY, OP_CHECKSIG])
         # address4 = "2N8oFVB2vThAKury4vnLquW2zVjsYjjAkYQ"
         scriptPubKey4 = CScript([OP_HASH160, addressHash3, OP_EQUAL])
@@ -240,7 +240,7 @@ class AddressIndexTest(BitcoinTestFramework):
 
         tx = CTransaction()
         tx.vin = [CTxIn(COutPoint(int(unspent[0]["txid"], 16), unspent[0]["vout"]))]
-        amount = unspent[0]["amount"] * 100000000
+        amount = int(unspent[0]["amount"] * 100000000)
         tx.vout = [CTxOut(amount, scriptPubKey3)]
         tx.rehash()
         signed_tx = self.nodes[2].signrawtransaction(binascii.hexlify(tx.serialize()).decode("utf-8"))
@@ -249,12 +249,12 @@ class AddressIndexTest(BitcoinTestFramework):
 
         tx2 = CTransaction()
         tx2.vin = [CTxIn(COutPoint(int(unspent[1]["txid"], 16), unspent[1]["vout"]))]
-        amount = unspent[1]["amount"] * 100000000
+        amount = int(unspent[1]["amount"] * 100000000)
         tx2.vout = [
-            CTxOut(amount / 4, scriptPubKey3),
-            CTxOut(amount / 4, scriptPubKey3),
-            CTxOut(amount / 4, scriptPubKey4),
-            CTxOut(amount / 4, scriptPubKey4)
+            CTxOut(int(amount / 4), scriptPubKey3),
+            CTxOut(int(amount / 4), scriptPubKey3),
+            CTxOut(int(amount / 4), scriptPubKey4),
+            CTxOut(int(amount / 4), scriptPubKey4)
         ]
         tx2.rehash()
         signed_tx2 = self.nodes[2].signrawtransaction(binascii.hexlify(tx2.serialize()).decode("utf-8"))
@@ -281,7 +281,7 @@ class AddressIndexTest(BitcoinTestFramework):
             CTxIn(COutPoint(int(memtxid2, 16), 0)),
             CTxIn(COutPoint(int(memtxid2, 16), 1))
         ]
-        tx.vout = [CTxOut(amount / 2 - 10000, scriptPubKey2)]
+        tx.vout = [CTxOut(int(amount / 2 - 10000), scriptPubKey2)]
         tx.rehash()
         self.nodes[2].importprivkey(privKey3)
         signed_tx3 = self.nodes[2].signrawtransaction(binascii.hexlify(tx.serialize()).decode("utf-8"))
@@ -298,7 +298,7 @@ class AddressIndexTest(BitcoinTestFramework):
         # sending and receiving to the same address
         privkey1 = "cMvZn1pVWntTEcsK36ZteGQXRAcZ8CoTbMXF1QasxBLdnTwyVQCc"
         address1 = "yM9Eed1bxjy7tYxD3yZDHxjcVT48WdRoB1"
-        address1hash = "0909C84A817651502E020AAD0FBCAE5F656E7D8A".decode("hex")
+        address1hash = binascii.unhexlify("0909C84A817651502E020AAD0FBCAE5F656E7D8A")
         address1script = CScript([OP_DUP, OP_HASH160, address1hash, OP_EQUALVERIFY, OP_CHECKSIG])
 
         self.nodes[0].sendtoaddress(address1, 10)
@@ -312,7 +312,7 @@ class AddressIndexTest(BitcoinTestFramework):
         tx.vin = [
             CTxIn(COutPoint(int(utxos[0]["txid"], 16), utxos[0]["outputIndex"]))
         ]
-        amount = utxos[0]["satoshis"] - 10000
+        amount = int(utxos[0]["satoshis"] - 10000)
         tx.vout = [CTxOut(amount, address1script)]
         tx.rehash()
         self.nodes[0].importprivkey(privkey1)

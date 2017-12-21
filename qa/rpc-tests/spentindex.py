@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python3
 # Copyright (c) 2014-2015 The Bitcoin Core developers
 # Distributed under the MIT software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
@@ -48,11 +48,11 @@ class SpentIndexTest(BitcoinTestFramework):
 
         privkey = "cU4zhap7nPJAWeMFu4j6jLrfPmqakDAzy8zn8Fhb3oEevdm4e5Lc"
         address = "yeMpGzMj3rhtnz48XsfpB8itPHhHtgxLc3"
-        addressHash = "C5E4FB9171C22409809A3E8047A29C83886E325D".decode("hex")
+        addressHash = binascii.unhexlify("C5E4FB9171C22409809A3E8047A29C83886E325D")
         scriptPubKey = CScript([OP_DUP, OP_HASH160, addressHash, OP_EQUALVERIFY, OP_CHECKSIG])
         unspent = self.nodes[0].listunspent()
         tx = CTransaction()
-        amount = unspent[0]["amount"] * 100000000
+        amount = int(unspent[0]["amount"] * 100000000)
         tx.vin = [CTxIn(COutPoint(int(unspent[0]["txid"], 16), unspent[0]["vout"]))]
         tx.vout = [CTxOut(amount, scriptPubKey)]
         tx.rehash()
@@ -86,7 +86,7 @@ class SpentIndexTest(BitcoinTestFramework):
         # Check that verbose raw transaction includes address values and input values
         privkey2 = "cU4zhap7nPJAWeMFu4j6jLrfPmqakDAzy8zn8Fhb3oEevdm4e5Lc"
         address2 = "yeMpGzMj3rhtnz48XsfpB8itPHhHtgxLc3"
-        addressHash2 = "C5E4FB9171C22409809A3E8047A29C83886E325D".decode("hex")
+        addressHash2 = binascii.unhexlify("C5E4FB9171C22409809A3E8047A29C83886E325D")
         scriptPubKey2 = CScript([OP_DUP, OP_HASH160, addressHash2, OP_EQUALVERIFY, OP_CHECKSIG])
         tx2 = CTransaction()
         tx2.vin = [CTxIn(COutPoint(int(txid, 16), 0))]
