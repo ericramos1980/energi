@@ -2656,7 +2656,7 @@ void ReprocessBlocks(int nBlocks)
             if (mi != mapBlockIndex.end() && (*mi).second) {
 
                 CBlockIndex* pindex = (*mi).second;
-                LogPrintf("ResetBlockFailureFlags -- %s\n", (*it).first.ToString());
+                LogPrintf("ReprocessBlocks -- %s\n", (*it).first.ToString());
 
                 ResetBlockFailureFlags(pindex);
             }
