@@ -414,11 +414,10 @@ public:
      };
 
         chainTxData = ChainTxData{
-            1545317625,     // * UNIX timestamp of last checkpoint block
+            1545317625,     // * UNIX timestamp of last known number of transactions
             429697,         // * total number of transactions between genesis and that timestamp
                             //   (the tx=... number in the SetBestChain debug.log lines)
-
-            2347.0,           // * estimated number of transactions per day after checkpoint
+            0.027          // * estimated number of transactions per second after that timestamp
         };
     }
 };
@@ -574,9 +573,8 @@ public:
         chainTxData = ChainTxData{
             1544404999,     // * UNIX timestamp of last checkpoint block
             47119,          // * total number of transactions between genesis and last checkpoint
-            1462856598,
                             //   (the tx=... number in the SetBestChain debug.log lines)
-            403.1,            // * estimated number of transactions per day after checkpoint
+            0.01            // * estimated number of transactions per second after that timestamp
         };
 
     }
@@ -850,11 +848,9 @@ public:
         };
 
         chainTxData = ChainTxData{
-            // Data as of block 0000024bc3f4f4cb30d29827c13d921ad77d2c6072e586c7f60d83c2722cdcc5 (height 2999)
-            devnetGenesis.GetBlockTime(),
-            2,     // * total number of transactions between genesis and last checkpoint
-            //   (the tx=... number in the SetBestChain debug.log lines)
-            0.01        // * estimated number of transactions per day after checkpoint
+            devnetGenesis.GetBlockTime(), // * UNIX timestamp of devnet genesis block
+            2,                            // * we only have 2 coinbase transactions when a devnet is started up
+            0.01                          // * estimated number of transactions per second
         };
     }
 };
