@@ -1834,7 +1834,7 @@ void CConnman::ThreadOpenConnections()
 
             // only consider nodes missing relevant services after 40 failed attempts and only if less than half the outbound are up.
             ServiceFlags nRequiredServices = nRelevantServices;
-            if (nTries >= 40 && nOutbound < (nMaxOutbound >> 1)) {
+            if (nTries >= ALLOW_NONRELEVANT_ATTEMPT && nOutbound < (nMaxOutbound >> 1)) {
                 nRequiredServices = REQUIRED_SERVICES;
             }
 
