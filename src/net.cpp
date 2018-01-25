@@ -1828,6 +1828,10 @@ void CConnman::ThreadOpenConnections()
             if (nANow - addr.nLastTry < 600 && nTries < ALLOW_RETRY_ATTEMPT)
                 continue;
 
+            // only consider nodes missing relevant services after 40 failed attempts
+            if ((addr.nServices & nRelevantServices) != nRelevantServices && nTries < 40)
+                continue;
+
             // do not allow non-default ports, unless after 50 invalid addresses selected already
             if (addr.GetPort() != Params().GetDefaultPort() && nTries < ALLOW_NONDEFAULT_ATTEMPT)
                 continue;
