@@ -106,7 +106,7 @@ namespace boost {
 using namespace std;
 
 //Energi only features
-bool fMasterNode = false;
+bool fMasternodeMode = false;
 bool fLiteMode = false;
 /**
     nWalletBackups:

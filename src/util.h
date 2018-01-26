@@ -45,7 +45,7 @@
 
 //Energi only features
 
-extern bool fMasterNode;
+extern bool fMasternodeMode;
 extern bool fLiteMode;
 extern int nWalletBackups;
 
