@@ -8,7 +8,7 @@ BENCH_SRCDIR = bench
 BENCH_BINARY = bench/bench_energi$(EXEEXT)
 
 RAW_TEST_FILES = \
-  bench/data/block413567.raw
+  bench/data/block813851.raw
 GENERATED_TEST_FILES = $(RAW_TEST_FILES:.raw=.raw.h)
 
 bench_bench_energi_SOURCES = \
@@ -60,8 +60,8 @@ CLEAN_BITCOIN_BENCH = bench/*.gcda bench/*.gcno $(GENERATED_TEST_FILES)
 CLEANFILES += $(CLEAN_BITCOIN_BENCH)
 
 $(bench_bench_energi_SOURCES): $(ENERGI_PCH)
+bench/checkblock.cpp: bench/data/block813851.raw.h
 
-bench/checkblock.cpp: bench/data/block413567.raw.h
 
 bitcoin_bench: $(BENCH_BINARY)
 
