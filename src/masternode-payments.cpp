@@ -447,7 +447,7 @@ bool CMasternodePayments::GetBlockPayee(int nBlockHeight, CScript& payee)
 
 // Is this masternode scheduled to get paid soon?
 // -- Only look ahead up to 8 blocks to allow for propagation of the latest 2 blocks of votes
-bool CMasternodePayments::IsScheduled(CMasternode& mn, int nNotBlockHeight)
+bool CMasternodePayments::IsScheduled(const CMasternode& mn, int nNotBlockHeight)
 {
     LOCK(cs_mapMasternodeBlocks);
 
@@ -499,7 +499,7 @@ void CMasternodeBlockPayees::AddPayee(const CMasternodePaymentVote& vote)
 {
     LOCK(cs_vecPayees);
 
-    BOOST_FOREACH(CMasternodePayee& payee, vecPayees) {
+    for (auto& payee : vecPayees) {
         if (payee.GetPayee() == vote.payee) {
             payee.AddVoteHash(vote.GetHash());
             return;
@@ -519,7 +519,7 @@ bool CMasternodeBlockPayees::GetBestPayee(CScript& payeeRet)
     }
 
     int nVotes = -1;
-    BOOST_FOREACH(CMasternodePayee& payee, vecPayees) {
+    for (const auto& payee : vecPayees) {
         if (payee.GetVoteCount() > nVotes) {
             payeeRet = payee.GetPayee();
             nVotes = payee.GetVoteCount();
@@ -533,7 +533,7 @@ bool CMasternodeBlockPayees::HasPayeeWithVotes(const CScript& payeeIn, int nVote
 {
     LOCK(cs_vecPayees);
 
-    BOOST_FOREACH(CMasternodePayee& payee, vecPayees) {
+    for (const auto& payee : vecPayees) {
         if (payee.GetVoteCount() >= nVotesReq && payee.GetPayee() == payeeIn) {
             return true;
         }
@@ -554,7 +554,7 @@ bool CMasternodeBlockPayees::IsTransactionValid(const CTransaction& txNew)
 
     //require at least MNPAYMENTS_SIGNATURES_REQUIRED signatures
 
-    BOOST_FOREACH(CMasternodePayee& payee, vecPayees) {
+    for (const auto& payee : vecPayees) {
         if (payee.GetVoteCount() >= nMaxSignatures) {
             nMaxSignatures = payee.GetVoteCount();
         }
@@ -563,9 +563,9 @@ bool CMasternodeBlockPayees::IsTransactionValid(const CTransaction& txNew)
     // if we don't have at least MNPAYMENTS_SIGNATURES_REQUIRED signatures on a payee, approve whichever is the longest chain
     if(nMaxSignatures < MNPAYMENTS_SIGNATURES_REQUIRED) return true;
 
-    BOOST_FOREACH(CMasternodePayee& payee, vecPayees) {
+    for (const auto& payee : vecPayees) {
         if (payee.GetVoteCount() >= MNPAYMENTS_SIGNATURES_REQUIRED) {
-            BOOST_FOREACH(CTxOut txout, txNew.vout) {
+            for (const auto& txout : txNew.vout) {
                 if (payee.GetPayee() == txout.scriptPubKey && nMasternodePayment == txout.nValue) {
                     LogPrint("mnpayments", "CMasternodeBlockPayees::IsTransactionValid -- Found required payment\n");
                     return true;
@@ -594,7 +594,7 @@ std::string CMasternodeBlockPayees::GetRequiredPaymentsString()
 
     std::string strRequiredPayments = "Unknown";
 
-    BOOST_FOREACH(CMasternodePayee& payee, vecPayees)
+    for (const auto& payee : vecPayees)
     {
         CTxDestination address1;
         ExtractDestination(payee.GetPayee(), address1);
@@ -800,8 +800,8 @@ void CMasternodePayments::CheckPreviousBlockVotes(int nPrevBlockHeight)
         bool found = false;
 
         if (mapMasternodeBlocks.count(nPrevBlockHeight)) {
-            for (auto &p : mapMasternodeBlocks[nPrevBlockHeight].vecPayees) {
-                for (auto &voteHash : p.GetVoteHashes()) {
+            for (const auto &p : mapMasternodeBlocks[nPrevBlockHeight].vecPayees) {
+                for (const auto& voteHash : p.GetVoteHashes()) {
                     if (!mapMasternodePaymentVotes.count(voteHash)) {
                         debugStr += strprintf("CMasternodePayments::CheckPreviousBlockVotes --   could not find vote %s\n",
                                               voteHash.ToString());
@@ -832,8 +832,8 @@ void CMasternodePayments::CheckPreviousBlockVotes(int nPrevBlockHeight)
                               mn.second.vin.prevout.ToStringShort(), address2.ToString());
     }
     debugStr += "CMasternodePayments::CheckPreviousBlockVotes -- Masternodes which missed a vote in the past:\n";
-    for (auto it : mapMasternodesDidNotVote) {
-        debugStr += strprintf("CMasternodePayments::CheckPreviousBlockVotes --   %s: %d\n", it.first.ToStringShort(), it.second);
+    for (const auto& item : mapMasternodesDidNotVote) {
+        debugStr += strprintf("CMasternodePayments::CheckPreviousBlockVotes --   %s: %d\n", item.first.ToStringShort(), item.second);
     }
 
     LogPrint("mnpayments", "%s", debugStr);
@@ -897,9 +897,9 @@ void CMasternodePayments::Sync(CNode* pnode, CConnman& connman)
 
     for(int h = nCachedBlockHeight; h < nCachedBlockHeight + 20; h++) {
         if(mapMasternodeBlocks.count(h)) {
-            BOOST_FOREACH(CMasternodePayee& payee, mapMasternodeBlocks[h].vecPayees) {
+            for (const auto& payee : mapMasternodeBlocks[h].vecPayees) {
                 std::vector<uint256> vecVoteHashes = payee.GetVoteHashes();
-                BOOST_FOREACH(uint256& hash, vecVoteHashes) {
+                for (const auto& hash : vecVoteHashes) {
                     if(!HasVerifiedPaymentVote(hash)) continue;
                     pnode->PushInventory(CInv(MSG_MASTERNODE_PAYMENT_VOTE, hash));
                     nInvCount++;
@@ -947,7 +947,7 @@ void CMasternodePayments::RequestLowDataPaymentBlocks(CNode* pnode, CConnman& co
     while(it != mapMasternodeBlocks.end()) {
         int nTotalVotes = 0;
         bool fFound = false;
-        BOOST_FOREACH(CMasternodePayee& payee, it->second.vecPayees) {
+        for (const auto& payee : it->second.vecPayees) {
             if(payee.GetVoteCount() >= MNPAYMENTS_SIGNATURES_REQUIRED) {
                 fFound = true;
                 break;
@@ -964,7 +964,7 @@ void CMasternodePayments::RequestLowDataPaymentBlocks(CNode* pnode, CConnman& co
         // DEBUG
         DBG (
             // Let's see why this failed
-            BOOST_FOREACH(CMasternodePayee& payee, it->second.vecPayees) {
+            for (const auto& payee : it->second.vecPayees) {
                 CTxDestination address1;
                 ExtractDestination(payee.GetPayee(), address1);
                 CBitcoinAddress address2(address1);
