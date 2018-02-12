@@ -41,7 +41,7 @@ CGovernanceObject::CGovernanceObject()
     LoadData();
 }
 
-CGovernanceObject::CGovernanceObject(uint256 nHashParentIn, int nRevisionIn, int64_t nTimeIn, uint256 nCollateralHashIn, std::string strDataIn)
+CGovernanceObject::CGovernanceObject(const uint256& nHashParentIn, int nRevisionIn, int64_t nTimeIn, const uint256& nCollateralHashIn, const std::string& strDataIn)
 : cs(),
   nObjectType(GOVERNANCE_OBJECT_UNKNOWN),
   nHashParent(nHashParentIn),
@@ -227,7 +227,7 @@ void CGovernanceObject::SetMasternodeVin(const COutPoint& outpoint)
     vinMasternode = CTxIn(outpoint);
 }
 
-bool CGovernanceObject::Sign(CKey& keyMasternode, CPubKey& pubKeyMasternode)
+bool CGovernanceObject::Sign(const CKey& keyMasternode, const CPubKey& pubKeyMasternode)
 {
     std::string strError;
     std::string strMessage = GetSignatureMessage();
@@ -251,7 +251,7 @@ bool CGovernanceObject::Sign(CKey& keyMasternode, CPubKey& pubKeyMasternode)
     return true;
 }
 
-bool CGovernanceObject::CheckSignature(CPubKey& pubKeyMasternode)
+bool CGovernanceObject::CheckSignature(const CPubKey& pubKeyMasternode)
 {
     std::string strError;
 
