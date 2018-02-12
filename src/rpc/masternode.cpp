@@ -333,7 +333,7 @@ UniValue masternode(const JSONRPCRequest& request)
         for (const auto& mne : masternodeConfig.getEntries()) {
             std::string strError;
 
-            COutPoint outpoint = COutPoint(uint256S(mne.getTxHash()), uint32_t(atoi(mne.getOutputIndex().c_str())));
+            COutPoint outpoint = COutPoint(uint256S(mne.getTxHash()), (uint32_t)atoi(mne.getOutputIndex()));
             CMasternode mn;
             bool fFound = mnodeman.Get(outpoint, mn);
             CMasternodeBroadcast mnb;
@@ -381,7 +381,7 @@ UniValue masternode(const JSONRPCRequest& request)
         UniValue resultObj(UniValue::VOBJ);
 
         for (const auto& mne : masternodeConfig.getEntries()) {
-            COutPoint outpoint = COutPoint(uint256S(mne.getTxHash()), uint32_t(atoi(mne.getOutputIndex().c_str())));
+            COutPoint outpoint = COutPoint(uint256S(mne.getTxHash()), (uint32_t)atoi(mne.getOutputIndex()));
             CMasternode mn;
             bool fFound = mnodeman.Get(outpoint, mn);
 
