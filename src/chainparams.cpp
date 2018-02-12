@@ -955,7 +955,7 @@ public:
         pchMessageStart[1] = 0x89;
         pchMessageStart[2] = 0x6c;
         pchMessageStart[3] = 0x7f;
-        nDelayGetHeadersTime = 0; // never delay GETHEADERS in regtests
+        nDelayGetHeadersTime = std::numeric_limits<int64_t>::max(); // never delay GETHEADERS in regtests
         nDefaultPort = 39797;
         nPruneAfterHeight = 1000;
 
