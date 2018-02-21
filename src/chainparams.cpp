@@ -771,7 +771,6 @@ public:
 
         consensus.nMasternodePaymentsStartBlock = 4010; // not true, but it's ok as long as it's less then nMasternodePaymentsIncreaseBlock
         consensus.nInstantSendKeepLock = 6;
-        consensus.nBudgetProposalEstablishingTime = 60*20;
         consensus.nSuperblockCycle = 24; // Superblocks can be issued hourly on devnet
         consensus.nGovernanceMinQuorum = 1;
         consensus.nGovernanceFilterElements = 500;
@@ -918,7 +917,6 @@ public:
 
         consensus.nMasternodePaymentsStartBlock = 240;
         consensus.nInstantSendKeepLock = 6;
-        consensus.nBudgetProposalEstablishingTime = 60*20;
         consensus.nGovernanceMinQuorum = 1;
         consensus.nGovernanceFilterElements = 100;
         consensus.nMasternodeMinimumConfirmations = 1;
