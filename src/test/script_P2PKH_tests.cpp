@@ -7,8 +7,6 @@
 
 #include <boost/test/unit_test.hpp>
 
-using namespace std;
-
 BOOST_FIXTURE_TEST_SUITE(script_P2PKH_tests, BasicTestingSetup)
 
 #pragma GCC diagnostic ignored "-Warray-bounds"
