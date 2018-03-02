@@ -26,6 +26,7 @@ void AppendParamsHelpMessages(std::string& strUsage, bool debugHelp)
     #ifdef ENERGI_ENABLE_TESTNET_60X
     strUsage += HelpMessageOpt("-testnet60x", _("Use the 60x test chain, which is essentially 60 times faster, in terms of emission and governance"));
     #endif
+    strUsage += HelpMessageOpt("-devnet=<name>", _("Use devnet chain with provided name"));
     if (debugHelp) {
         strUsage += HelpMessageOpt("-regtest", "Enter regression test mode, which uses a special chain in which blocks can be solved instantly. "
                                    "This is intended for regression testing tools and app development.");
