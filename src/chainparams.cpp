@@ -302,6 +302,7 @@ public:
         consensus.BIP34Height = 1; // since genesis
         consensus.BIP65Height = 1; // since genesis
         consensus.BIP66Height = 1; // since genesis
+        consensus.DIP0001Height = 1; // since genesis
         consensus.powLimit = uint256S("00000fffff000000000000000000000000000000000000000000000000000000");
 
         consensus.nPowTargetTimespan = 24 * 60 * 60; // Dash: 1 day
@@ -481,6 +482,7 @@ public:
         consensus.BIP34Height = 1; //
         consensus.BIP65Height = 1; //
         consensus.BIP66Height = 1; //
+        consensus.DIP0001Height = 1; //
         consensus.fPowAllowMinDifficultyBlocks = true;
         consensus.fPowNoRetargeting = false;
         consensus.nRuleChangeActivationThreshold = 1512; // 75% for testchains
@@ -782,6 +784,7 @@ public:
         consensus.BIP34Height = 2; // BIP34 activated immediately on devnet
         consensus.BIP65Height = 2; // BIP65 activated immediately on devnet
         consensus.BIP66Height = 2; // BIP66 activated immediately on devnet
+        consensus.DIP0001Height = 2; // DIP0001 activated immediately on devnet
         consensus.nPowTargetTimespan = 24 * 60 * 60; // Dash: 1 day
         consensus.nPowTargetSpacing = 2.5 * 60; // Dash: 2.5 minutes
         consensus.fPowAllowMinDifficultyBlocks = true;
@@ -925,6 +928,7 @@ public:
         consensus.BIP34Height = 100000000; // BIP34 has not activated on regtest (far in the future so block v1 are not rejected in tests)
         consensus.BIP65Height = 1351; // BIP65 activated on regtest (Used in rpc activation tests)
         consensus.BIP66Height = 1251; // BIP66 activated on regtest (Used in rpc activation tests)
+        consensus.DIP0001Height = 2000;
         consensus.powLimit = uint256S("7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff");
         consensus.nPowTargetTimespan = 24 * 60 * 60; // Dash: 1 day
         consensus.nPowTargetSpacing = 60; // Energi: 1 minute
