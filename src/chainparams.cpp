@@ -292,6 +292,7 @@ public:
 
         consensus.nMasternodePaymentsStartBlock = 216000; // should be about 150 days after genesis
         consensus.nInstantSendKeepLock = 24;
+        consensus.nInstantSendConfirmationsRequired = 6;
 
         consensus.nBudgetProposalEstablishingTime = 60*60*24; // 1 day
 
@@ -472,6 +473,7 @@ public:
 
         consensus.nMasternodePaymentsStartBlock = 17630; // should be about 15 days after genesis
         consensus.nInstantSendKeepLock = 6;
+        consensus.nInstantSendConfirmationsRequired = 2;
         consensus.nBudgetProposalEstablishingTime = 60*60;
         consensus.nGovernanceMinQuorum = 1;
         consensus.nGovernanceFilterElements = 500;
@@ -776,6 +778,7 @@ public:
         consensus.nSpecialTreasuryBudgetBlock = consensus.nSuperblockCycle * 50;
 
         consensus.nMasternodePaymentsStartBlock = 4010; // not true, but it's ok as long as it's less then nMasternodePaymentsIncreaseBlock
+        consensus.nInstantSendConfirmationsRequired = 2;
         consensus.nInstantSendKeepLock = 6;
         consensus.nSuperblockCycle = 24; // Superblocks can be issued hourly on devnet
         consensus.nGovernanceMinQuorum = 1;
@@ -921,6 +924,7 @@ public:
         consensus.nSpecialTreasuryBudgetBlock = consensus.nSuperblockCycle * 50;
 
         consensus.nMasternodePaymentsStartBlock = 240;
+        consensus.nInstantSendConfirmationsRequired = 2;
         consensus.nInstantSendKeepLock = 6;
         consensus.nGovernanceMinQuorum = 1;
         consensus.nGovernanceFilterElements = 100;
