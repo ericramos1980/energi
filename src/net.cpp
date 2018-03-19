@@ -2523,6 +2523,12 @@ void CConnman::Interrupt()
             semAddnode->post();
         }
     }
+
+    if (semMasternodeOutbound) {
+        for (int i=0; i<MAX_OUTBOUND_MASTERNODE_CONNECTIONS; i++) {
+            semMasternodeOutbound->post();
+        }
+    }
 }
 
 void CConnman::Stop()
@@ -2545,10 +2551,6 @@ void CConnman::Stop()
     while (asyncTaskCount != 0) {
         std::this_thread::sleep_for(MIN_OUTBOUND_INTERVAL);
     }
-
-    if (semMasternodeOutbound)
-        for (int i=0; i<MAX_OUTBOUND_MASTERNODE_CONNECTIONS; i++)
-            semMasternodeOutbound->post();
 
     if (fAddressesInitialized)
     {
