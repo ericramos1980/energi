@@ -119,10 +119,6 @@ static const unsigned int INVENTORY_BROADCAST_INTERVAL = 5;
 /** Maximum number of inventory items to send per transmission.
  *  Limits the impact of low-fee transaction floods. */
 static const unsigned int INVENTORY_BROADCAST_MAX = 7 * INVENTORY_BROADCAST_INTERVAL;
-/** Average delay between feefilter broadcasts in seconds. */
-static const unsigned int AVG_FEEFILTER_BROADCAST_INTERVAL = 10 * 60;
-/** Maximum feefilter broadcast delay after significant change. */
-static const unsigned int MAX_FEEFILTER_CHANGE_DELAY = 5 * 60;
 /** Block download timeout base, expressed in millionths of the block interval (i.e. 2.5 min) */
 static const int64_t BLOCK_DOWNLOAD_TIMEOUT_BASE = 1000000;
 /** Additional block download timeout per parallel downloading peer (i.e. 1.25 min) */
@@ -146,8 +142,6 @@ static const unsigned int DEFAULT_BANSCORE_THRESHOLD = 100;
 
 /** Default for -mempoolreplacement */
 static const bool DEFAULT_ENABLE_REPLACEMENT = false;
-/** Default for using fee filter */
-static const bool DEFAULT_FEEFILTER = true;
 
 /** Default for -usedag */
 static const bool DEFAULT_USEDAG = false;
