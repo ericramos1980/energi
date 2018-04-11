@@ -127,6 +127,7 @@ BITCOIN_CORE_H = \
   base58.h \
   bip39.h \
   bip39_english.h \
+  blockencodings.h \
   bloom.h \
   cachemap.h \
   cachemultimap.h \
@@ -256,6 +257,7 @@ libbitcoin_server_a_SOURCES = \
   addrdb.cpp \
   alert.cpp \
   bloom.cpp \
+  blockencodings.cpp \
   chain.cpp \
   checkpoints.cpp \
   dsnotificationinterface.cpp \
