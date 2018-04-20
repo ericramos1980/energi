@@ -53,7 +53,7 @@ private:
 
 public:
 
-    CHDChain() : nVersion(CHDChain::CURRENT_VERSION) { SetNull(); }
+    CHDChain() { SetNull(); }
     CHDChain(const CHDChain& other) :
         nVersion(other.nVersion),
         id(other.id),

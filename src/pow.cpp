@@ -23,6 +23,12 @@ unsigned int static DarkGravityWave(const CBlockIndex* pindexLast, const Consens
         return bnPowLimit.GetCompact();
     }
 
+        // NOTE: 000000000000000000000000000000000000000000000000003e9ccfe0e03e01 is the work of the "wrong" chain,
+        // so this rule activates there immediately and new blocks with high diff from that chain are going
+        // to be rejected by updated nodes. Note, that old nodes are going to reject blocks from updated nodes
+        // after the "right" chain reaches this amount of work too. This is a temporary condition which should
+        // be removed when we decide to hard-fork testnet again.
+        // TODO: remove "testnet+work OR devnet" part on next testnet hard-fork
     const CBlockIndex *pindex = pindexLast;
     arith_uint256 bnPastTargetAvg;
 
