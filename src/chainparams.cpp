@@ -352,7 +352,6 @@ public:
         pchMessageStart[3] = 0xaf;
         vAlertPubKey = ParseHex("048cd9adbefe1ca8435de5372e2725027e56f959fb979f5252c7d2a51de2f5251c10d55ad632e8c217d086b7b517ccfa934d5af693f354a0ab58bce23c963df5fc");
         nDefaultPort = 9797;
-        nDelayGetHeadersTime = 24 * 60 * 60;
         nPruneAfterHeight = 100000;
 
         genesis = CreateGenesisBlock(1523716938, 34766776, 0x1e0ffff0, 1, consensus.nBlockSubsidyBackbone + consensus.nBlockSubsidyMiners);
@@ -524,7 +523,6 @@ public:
         pchMessageStart[3] = 0x6e;
         vAlertPubKey = ParseHex("04da7109a0215bf7bb19ecaf9e4295104142b4e03579473c1083ad44e8195a13394a8a7e51ca223fdbc5439420fd08963e491007beab68ac65c5b1c842c8635b37");
         nDefaultPort = 19797;
-        nDelayGetHeadersTime = 30 * 24 * 60 * 60;
         nPruneAfterHeight = 1000;
 
         genesis = CreateGenesisBlock(1524344801, 16880322, 0x207fffff, 1, consensus.nBlockSubsidyBackbone + consensus.nBlockSubsidyMiners);
@@ -830,7 +828,6 @@ public:
         pchMessageStart[3] = 0xce;
         vAlertPubKey = ParseHex("04517d8a699cb43d3938d7b24faaff7cda448ca4ea267723ba614784de661949bf632d6304316b244646dea079735b9a6fc4af804efb4752075b9fe2245e14e412");
         nDefaultPort = 19797;
-        nDelayGetHeadersTime = 24 * 60 * 60;
         nPruneAfterHeight = 1000;
 
         genesis = CreateGenesisBlock(1417713337, 1096447, 0x207fffff, 1, 50 * COIN);
@@ -964,7 +961,6 @@ public:
         pchMessageStart[1] = 0x89;
         pchMessageStart[2] = 0x6c;
         pchMessageStart[3] = 0x7f;
-        nDelayGetHeadersTime = std::numeric_limits<int64_t>::max(); // never delay GETHEADERS in regtests
         nDefaultPort = 39797;
         nPruneAfterHeight = 1000;
 
