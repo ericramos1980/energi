@@ -29,6 +29,11 @@ unsigned int static DarkGravityWave(const CBlockIndex* pindexLast, const Consens
         // after the "right" chain reaches this amount of work too. This is a temporary condition which should
         // be removed when we decide to hard-fork testnet again.
         // TODO: remove "testnet+work OR devnet" part on next testnet hard-fork
+            // recent block is more than 2 hours old
+            if (pblock->GetBlockTime() > pindexLast->GetBlockTime() + 2 * 60 * 60) {
+                return bnPowLimit.GetCompact();
+            }
+            // recent block is more than 10 minutes old
     const CBlockIndex *pindex = pindexLast;
     arith_uint256 bnPastTargetAvg;
 
