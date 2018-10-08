@@ -516,7 +516,7 @@ BITCOIN_QT_INCLUDES = -I$(builddir)/qt -I$(srcdir)/qt -I$(srcdir)/qt/forms \
   -I$(builddir)/qt/forms -DQT_NO_KEYWORDS
 
 qt_libbitcoinqt_a_CPPFLAGS = $(AM_CPPFLAGS) $(BITCOIN_INCLUDES) $(PIC_FLAGS) $(BITCOIN_QT_INCLUDES) \
-  $(QT_INCLUDES) $(QT_DBUS_INCLUDES) $(PROTOBUF_CFLAGS) $(QR_CFLAGS) $(ENERGI_PCH_CPPFLAGS)
+  $(QT_INCLUDES) $(QT_DBUS_INCLUDES) $(PROTOBUF_CFLAGS) $(QR_CFLAGS)
 qt_libbitcoinqt_a_CXXFLAGS = $(AM_CXXFLAGS) $(QT_PIE_FLAGS)
 
 qt_libbitcoinqt_a_SOURCES = $(BITCOIN_QT_CPP) $(BITCOIN_QT_H) $(QT_FORMS_UI) \
@@ -532,6 +532,12 @@ $(nodist_qt_libbitcoinqt_a_SOURCES): $(ENERGI_PCH)
 if TARGET_WINDOWS
 qt_libbitcoinqt_a_CXXFLAGS += -Wno-error
 endif
+
+if !TARGET_DARWIN
+  qt_libbitcoinqt_a_CPPFLAGS += $(ENERGI_PCH_CPPFLAGS)
+  qt_libbitcoinqt_a_CXXFLAGS += $(PIE_FLAGS)
+endif
+
 
 # forms/foo.h -> forms/ui_foo.h
 QT_FORMS_H=$(join $(dir $(QT_FORMS_UI)),$(addprefix ui_, $(notdir $(QT_FORMS_UI:.ui=.h))))
@@ -561,6 +567,7 @@ if TARGET_DARWIN
 else
 # TODO: improve OBJCXX-related PCH
   qt_energi_qt_CPPFLAGS += $(ENERGI_PCH_CPPFLAGS)
+  qt_energi_qt_CXXFLAGS += $(PIE_FLAGS)
 endif
 if TARGET_WINDOWS
   qt_energi_qt_SOURCES += $(BITCOIN_RC)
