@@ -1628,7 +1628,7 @@ void CConnman::ThreadOpenConnections()
             BOOST_FOREACH(const std::string& strAddr, mapMultiArgs["-connect"])
             {
                 CAddress addr(CService(), NODE_NONE);
-                OpenNetworkConnection(addr, NULL, strAddr.c_str());
+                OpenNetworkConnectionAsync(addr, NULL, strAddr.c_str());
                 for (int i = 0; i < 10 && i < nLoop; i++)
                 {
                     if (!interruptNet.sleep_for(DEFAULT_OUTBOUND_INTERVAL))
@@ -1770,7 +1770,7 @@ void CConnman::ThreadOpenConnections()
                 LogPrint("net", "Making feeler connection to %s\n", addrConnect.ToString());
             }
 
-            OpenNetworkConnection(addrConnect, &grant, NULL, false, fFeeler);
+            OpenNetworkConnectionAsync(addrConnect, &grant, NULL, false, fFeeler);
         }
     }
 }
@@ -1843,7 +1843,7 @@ void CConnman::ThreadOpenAddedConnections()
                 // If strAddedNode is an IP/port, decode it immediately, so
                 // OpenNetworkConnection can detect existing connections to that IP/port.
                 CService service(LookupNumeric(info.strAddedNode.c_str(), Params().GetDefaultPort()));
-                OpenNetworkConnection(CAddress(service, NODE_NONE), &grant, info.strAddedNode.c_str(), false);
+                OpenNetworkConnectionAsync(CAddress(service, NODE_NONE), &grant, info.strAddedNode.c_str(), false);
                 if (!interruptNet.sleep_for(DEFAULT_OUTBOUND_INTERVAL))
                     return;
             }
@@ -1895,6 +1895,76 @@ void CConnman::ThreadMnbRequestConnections()
         PushMessage(pnode, NetMsgType::GETDATA, vToFetch);
     }
 }
+
+// Due to poor original design of Bitcoin network stack, we need
+// this thread-pool approach to minimize impact on fragile functionality.
+void CConnman::OpenNetworkConnectionAsync(
+    const CAddress& addrConnect, CSemaphoreGrant *grantOutbound,
+    const char *strDest, bool fOneShot, bool fFeeler)
+{
+    struct AsyncHelper {
+        AsyncHelper(CConnman& connman) :
+            connman(connman)
+        {
+            ++connman.asyncTaskCount;
+        }
+
+        ~AsyncHelper()
+        {
+            --connman.asyncTaskCount;
+        }
+
+        void open()
+        {
+            LogPrint("net", "async connection to %s of %u total\n",
+                    have_dest ? dest.c_str() : addr.ToString(),
+                    unsigned(connman.asyncTaskCount));
+
+            connman.OpenNetworkConnection(
+                addr,
+                &grant,
+                have_dest ? dest.c_str() : nullptr, // see below
+                one_shot,
+                feeler
+            );
+        }
+
+        CConnman &connman;
+        CAddress addr;
+        CSemaphoreGrant grant;
+        std::string dest;
+        bool have_dest;
+        bool one_shot;
+        bool feeler;
+
+        static void exec(AsyncHelper* ah) {
+            std::unique_ptr<AsyncHelper> sah(ah); // not in formal arg due to std::thread details
+            ah->open();
+        };
+    };
+    std::unique_ptr<AsyncHelper> ah(new AsyncHelper(*this));
+
+    ah->addr = addrConnect;
+    ah->one_shot = fOneShot;
+    ah->feeler = fFeeler;
+
+    if (grantOutbound != nullptr) {
+        grantOutbound->MoveTo(ah->grant);
+    }
+
+    // Note: it may be excessive, but we need to workaround a
+    // possible case with empty string due to possible bugs in other cases.
+    ah->have_dest = (strDest != nullptr);
+
+    if (ah->have_dest) {
+        ah->dest = strDest;
+    }
+
+    std::thread thr(AsyncHelper::exec, ah.get());
+    thr.detach();
+    ah.release();
+}
+
 
 // if successful, this moves the passed grant to the constructed node
 bool CConnman::OpenNetworkConnection(const CAddress& addrConnect, CSemaphoreGrant *grantOutbound, const char *pszDest, bool fOneShot, bool fFeeler)
@@ -2331,6 +2401,12 @@ void CConnman::Stop()
         threadDNSAddressSeed.join();
     if (threadSocketHandler.joinable())
         threadSocketHandler.join();
+
+    // As this is exceptional functionality such dummy approach
+    // is acceptable.
+    while (asyncTaskCount != 0) {
+        std::this_thread::sleep_for(MIN_OUTBOUND_INTERVAL);
+    }
 
     if (semMasternodeOutbound)
         for (int i=0; i<MAX_OUTBOUND_MASTERNODE_CONNECTIONS; i++)
