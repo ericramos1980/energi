@@ -1646,6 +1646,7 @@ void CConnman::ThreadOpenConnections()
     // Minimum time before next feeler connection (in microseconds).
     int64_t nNextFeeler = PoissonNextSend(nStart*1000*1000, FEELER_INTERVAL);
     int nOutbound = 0;
+    bool was_ipv6 = true;
 
     while (!interruptNet)
     {
@@ -1756,7 +1757,16 @@ void CConnman::ThreadOpenConnections()
             if (addr.GetPort() != Params().GetDefaultPort() && nTries < 50)
                 continue;
 
+            // Balance between IPv4 and IPv6 candidates to avoid local IPv6 network with
+            // IPv4-only internet cases.
+            bool is_ipv6 = addr.IsIPv6();
+
+            if (is_ipv6 == was_ipv6) {
+                continue;
+            }
+
             addrConnect = addr;
+            was_ipv6 = is_ipv6;
             break;
         }
 
