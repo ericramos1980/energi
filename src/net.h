@@ -91,6 +91,9 @@ static const ServiceFlags REQUIRED_SERVICES = NODE_NETWORK;
 // NOTE: When adjusting this, update rpcnet:setban's help ("24h")
 static const unsigned int DEFAULT_MISBEHAVING_BANTIME = 60 * 60 * 24;  // Default 24-hour ban
 
+static const auto DEFAULT_OUTBOUND_INTERVAL = std::chrono::milliseconds(500);
+static const auto MIN_OUTBOUND_INTERVAL = std::chrono::milliseconds(100);
+
 typedef int NodeId;
 
 struct AddedNodeInfo
@@ -137,6 +140,7 @@ public:
     bool GetNetworkActive() const { return fNetworkActive; };
     void SetNetworkActive(bool active);
     bool OpenNetworkConnection(const CAddress& addrConnect, CSemaphoreGrant *grantOutbound = NULL, const char *strDest = NULL, bool fOneShot = false, bool fFeeler = false);
+    void OpenNetworkConnectionAsync(const CAddress& addrConnect, CSemaphoreGrant *grantOutbound = nullptr, const char *strDest = nullptr, bool fOneShot = false, bool fFeeler = false);
     bool CheckIncomingNonce(uint64_t nonce);
 
     // fConnectToMasternode should be 'true' only if you want this node to allow to connect to itself
@@ -505,6 +509,7 @@ private:
     std::thread threadOpenConnections;
     std::thread threadMnbRequestConnections;
     std::thread threadMessageHandler;
+    std::atomic_size_t asyncTaskCount{0};
 };
 extern std::unique_ptr<CConnman> g_connman;
 void Discover(boost::thread_group& threadGroup);
