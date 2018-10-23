@@ -91,6 +91,9 @@ static const ServiceFlags REQUIRED_SERVICES = NODE_NETWORK;
 // NOTE: When adjusting this, update rpcnet:setban's help ("24h")
 static const unsigned int DEFAULT_MISBEHAVING_BANTIME = 60 * 60 * 24;  // Default 24-hour ban
 
+static const auto DEFAULT_OUTBOUND_INTERVAL = std::chrono::milliseconds(500);
+static const auto MIN_OUTBOUND_INTERVAL = std::chrono::milliseconds(100);
+
 typedef int NodeId;
 
 struct AddedNodeInfo

@@ -1631,11 +1631,11 @@ void CConnman::ThreadOpenConnections()
                 OpenNetworkConnection(addr, NULL, strAddr.c_str());
                 for (int i = 0; i < 10 && i < nLoop; i++)
                 {
-                    if (!interruptNet.sleep_for(std::chrono::milliseconds(500)))
+                    if (!interruptNet.sleep_for(DEFAULT_OUTBOUND_INTERVAL))
                         return;
                 }
             }
-            if (!interruptNet.sleep_for(std::chrono::milliseconds(500)))
+            if (!interruptNet.sleep_for(DEFAULT_OUTBOUND_INTERVAL))
                 return;
         }
     }
@@ -1645,11 +1645,21 @@ void CConnman::ThreadOpenConnections()
 
     // Minimum time before next feeler connection (in microseconds).
     int64_t nNextFeeler = PoissonNextSend(nStart*1000*1000, FEELER_INTERVAL);
+    int nOutbound = 0;
+
     while (!interruptNet)
     {
         ProcessOneShot();
 
-        if (!interruptNet.sleep_for(std::chrono::milliseconds(500)))
+        auto delay = DEFAULT_OUTBOUND_INTERVAL;
+
+        if (nOutbound < nMaxOutbound) {
+            // We still need to give chance to other threads
+            // and to AVOID hammering network.
+            delay = MIN_OUTBOUND_INTERVAL;
+        }
+
+        if (!interruptNet.sleep_for(delay))
             return;
 
         CSemaphoreGrant grant(*semOutbound);
@@ -1675,7 +1685,7 @@ void CConnman::ThreadOpenConnections()
 
         // Only connect out to one peer per network group (/16 for IPv4).
         // Do this here so we don't have to critsect vNodes inside mapAddresses critsect.
-        int nOutbound = 0;
+        nOutbound = 0;
         std::set<std::vector<unsigned char> > setConnected;
         {
             LOCK(cs_vNodes);
@@ -1830,7 +1840,7 @@ void CConnman::ThreadOpenAddedConnections()
                 // OpenNetworkConnection can detect existing connections to that IP/port.
                 CService service(LookupNumeric(info.strAddedNode.c_str(), Params().GetDefaultPort()));
                 OpenNetworkConnection(CAddress(service, NODE_NONE), &grant, info.strAddedNode.c_str(), false);
-                if (!interruptNet.sleep_for(std::chrono::milliseconds(500)))
+                if (!interruptNet.sleep_for(DEFAULT_OUTBOUND_INTERVAL))
                     return;
             }
         }
