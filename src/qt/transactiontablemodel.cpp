@@ -87,6 +87,8 @@ public:
                 if(TransactionRecord::showTransaction(it->second))
                     cachedWallet.append(TransactionRecord::decomposeTransaction(wallet, it->second));
             }
+
+            updateCachedStatus();
         }
     }
 
@@ -166,9 +168,35 @@ public:
             parent->endRemoveRows();
             break;
         case CT_UPDATED:
-            // Miscellaneous updates -- nothing to do, status update will take care of this, and is only computed for
-            // visible transactions.
+            {
+                LOCK2(cs_main, wallet->cs_wallet);
+                auto& wallet_map = wallet->mapWallet;
+
+                for (auto iter = lower; iter != upper; ++iter) {
+                    auto wallet_iter = wallet_map.find(iter->hash);
+
+                    if (wallet_iter != wallet_map.end()) {
+                        iter->updateStatus(wallet_iter->second);
+                    }
+                }
+            }
             break;
+        }
+    }
+
+    void updateCachedStatus()
+    {
+        AssertLockHeld(wallet->cs_wallet);
+        auto& wallet_map = wallet->mapWallet;
+
+        for (auto &rec : cachedWallet) {
+            if (rec.statusUpdateNeeded()) {
+                auto iter = wallet_map.find(rec.hash);
+
+                if (iter != wallet_map.end()) {
+                    rec.updateStatus(iter->second);
+                }
+            }
         }
     }
 
@@ -181,30 +209,7 @@ public:
     {
         if(idx >= 0 && idx < cachedWallet.size())
         {
-            TransactionRecord *rec = &cachedWallet[idx];
-
-            // Get required locks upfront. This avoids the GUI from getting
-            // stuck if the core is holding the locks for a longer time - for
-            // example, during a wallet rescan.
-            //
-            // If a status update is needed (blocks came in since last check),
-            //  update the status of this transaction from the wallet. Otherwise,
-            // simply re-use the cached status.
-            TRY_LOCK(cs_main, lockMain);
-            if(lockMain)
-            {
-                TRY_LOCK(wallet->cs_wallet, lockWallet);
-                if(lockWallet && rec->statusUpdateNeeded())
-                {
-                    std::map<uint256, CWalletTx>::iterator mi = wallet->mapWallet.find(rec->hash);
-
-                    if(mi != wallet->mapWallet.end())
-                    {
-                        rec->updateStatus(mi->second);
-                    }
-                }
-            }
-            return rec;
+            return &cachedWallet[idx];
         }
         return 0;
     }
@@ -274,6 +279,8 @@ void TransactionTableModel::updateTransaction(const QString &hash, int status, b
 
 void TransactionTableModel::updateConfirmations()
 {
+    priv->updateCachedStatus();
+
     // Blocks came in since last poll.
     // Invalidate status (number of confirmations) and (possibly) description
     //  for all rows. Qt is smart enough to only actually request the data for the
@@ -721,7 +728,7 @@ QModelIndex TransactionTableModel::index(int row, int column, const QModelIndex 
     TransactionRecord *data = priv->index(row);
     if(data)
     {
-        return createIndex(row, column, priv->index(row));
+        return createIndex(row, column, data);
     }
     return QModelIndex();
 }
@@ -741,11 +748,11 @@ public:
     TransactionNotification(uint256 hash, ChangeType status, bool showTransaction):
         hash(hash), status(status), showTransaction(showTransaction) {}
 
-    void invoke(QObject *ttm)
+    void invoke(QObject *ttm, Qt::ConnectionType conn_type=Qt::QueuedConnection)
     {
         QString strHash = QString::fromStdString(hash.GetHex());
         qDebug() << "NotifyTransactionChanged: " + strHash + " status= " + QString::number(status);
-        QMetaObject::invokeMethod(ttm, "updateTransaction", Qt::QueuedConnection,
+        QMetaObject::invokeMethod(ttm, "updateTransaction", conn_type,
                                   Q_ARG(QString, strHash),
                                   Q_ARG(int, status),
                                   Q_ARG(bool, showTransaction));
@@ -785,17 +792,26 @@ static void ShowProgress(TransactionTableModel *ttm, const std::string &title, i
     if (nProgress == 100)
     {
         fQueueNotifications = false;
-        if (vQueueNotifications.size() > 10) // prevent balloon spam, show maximum 10 balloons
-            QMetaObject::invokeMethod(ttm, "setProcessingQueuedTransactions", Qt::QueuedConnection, Q_ARG(bool, true));
-        for (unsigned int i = 0; i < vQueueNotifications.size(); ++i)
-        {
-            if (vQueueNotifications.size() - i <= 10)
-                QMetaObject::invokeMethod(ttm, "setProcessingQueuedTransactions", Qt::QueuedConnection, Q_ARG(bool, false));
-
-            vQueueNotifications[i].invoke(ttm);
-        }
-        std::vector<TransactionNotification >().swap(vQueueNotifications); // clear
+        QMetaObject::invokeMethod(ttm, "processQueuedTransactions", Qt::QueuedConnection);
     }
+}
+
+void TransactionTableModel::processQueuedTransactions()
+{
+    LOCK2(cs_main, wallet->cs_wallet);
+
+    fProcessingQueuedTransactions = true;
+    //---
+
+    for(auto& notification: vQueueNotifications) {
+        notification.invoke(this, Qt::DirectConnection);
+    }
+
+    vQueueNotifications.clear();
+    vQueueNotifications.shrink_to_fit();
+
+    //---
+    fProcessingQueuedTransactions = false;
 }
 
 void TransactionTableModel::subscribeToCoreSignals()
