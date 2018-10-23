@@ -1766,7 +1766,6 @@ void CConnman::ThreadOpenConnections()
             }
 
             addrConnect = addr;
-            was_ipv6 = is_ipv6;
             break;
         }
 
@@ -1782,6 +1781,10 @@ void CConnman::ThreadOpenConnections()
 
             OpenNetworkConnectionAsync(addrConnect, &grant, NULL, false, fFeeler);
         }
+
+        // NOTE: it must be changed irrespective to actual address used to avoid
+        // situation of stalled network connection on lack of one of the types.
+        was_ipv6 = !was_ipv6;
     }
 }
 
