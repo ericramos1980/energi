@@ -17,11 +17,11 @@ Vagrant.configure("2") do |config|
         # mainnet
         node.vm.network "forwarded_port", guest: 9797, host: 9797, host_ip: "0.0.0.0"
         # mainnet RPC
-        node.vm.network "forwarded_port", guest: 9796, host: 9796, host_ip: "127.0.0.1"
+        node.vm.network "forwarded_port", guest: 9796, host: 9796, host_ip: "127.0.0.1", guest_ip: "127.0.0.1"
         # testnet
         node.vm.network "forwarded_port", guest: 19797, host: 19797, host_ip: "0.0.0.0"
         # testnet RPC
-        node.vm.network "forwarded_port", guest: 19796, host: 19796, host_ip: "127.0.0.1"
+        node.vm.network "forwarded_port", guest: 19796, host: 19796, host_ip: "127.0.0.1", guest_ip: "127.0.0.1"
 
         node.vm.provision 'libdb4', type: "shell", inline:\
             "add-apt-repository ppa:bitcoin/bitcoin;"\
