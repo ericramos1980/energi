@@ -206,11 +206,11 @@ if test "x$enable_debug" = xyes; then
 fi
 
 AC_ARG_ENABLE([pch],
-  [AS_HELP_STRING([--disable-pch],
-  [disable use of PreCompiled Header])],
-  [use_zmq=$enableval],
-  [use_zmq=yes])
-AM_CONDITIONAL([ENABLE_PCH],[test x$use_zmq = xyes])
+  [AS_HELP_STRING([--enable-pch],
+  [enable use of PreCompiled Header])],
+  [use_pch=$enableval],
+  [use_pch=no])
+AM_CONDITIONAL([ENABLE_PCH],[test x$use_pch = xyes])
 
 CPPFLAGS="$CPPFLAGS -DHAVE_BUILD_INFO -D__STDC_FORMAT_MACROS"
 
