@@ -263,7 +263,7 @@ bool CWallet::AddHDPubKey(const CExtPubKey &extPubKey, bool fInternal)
     CHDChain hdChainCurrent;
     GetHDChain(hdChainCurrent);
 
-    CHDPubKey hdPubKey;
+    CHDPubKey hdPubKey(hdChainCurrent.GetVersion());
     hdPubKey.extPubKey = extPubKey;
     hdPubKey.hdchainID = hdChainCurrent.GetID();
     hdPubKey.nChangeIndex = fInternal ? 1 : 0;

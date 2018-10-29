@@ -31,6 +31,8 @@ import re
 
 sys.path.append(os.path.realpath(
         os.path.join(__file__, '..', '..', '..', 'build', 'qa', 'pull-tester')))
+sys.path.append(os.path.realpath(
+        os.path.join(__file__, '..', '..', '..', 'build', 'current', 'qa', 'pull-tester')))
 
 from tests_config import *
 
@@ -100,6 +102,7 @@ testScripts = [
     'bip68-112-113-p2p.py',
     'wallet.py',
     'wallet-hd.py',
+    'wallet-legacyhd.py',
     'listtransactions.py',
     'receivedby.py',
     'mempool_resurrect_test.py',

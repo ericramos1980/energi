@@ -17,6 +17,18 @@
 
 #include "chainparamsseeds.h"
 #include "arith_uint256.h"
+#include "hdchain.h"
+
+int CChainParams::ExtCoinType(int version) const {
+    switch(version) {
+    case HDVersion::LEGACY:
+        return nLegacyExtCoinType;
+    case HDVersion::CURRENT:
+    default:
+        return nExtCoinType;
+    }
+}
+
 
 static CBlock CreateGenesisBlock(const char* pszTimestamp, const CScript& genesisOutputScript, uint32_t nTime, uint64_t nNonce, uint32_t nBits, int32_t nVersion, const CAmount& genesisReward)
 {
@@ -314,8 +326,10 @@ public:
         // Energi BIP32 prvkeys start with 'nprv'
         base58Prefixes[EXT_SECRET_KEY] = boost::assign::list_of(0xD7)(0xDC)(0x6E)(0x9F).convert_to_container<std::vector<unsigned char> >();
 
-        // Energi BIP44 coin type is '5'
-        nExtCoinType = 5;
+        // Energi BIP44/SLIP44 coin type is '9797'
+        nExtCoinType = 9797;
+        // Legacy inherited from Dash
+        nLegacyExtCoinType = 5;
 
         vFixedSeeds = std::vector<SeedSpec6>(pnSeed6_main, pnSeed6_main + ARRAYLEN(pnSeed6_main));
 
@@ -455,8 +469,10 @@ public:
         // Testnet Dash BIP32 prvkeys start with 'tprv' (Bitcoin defaults)
         base58Prefixes[EXT_SECRET_KEY] = boost::assign::list_of(0x04)(0x35)(0x83)(0x94).convert_to_container<std::vector<unsigned char> >();
 
-        // Testnet Dash BIP44 coin type is '1' (All coin's testnet default)
-        nExtCoinType = 1;
+        // Dedicated NRG testnet for BIP44
+        nExtCoinType = 19797;
+        // BIP44 test coin type is '1' (All coin's testnet default)
+        nLegacyExtCoinType = 1;
 
         vFixedSeeds = std::vector<SeedSpec6>(pnSeed6_test, pnSeed6_test + ARRAYLEN(pnSeed6_test));
 
@@ -593,8 +609,10 @@ public:
         // Testnet Dash BIP32 prvkeys start with 'tprv' (Bitcoin defaults)
         base58Prefixes[EXT_SECRET_KEY] = boost::assign::list_of(0x04)(0x35)(0x83)(0x94).convert_to_container<std::vector<unsigned char> >();
 
-        // Testnet Dash BIP44 coin type is '1' (All coin's testnet default)
-        nExtCoinType = 1;
+        // Dedicated NRG testnet for BIP44
+        nExtCoinType = 19797;
+        // BIP44 test coin type is '1' (All coin's testnet default)
+        nLegacyExtCoinType = 1;
 
         vFixedSeeds = std::vector<SeedSpec6>(pnSeed6_test60x, pnSeed6_test60x + ARRAYLEN(pnSeed6_test60x));
 
@@ -747,8 +765,10 @@ public:
         // Testnet Dash BIP32 prvkeys start with 'tprv' (Bitcoin defaults)
         base58Prefixes[EXT_SECRET_KEY] = boost::assign::list_of(0x04)(0x35)(0x83)(0x94).convert_to_container<std::vector<unsigned char> >();
 
-        // Regtest Dash BIP44 coin type is '1' (All coin's testnet default)
-        nExtCoinType = 1;
+        // Dedicated NRG testnet for BIP44
+        nExtCoinType = 19797;
+        // BIP44 test coin type is '1' (All coin's testnet default)
+        nLegacyExtCoinType = 1;
    }
 };
 static CRegTestParams regTestParams;
