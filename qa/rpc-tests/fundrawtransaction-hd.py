@@ -39,16 +39,26 @@ class RawTransactionsTest(BitcoinTestFramework):
         # than a minimum sized signature.
 
         #            = 2 bytes * minRelayTxFeePerByte
-        feeTolerance = 2 * min_relay_tx_fee/1000
+        #feeTolerance = 2 * min_relay_tx_fee/1000
+
+        feeTolerance = 10 * min_relay_tx_fee/1000
+
+        def check_fee_delta(feeDelta, mult=1):
+            ft = feeTolerance * mult
+            print("feeDelta = {0}, feeTolerance = {1}".format(feeDelta, ft))
+            assert(feeDelta >= 0 and feeDelta <= ft)
+
 
         self.nodes[2].generate(1)
         self.sync_all()
-        self.nodes[0].generate(121)
+        self.nodes[0].generate(300)
         self.sync_all()
+
+        assert_equal(self.nodes[0].getbalance(), 456)
 
         watchonly_address = self.nodes[0].getnewaddress()
         watchonly_pubkey = self.nodes[0].validateaddress(watchonly_address)["pubkey"]
-        watchonly_amount = Decimal(2000)
+        watchonly_amount = Decimal(200)
         self.nodes[3].importpubkey(watchonly_pubkey, "", True)
         watchonly_txid = self.nodes[0].sendtoaddress(watchonly_address, watchonly_amount)
         self.nodes[0].sendtoaddress(self.nodes[3].getnewaddress(), watchonly_amount / 10)
@@ -324,7 +334,7 @@ class RawTransactionsTest(BitcoinTestFramework):
 
         #compare fee
         feeDelta = Decimal(fundedTx['fee']) - Decimal(signedFee)
-        assert(feeDelta >= 0 and feeDelta <= feeTolerance)
+        check_fee_delta(feeDelta)
         ############################################################
 
         ############################################################
@@ -339,7 +349,7 @@ class RawTransactionsTest(BitcoinTestFramework):
 
         #compare fee
         feeDelta = Decimal(fundedTx['fee']) - Decimal(signedFee)
-        assert(feeDelta >= 0 and feeDelta <= feeTolerance)
+        check_fee_delta(feeDelta)
         ############################################################
 
 
@@ -366,7 +376,7 @@ class RawTransactionsTest(BitcoinTestFramework):
 
         #compare fee
         feeDelta = Decimal(fundedTx['fee']) - Decimal(signedFee)
-        assert(feeDelta >= 0 and feeDelta <= feeTolerance)
+        check_fee_delta(feeDelta)
         ############################################################
 
 
@@ -399,7 +409,7 @@ class RawTransactionsTest(BitcoinTestFramework):
 
         #compare fee
         feeDelta = Decimal(fundedTx['fee']) - Decimal(signedFee)
-        assert(feeDelta >= 0 and feeDelta <= feeTolerance)
+        check_fee_delta(feeDelta)
         ############################################################
 
 
@@ -416,7 +426,7 @@ class RawTransactionsTest(BitcoinTestFramework):
         mSigObj = self.nodes[2].addmultisigaddress(2, [addr1Obj['pubkey'], addr2Obj['pubkey']])
 
 
-        # send 12 DASH to msig addr
+        # send 12 ENERGI to msig addr
         txId = self.nodes[0].sendtoaddress(mSigObj, 12)
         self.sync_all()
         self.nodes[1].generate(1)
@@ -498,7 +508,7 @@ class RawTransactionsTest(BitcoinTestFramework):
         self.sync_all()
 
         # make sure funds are received at node1
-        assert_equal(oldBalance+Decimal('511.0000000'), self.nodes[0].getbalance())
+        assert_equal(oldBalance+Decimal('13.2800000'), self.nodes[0].getbalance())
 
 
         ###############################################
@@ -529,7 +539,7 @@ class RawTransactionsTest(BitcoinTestFramework):
 
         #compare fee
         feeDelta = Decimal(fundedTx['fee']) - Decimal(signedFee)
-        assert(feeDelta >= 0 and feeDelta <= feeTolerance*19) #~19 inputs
+        check_fee_delta(feeDelta, 19)
 
 
         #############################################
@@ -560,7 +570,7 @@ class RawTransactionsTest(BitcoinTestFramework):
         self.sync_all()
         self.nodes[0].generate(1)
         self.sync_all()
-        assert_equal(oldBalance+Decimal('500.19000000'), self.nodes[0].getbalance()) #0.19+block reward
+        assert_equal(oldBalance+Decimal('2.47000000'), self.nodes[0].getbalance()) #0.19+block reward
 
         #####################################################
         # test fundrawtransaction with OP_RETURN and no vin #

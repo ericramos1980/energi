@@ -6,6 +6,14 @@
 #include "key.h"
 #include "sync.h"
 
+namespace HDVersion {
+    // NOTE: enum class is not used on purpose for easy casting
+    enum : int {
+        LEGACY = 1,
+        CURRENT = 2,
+    };
+};
+
 /* hd account data model */
 class CHDAccount
 {
@@ -28,7 +36,7 @@ public:
 class CHDChain
 {
 private:
-    static const int CURRENT_VERSION = 1;
+    static const int CURRENT_VERSION = HDVersion::CURRENT;
     int nVersion;
 
     uint256 id;
@@ -92,6 +100,8 @@ public:
         return *this;
     }
 
+    int GetVersion() const { return nVersion; }
+
     bool SetNull();
     bool IsNull() const;
 
@@ -123,16 +133,17 @@ public:
 class CHDPubKey
 {
 private:
-    static const int CURRENT_VERSION = 1;
-    int nVersion;
+    static const int CURRENT_VERSION = HDVersion::CURRENT;
+    int nVersion = CHDPubKey::CURRENT_VERSION;
 
 public:
     CExtPubKey extPubKey;
     uint256 hdchainID;
-    uint32_t nAccountIndex;
-    uint32_t nChangeIndex;
+    uint32_t nAccountIndex = 0;
+    uint32_t nChangeIndex = 0;
 
-    CHDPubKey() : nVersion(CHDPubKey::CURRENT_VERSION), nAccountIndex(0), nChangeIndex(0) {}
+    CHDPubKey() = default;
+    CHDPubKey(int version) : nVersion(version) {}
 
     ADD_SERIALIZE_METHODS;
     template <typename Stream, typename Operation>
