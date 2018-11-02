@@ -18,8 +18,9 @@ nrghash = Extension(
     sources = [
         'nrghashmodule.cpp',
         os.path.join(src_dir, 'crypto', 'egihash.cpp'),
-        os.path.join(src_dir, 'crypto', 'keccak-tiny.c'),
+        #os.path.join(src_dir, 'crypto', 'keccak-tiny.c'),
     ],
+    language='c++',
     extra_compile_args=['-std=c++11'])
 
 setup(

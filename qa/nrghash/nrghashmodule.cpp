@@ -1,7 +1,13 @@
 
 #include <Python.h>
 #include "./../../src/crypto/egihash.h"
+#include <string>
 #include <vector>
+
+extern "C" {
+// Workaround for issues in setuptools, -x c++, clang and -std=c++11 for older gcc
+#include "./../../src/crypto/keccak-tiny.c"
+}
 
 static PyObject *
 nrghash(PyObject *self, PyObject *args)
