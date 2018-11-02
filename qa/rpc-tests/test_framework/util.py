@@ -40,7 +40,7 @@ def enable_mocktime():
     #with previous versions of the cache, set MOCKTIME 
     #to regtest genesis time + (201 * 156)
     global MOCKTIME
-    MOCKTIME = 1417713337 + (201 * 156)
+    MOCKTIME = 1524279488 + (201 * 156)
 
 def disable_mocktime():
     global MOCKTIME
@@ -119,8 +119,8 @@ def sync_blocks(rpc_connections, wait=1):
     Wait until everybody has the same block count
     """
     while True:
-        counts = [ x.getblockcount() for x in rpc_connections ]
-        if counts == [ counts[0] ]*len(counts):
+        counts = set([ x.getblockcount() for x in rpc_connections ])
+        if len(counts) == 1:
             break
         time.sleep(wait)
 

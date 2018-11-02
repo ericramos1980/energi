@@ -31,17 +31,20 @@ from threading import RLock
 from threading import Thread
 import logging
 import copy
+import traceback
 
-import dash_hash
+from nrghash import nrghash
 
 BIP0031_VERSION = 60000
 MY_VERSION = 70206  # current MIN_PEER_PROTO_VERSION
-MY_SUBVERSION = b"/python-mininode-tester:0.0.2/"
+MY_SUBVERSION = b"/energi-mininode-tester:0.0.2/"
 
 MAX_INV_SZ = 50000
 MAX_BLOCK_SIZE = 1000000
 
 COIN = 100000000 # 1 btc in satoshis
+MCOIN = 100000
+NRG_BLOCK_REWARD = 10
 
 # Keep our own socket map for asyncore, so that we can track disconnects
 # ourselves (to workaround an issue with closing an asyncore socket when 
@@ -63,9 +66,7 @@ def sha256(s):
 
 def hash256(s):
     return sha256(sha256(s))
-
-def dashhash(s):
-    return dash_hash.getPoWHash(s)
+    
 
 def deser_string(f):
     nit = struct.unpack("<B", f.read(1))[0]
@@ -110,6 +111,9 @@ def uint256_from_str(s):
     for i in range(8):
         r += t[i] << (i * 32)
     return r
+
+def hex_uint256(u):
+    return encode(ser_uint256(u), 'hex_codec').decode('ascii')
 
 
 def uint256_from_compact(c):
@@ -452,7 +456,10 @@ class CBlockHeader(object):
             self.hashMerkleRoot = header.hashMerkleRoot
             self.nTime = header.nTime
             self.nBits = header.nBits
+            self.nHeight = header.nHeight
+            self.hashMix = header.hashMix
             self.nNonce = header.nNonce
+            self.powValue = header.nNonce
             self.sha256 = header.sha256
             self.hash = header.hash
             self.calc_sha256()
@@ -463,7 +470,10 @@ class CBlockHeader(object):
         self.hashMerkleRoot = 0
         self.nTime = 0
         self.nBits = 0
+        self.nHeight = 0
+        self.hashMix = 0
         self.nNonce = 0
+        self.powValue = None
         self.sha256 = None
         self.hash = None
 
@@ -473,7 +483,10 @@ class CBlockHeader(object):
         self.hashMerkleRoot = deser_uint256(f)
         self.nTime = struct.unpack("<I", f.read(4))[0]
         self.nBits = struct.unpack("<I", f.read(4))[0]
-        self.nNonce = struct.unpack("<I", f.read(4))[0]
+        self.nHeight = struct.unpack("<I", f.read(4))[0]
+        self.hashMix = deser_uint256(f)
+        self.nNonce = struct.unpack("<Q", f.read(8))[0]
+        self.powValue = None
         self.sha256 = None
         self.hash = None
 
@@ -484,20 +497,32 @@ class CBlockHeader(object):
         r += ser_uint256(self.hashMerkleRoot)
         r += struct.pack("<I", self.nTime)
         r += struct.pack("<I", self.nBits)
-        r += struct.pack("<I", self.nNonce)
+        r += struct.pack("<I", self.nHeight)
+        r += ser_uint256(self.hashMix)
+        r += struct.pack("<Q", self.nNonce)
         return r
 
     def calc_sha256(self):
         if self.sha256 is None:
             r = b""
             r += struct.pack("<i", self.nVersion)
-            r += ser_uint256(self.hashPrevBlock)
-            r += ser_uint256(self.hashMerkleRoot)
+            r += encode(ser_uint256(self.hashPrevBlock)[::-1], 'hex_codec')
+            r += b"\x00"
+            r += encode(ser_uint256(self.hashMerkleRoot)[::-1], 'hex_codec')
+            r += b"\x00"
             r += struct.pack("<I", self.nTime)
             r += struct.pack("<I", self.nBits)
-            r += struct.pack("<I", self.nNonce)
-            self.sha256 = uint256_from_str(dashhash(r))
-            self.hash = encode(dashhash(r)[::-1], 'hex_codec').decode('ascii')
+            r += struct.pack("<I", self.nHeight)
+            
+            if len(r) != 146:
+                raise ValueError("invalid block header length %d" % len(r))
+            
+            ret = nrghash(self.nHeight, r, self.nNonce)
+
+            self.hashMix = uint256_from_str(ret[0][::-1])
+            self.powValue = uint256_from_str(ret[1][::-1])
+            self.sha256 = uint256_from_str(ret[2][::-1])
+            self.hash = hex_uint256(self.sha256)
 
     def rehash(self):
         self.sha256 = None
@@ -505,9 +530,9 @@ class CBlockHeader(object):
         return self.sha256
 
     def __repr__(self):
-        return "CBlockHeader(nVersion=%i hashPrevBlock=%064x hashMerkleRoot=%064x nTime=%s nBits=%08x nNonce=%08x)" \
+        return "CBlockHeader(nVersion=%i hashPrevBlock=%064x hashMerkleRoot=%064x nTime=%s nBits=%08x nHeight=%d hashMix=%064x nNonce=%08x / hash=%064x)" \
             % (self.nVersion, self.hashPrevBlock, self.hashMerkleRoot,
-               time.ctime(self.nTime), self.nBits, self.nNonce)
+               time.ctime(self.nTime), self.nBits, self.nHeight, self.hashMix, self.nNonce, self.sha256)
 
 
 class CBlock(CBlockHeader):
@@ -553,14 +578,14 @@ class CBlock(CBlockHeader):
     def solve(self):
         self.rehash()
         target = uint256_from_compact(self.nBits)
-        while self.sha256 > target:
+        while self.powValue > target:
             self.nNonce += 1
             self.rehash()
 
     def __repr__(self):
-        return "CBlock(nVersion=%i hashPrevBlock=%064x hashMerkleRoot=%064x nTime=%s nBits=%08x nNonce=%08x vtx=%s)" \
+        return "CBlock(nVersion=%i hashPrevBlock=%064x hashMerkleRoot=%064x nTime=%s nBits=%08x nHeight=%d hashMix=%064x  nNonce=%08x vtx=%s / hash=%064x)" \
             % (self.nVersion, self.hashPrevBlock, self.hashMerkleRoot,
-               time.ctime(self.nTime), self.nBits, self.nNonce, repr(self.vtx))
+               time.ctime(self.nTime), self.nBits, self.nHeight, self.hashMix, self.nNonce, repr(self.vtx), self.sha256)
 
 
 class CUnsignedAlert(object):
@@ -1070,6 +1095,7 @@ class NodeConnCB(object):
             except:
                 print("ERROR delivering %s (%s)" % (repr(message),
                                                     sys.exc_info()[0]))
+                traceback.print_tb(sys.exc_info()[2])
 
     def on_version(self, conn, message):
         if message.nVersion >= 209:
@@ -1156,9 +1182,9 @@ class NodeConn(asyncore.dispatcher):
         b"mempool": msg_mempool,
     }
     MAGIC_BYTES = {
-        "mainnet": b"\xbf\x0c\x6b\xbd",   # mainnet
-        "testnet1": b"\xce\xe2\xca\xff",  # testnet1
-        "regtest": b"\xfc\xc1\xb7\xdc"    # regtest
+        "mainnet": b"\xec\x2d\x9a\xaf",   # mainnet
+        "testnet1": b"\xd9\x2a\xab\x6e",  # testnet1
+        "regtest": b"\xef\x89\x6c\x7f"    # regtest
     }
 
     def __init__(self, dstaddr, dstport, rpc, callback, net="regtest", services=1):
