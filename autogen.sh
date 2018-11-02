@@ -66,10 +66,6 @@ elif which apt-get >/dev/null 2>&1; then
 
         CC=gcc CXX=g++ /usr/bin/pip install --user "$@"
     }
-
-    echo 'import dash_hash' | /usr/bin/env python - >/dev/null 2>&1 || \
-        pip_install git+https://github.com/dashpay/dash_hash
-    pip_install pyzmq
 elif which brew >/dev/null 2>&1; then
     brew_list=""
     brew_list="${brew_list} ccache"
@@ -83,12 +79,17 @@ elif which brew >/dev/null 2>&1; then
 
         /usr/local/bin/pip install --user "$@"
     }
-
-    echo 'import dash_hash' | /usr/bin/env python - >/dev/null 2>&1 || \
-        pip_install git+https://github.com/dashpay/dash_hash
-    pip_install pyzmq
+else
+    pip_install() {
+        :
+    }
 fi
 
+#---
+pip_install pyzmq
+pip_install -U -e $srcdir/qa/nrghash/
+
+#---
 autoreconf --install --force --warnings=all $srcdir
 
 if [ "$HOST" = "x86_64-w64-mingw32" ]; then

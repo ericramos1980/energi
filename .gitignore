@@ -9,6 +9,7 @@ TAGS
 *.tar.gz
 
 *.exe
+*.so
 src/energi
 src/energid
 src/energi-cli
@@ -164,3 +165,5 @@ make
 # Development VM
 /.vagrant/
 
+# Testing
+*.egg-info
