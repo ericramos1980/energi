@@ -34,6 +34,7 @@ Major changes:
 - FIXED: IPv6-related connectivity issues with IPv4-only internet connection
 - FIXED: growing memory usage on long run due to not unloading old DAG
 - FIXED: improved UI performance of wallet with large number of transactions
+- FIXED: Spork 8 Master Payment Enforcement value
 
 Minor changes:
 
