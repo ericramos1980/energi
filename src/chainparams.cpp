@@ -352,7 +352,13 @@ public:
             (  32000, uint256S("0x423d1fcaef88449d94a74b803055f165b1b2c677e10487e63cf3a55b53cff82a"))
             (  50000, uint256S("0x0823370fb037369fcbf28e0de607733bbad1133343c58674a48654dfa690b15c"))
             (  75000, uint256S("0x50b98feae42b5acdd36c5f75582e4eb9780a5ae0901992985b9aaf58ba6e4e71"))
-            (  94800, uint256S("0x8cddf9609d578281ed60a79900522f45c4eab1406f336d2109c61619c370828f")),
+            (  94800, uint256S("0x8cddf9609d578281ed60a79900522f45c4eab1406f336d2109c61619c370828f"))
+            ( 100000, uint256S("0x165dd668bb60e90752161dc777a89946d224769ed3b1a10ccfca5693db999b03"))
+            ( 150000, uint256S("0x47947121d1025b7881fd7583df130f2bbb60a36fa73fe2ca41fe30419a4d0aab"))
+            ( 200000, uint256S("0xbf363e6e74c2bf2f1eba5ee4afb85f48d29fc44ceb8260e847b76dfa70c8868b"))
+            ( 250000, uint256S("0x835d278a931b3b39ed42ebdad1402fff51c1de05cbd3660a8877c989f1e3d202"))
+            ( 281000, uint256S("0x64e17d3d00946e8fd82ef4991ca864d63b7274a8c89809c9bef9a3c60e713f95"))
+            ,
 
             1529671563,     // * UNIX timestamp of last checkpoint block
             100461,         // * total number of transactions between genesis and last checkpoint
@@ -491,7 +497,11 @@ public:
             (  1000, uint256S("0x48357913ab6aeff3ac5d8a7120cdf991ca7b598f40c30efbc66b32ce343c8596"))
             (  5000, uint256S("0x50d6318ae28e2d46d3aa5ecb4a7566ec3e9f8b9542e9a84a744d3c8eb815f405"))
             (  9000, uint256S("0x263bb5d663abbbff11318d82c93249c63523f6b48535f81acf194e45e353be59a"))
-            (  17606, uint256S("0xa3a707f57db9100fcc949609394c2ab164e51892f1b3810bbedad8f9cfb87f91")),
+            (  17606, uint256S("0xa3a707f57db9100fcc949609394c2ab164e51892f1b3810bbedad8f9cfb87f91"))
+            (  20000, uint256S("0x8085fb36bd44f4e238b10f948f9c944f2185f93164f567e43f477097dad59dda"))
+            (  25000, uint256S("0x59049b920a2cbf4f61fce77ef3341ff9a393e0b70b734cc5812902dd105f4de8"))
+            (  31000, uint256S("0xf2b400d4d516ac50cfb806d365e26e55c4e216e21f678f3e60405942bf266409"))
+            ,
 
             1537290164,     // * UNIX timestamp of last checkpoint block
             19601,          // * total number of transactions between genesis and last checkpoint

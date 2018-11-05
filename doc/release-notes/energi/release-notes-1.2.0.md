@@ -31,6 +31,7 @@ Major changes:
 - NEW: much fast peer connectivity on startup
 - NEW: hardcoded dnsseed addresses
 - NEW: BIP44/SLIP44 HD wallet code 9797 for newly generated wallets
+- NEW: updated list of checkpoints
 - FIXED: IPv6-related connectivity issues with IPv4-only internet connection
 - FIXED: growing memory usage on long run due to not unloading old DAG
 - FIXED: improved UI performance of wallet with large number of transactions
