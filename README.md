@@ -1,4 +1,4 @@
-# Energi Core v0.1.0
+# Energi Core
 
 #### https://www.energi.world/
 
