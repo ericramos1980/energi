@@ -370,7 +370,8 @@ void Win32SequentialFile::_CleanUp()
 }
 
 Win32RandomAccessFile::Win32RandomAccessFile( const std::string& fname ) :
-    _filename(fname),_hFile(NULL)
+	_hFile(NULL),
+    _filename(fname)
 {
 	std::wstring path;
 	ToWidePath(fname, path);
@@ -385,7 +386,7 @@ Win32RandomAccessFile::~Win32RandomAccessFile()
 Status Win32RandomAccessFile::Read(uint64_t offset,size_t n,Slice* result,char* scratch) const
 {
     Status sRet;
-    OVERLAPPED ol = {0};
+    OVERLAPPED ol = {0, 0, 0, 0, 0};
     ZeroMemory(&ol,sizeof(ol));
     ol.Offset = (DWORD)offset;
     ol.OffsetHigh = (DWORD)(offset >> 32);
@@ -586,7 +587,7 @@ void Win32Logger::Logv( const char* format, va_list ap )
         }
 
         assert(p <= limit);
-        DWORD hasWritten = 0;
+        //DWORD hasWritten = 0;
         if(_pFileProxy){
             _pFileProxy->Append(Slice(base, p - base));
             _pFileProxy->Flush();

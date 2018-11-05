@@ -55,6 +55,7 @@ public:
         PrivateSendMultiSession,// bool
         Listen,                 // bool
         OptionIDRowCount,
+        ShowNotifications,      // bool
     };
 
     void Init(bool resetSettings = false);
@@ -68,6 +69,7 @@ public:
 
     /* Explicit getters */
     bool getHideTrayIcon() { return fHideTrayIcon; }
+    bool getShowNotifications() { return bShowNotifications; }
     bool getMinimizeToTray() { return fMinimizeToTray; }
     bool getMinimizeOnClose() { return fMinimizeOnClose; }
     int getDisplayUnit() { return nDisplayUnit; }
@@ -87,6 +89,7 @@ private:
     bool fHideTrayIcon;
     bool fMinimizeToTray;
     bool fMinimizeOnClose;
+    bool bShowNotifications;
     QString language;
     int nDisplayUnit;
     QString strThirdPartyTxUrls;

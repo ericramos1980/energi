@@ -9,6 +9,8 @@ pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = libenergiconsensus.pc
 endif
 
+ENERGI_LINUX_TAR=$(PACKAGE)-$(PACKAGE_VERSION)-linux.tar.gz
+
 BITCOIND_BIN=$(top_builddir)/src/energid$(EXEEXT)
 BITCOIN_QT_BIN=$(top_builddir)/src/qt/energi-qt$(EXEEXT)
 BITCOIN_CLI_BIN=$(top_builddir)/src/energi-cli$(EXEEXT)
@@ -21,7 +23,7 @@ OSX_DEPLOY_SCRIPT=$(top_srcdir)/contrib/macdeploy/macdeployqtplus
 OSX_FANCY_PLIST=$(top_srcdir)/contrib/macdeploy/fancy.plist
 OSX_BASE_LPROJ_DIR=$(top_srcdir)/contrib/macdeploy/Base.lproj/InfoPlist.strings
 OSX_INSTALLER_ICONS=$(top_srcdir)/src/qt/res/icons/energi.icns
-OSX_PLIST=$(top_srcdir)/share/qt/Info.plist #not installed
+OSX_PLIST=$(top_builddir)/share/qt/Info.plist #not installed
 OSX_QT_TRANSLATIONS = da,de,es,hu,ru,uk,zh_CN,zh_TW
 
 DIST_DOCS = $(wildcard doc/*.md) $(wildcard doc/release-notes/*.md)
@@ -57,6 +59,13 @@ distcheck-hook:
 
 distcleancheck:
 	@:
+
+$(ENERGI_LINUX_TAR): all-recursive
+	$(MKDIR_P) $(top_builddir)/$(PACKAGE)-$(PACKAGE_VERSION)/bin
+	STRIPPROG="$(STRIP)" $(INSTALL_STRIP_PROGRAM) $(BITCOIND_BIN) $(top_builddir)/$(PACKAGE)-$(PACKAGE_VERSION)/bin
+	STRIPPROG="$(STRIP)" $(INSTALL_STRIP_PROGRAM) $(BITCOIN_QT_BIN) $(top_builddir)/$(PACKAGE)-$(PACKAGE_VERSION)/bin
+	STRIPPROG="$(STRIP)" $(INSTALL_STRIP_PROGRAM) $(BITCOIN_CLI_BIN) $(top_builddir)/$(PACKAGE)-$(PACKAGE_VERSION)/bin
+	tar czf $(ENERGI_LINUX_TAR) -C $(top_builddir) $(PACKAGE)-$(PACKAGE_VERSION)
 
 $(BITCOIN_WIN_INSTALLER): all-recursive
 	$(MKDIR_P) $(top_builddir)/release
@@ -128,6 +137,9 @@ $(APP_DIST_DIR)/$(OSX_APP)/Contents/MacOS/Energi-Qt: $(OSX_APP_BUILT) $(OSX_PACK
 deploydir: $(APP_DIST_EXTRAS)
 endif
 
+if TARGET_LINUX
+deploy: $(ENERGI_LINUX_TAR)
+endif
 if TARGET_DARWIN
 appbundle: $(OSX_APP_BUILT)
 deploy: $(OSX_DMG)

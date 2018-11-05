@@ -15,6 +15,7 @@
 #include "util.h"
 #include "utilstrencodings.h"
 
+#include "boost_workaround.hpp"
 #include <boost/bind.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/foreach.hpp>

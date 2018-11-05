@@ -43,6 +43,7 @@ static_assert<false, "This Dash source is disabled - see energi.cpp instead">
 
 #include <stdint.h>
 
+#include "boost_workaround.hpp"
 #include <boost/filesystem/operations.hpp>
 #include <boost/thread.hpp>
 

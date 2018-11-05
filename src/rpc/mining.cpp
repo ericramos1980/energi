@@ -716,7 +716,7 @@ UniValue getblocktemplate(const UniValue& params, bool fHelp)
     CTxDestination address1;
     ExtractDestination(pblock->txoutBackbone.scriptPubKey, address1);
     CBitcoinAddress address2(address1);
-    backboneObj.push_back(Pair("payee", address2.ToString().c_str()));
+    backboneObj.push_back(Pair("payee", address2.IsValid() ? address2.ToString().c_str() : ""));
     backboneObj.push_back(Pair("script", HexStr(pblock->txoutBackbone.scriptPubKey.begin(), pblock->txoutBackbone.scriptPubKey.end())));
     backboneObj.push_back(Pair("amount", pblock->txoutBackbone.nValue));
     result.push_back(Pair("backbone", backboneObj));

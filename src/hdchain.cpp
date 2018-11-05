@@ -166,7 +166,7 @@ void CHDChain::DeriveChildExtKey(uint32_t nAccountIndex, bool fInternal, uint32_
     // derive m/purpose'
     masterKey.Derive(purposeKey, 44 | 0x80000000);
     // derive m/purpose'/coin_type'
-    purposeKey.Derive(cointypeKey, Params().ExtCoinType() | 0x80000000);
+    purposeKey.Derive(cointypeKey, Params().ExtCoinType(nVersion) | 0x80000000);
     // derive m/purpose'/coin_type'/account'
     cointypeKey.Derive(accountKey, nAccountIndex | 0x80000000);
     // derive m/purpose'/coin_type'/account/change
@@ -208,5 +208,5 @@ size_t CHDChain::CountAccounts()
 
 std::string CHDPubKey::GetKeyPath() const
 {
-    return strprintf("m/44'/%d'/%d'/%d/%d", Params().ExtCoinType(), nAccountIndex, nChangeIndex, extPubKey.nChild);
+    return strprintf("m/44'/%d'/%d'/%d/%d", Params().ExtCoinType(nVersion), nAccountIndex, nChangeIndex, extPubKey.nChild);
 }

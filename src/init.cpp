@@ -72,6 +72,11 @@
 #include <signal.h>
 #endif
 
+#ifdef WIN32
+#   define BOOST_USE_WINDOWS_H
+#endif
+
+#include "boost_workaround.hpp"
 #include <boost/algorithm/string/classification.hpp>
 #include <boost/algorithm/string/predicate.hpp>
 #include <boost/algorithm/string/replace.hpp>

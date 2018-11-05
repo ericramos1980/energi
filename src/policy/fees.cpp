@@ -309,18 +309,18 @@ CBlockPolicyEstimator::CBlockPolicyEstimator(const CFeeRate& _minRelayFee)
     vfeelist.push_back(INF_FEERATE);
     feeStats.Initialize(vfeelist, MAX_BLOCK_CONFIRMS, DEFAULT_DECAY, "FeeRate");
 
-    minTrackedPriority = AllowFreeThreshold() < MIN_PRIORITY ? MIN_PRIORITY : AllowFreeThreshold();
+    minTrackedPriority = AllowFreeThreshold() < MIN_FEE_PRIORITY ? MIN_FEE_PRIORITY : AllowFreeThreshold();
     std::vector<double> vprilist;
-    for (double bucketBoundary = minTrackedPriority; bucketBoundary <= MAX_PRIORITY; bucketBoundary *= PRI_SPACING) {
+    for (double bucketBoundary = minTrackedPriority; bucketBoundary <= MAX_FEE_PRIORITY; bucketBoundary *= PRI_SPACING) {
         vprilist.push_back(bucketBoundary);
     }
-    vprilist.push_back(INF_PRIORITY);
+    vprilist.push_back(INF_FEE_PRIORITY);
     priStats.Initialize(vprilist, MAX_BLOCK_CONFIRMS, DEFAULT_DECAY, "Priority");
 
     feeUnlikely = CFeeRate(0);
     feeLikely = CFeeRate(INF_FEERATE);
     priUnlikely = 0;
-    priLikely = INF_PRIORITY;
+    priLikely = INF_FEE_PRIORITY;
 }
 
 bool CBlockPolicyEstimator::isFeeDataPoint(const CFeeRate &fee, double pri)
@@ -455,7 +455,7 @@ void CBlockPolicyEstimator::processBlock(unsigned int nBlockHeight,
     LogPrint("estimatefee", "Blockpolicy recalculating dynamic cutoffs:\n");
     priLikely = priStats.EstimateMedianVal(2, SUFFICIENT_PRITXS, MIN_SUCCESS_PCT, true, nBlockHeight);
     if (priLikely == -1)
-        priLikely = INF_PRIORITY;
+        priLikely = INF_FEE_PRIORITY;
 
     double feeLikelyEst = feeStats.EstimateMedianVal(2, SUFFICIENT_FEETXS, MIN_SUCCESS_PCT, true, nBlockHeight);
     if (feeLikelyEst == -1)
@@ -550,7 +550,7 @@ double CBlockPolicyEstimator::estimateSmartPriority(int confTarget, int *answerF
     // If mempool is limiting txs, no priority txs are allowed
     CAmount minPoolFee = pool.GetMinFee(GetArg("-maxmempool", DEFAULT_MAX_MEMPOOL_SIZE) * 1000000).GetFeePerK();
     if (minPoolFee > 0)
-        return INF_PRIORITY;
+        return INF_FEE_PRIORITY;
 
     double median = -1;
     while (median < 0 && (unsigned int)confTarget <= priStats.GetMaxConfirms()) {

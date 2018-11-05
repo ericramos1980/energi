@@ -7,6 +7,7 @@
 #include "txdb.h"
 #include "txmempool.h"
 
+#include "boost_workaround.hpp"
 #include <boost/filesystem.hpp>
 #include <boost/thread.hpp>
 

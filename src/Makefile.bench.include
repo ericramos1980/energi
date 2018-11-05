@@ -9,7 +9,8 @@ bench_bench_energi_SOURCES = \
   bench/bench.h \
   bench/Examples.cpp
 
-bench_bench_energi_CPPFLAGS = $(AM_CPPFLAGS) $(BITCOIN_INCLUDES) $(EVENT_CLFAGS) $(EVENT_PTHREADS_CFLAGS) -I$(builddir)/bench/
+bench_bench_energi_CPPFLAGS = $(AM_CPPFLAGS) $(BITCOIN_INCLUDES) $(EVENT_CLFAGS) \
+  $(EVENT_PTHREADS_CFLAGS) -I$(builddir)/bench/ $(PIC_FLAGS) $(ENERGI_PCH_CPPFLAGS)
 bench_bench_energi_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
 bench_bench_energi_LDADD = \
   $(LIBBITCOIN_SERVER) \
@@ -35,6 +36,8 @@ bench_bench_energi_LDFLAGS = $(RELDFLAGS) $(AM_LDFLAGS) $(LIBTOOL_APP_LDFLAGS)
 CLEAN_BITCOIN_BENCH = bench/*.gcda bench/*.gcno
 
 CLEANFILES += $(CLEAN_BITCOIN_BENCH)
+
+$(bench_bench_energi_SOURCES): $(ENERGI_PCH)
 
 bitcoin_bench: $(BENCH_BINARY)
 

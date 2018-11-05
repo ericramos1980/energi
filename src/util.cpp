@@ -75,6 +75,7 @@
 #include <sys/prctl.h>
 #endif
 
+#include "boost_workaround.hpp"
 #include <boost/algorithm/string/case_conv.hpp> // for to_lower()
 #include <boost/algorithm/string/join.hpp>
 #include <boost/algorithm/string/predicate.hpp> // for startswith() and endswith()

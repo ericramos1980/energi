@@ -14,6 +14,7 @@
 
 #include <stdint.h>
 
+#include "boost_workaround.hpp"
 #include <boost/thread.hpp>
 
 using namespace std;

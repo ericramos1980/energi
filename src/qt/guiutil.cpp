@@ -3,6 +3,8 @@
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
+#include "energi_all.hpp"
+
 #include "guiutil.h"
 
 #include "bitcoinaddressvalidator.h"

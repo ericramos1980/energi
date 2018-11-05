@@ -38,6 +38,11 @@
 #include "leveldb/db.h"
 #include "leveldb/env.h"
 
+#ifdef WIN32
+#   pragma GCC diagnostic ignored "-Wformat"
+#   pragma GCC diagnostic ignored "-Wformat-extra-args"
+#endif
+
 namespace leveldb {
 
 namespace {

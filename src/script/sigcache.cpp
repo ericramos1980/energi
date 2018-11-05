@@ -11,6 +11,7 @@
 #include "uint256.h"
 #include "util.h"
 
+#include "boost_workaround.hpp"
 #include <boost/thread.hpp>
 #include <boost/unordered_set.hpp>
 

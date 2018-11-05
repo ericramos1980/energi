@@ -17,6 +17,7 @@
 #include "util.h"
 #include "consensus/validation.h"
 
+#include "boost_workaround.hpp"
 #include <boost/algorithm/string/replace.hpp>
 #include <boost/thread.hpp>
 

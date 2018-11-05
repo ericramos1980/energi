@@ -188,6 +188,9 @@ void OptionsModel::Init(bool resetSettings)
         settings.setValue("language", "");
     if (!SoftSetArg("-lang", settings.value("language").toString().toStdString()))
         addOverriddenOption("-lang");
+    if (!settings.contains("bShowNotifications"))
+        settings.setValue("bShowNotifications", true);
+    bShowNotifications = settings.value("bShowNotifications", true).toBool();
 
     language = settings.value("language").toString();
 }
@@ -295,6 +298,8 @@ QVariant OptionsModel::data(const QModelIndex & index, int role) const
             return settings.value("nThreadsScriptVerif");
         case Listen:
             return settings.value("fListen");
+        case ShowNotifications:
+            return settings.value("bShowNotifications");
         default:
             return QVariant();
         }
@@ -490,6 +495,12 @@ bool OptionsModel::setData(const QModelIndex & index, const QVariant & value, in
             if (settings.value("fListen") != value) {
                 settings.setValue("fListen", value);
                 setRestartRequired(true);
+            }
+            break;
+        case ShowNotifications:
+            if (settings.value("bShowNotifications") != value) {
+                settings.setValue("bShowNotifications", value);
+                bShowNotifications = value.toBool();
             }
             break;
         default:

@@ -31,7 +31,7 @@ The output will be two data structures with the peers in binary format:
 
 These should be pasted into `src/chainparamsseeds.h`.
 '''
-from __future__ import print_function, division
+
 from base64 import b32decode
 from binascii import a2b_hex
 import sys, os
@@ -88,9 +88,9 @@ def parse_spec(s, defaultport):
     else:
         port = int(port)
 
-    host = name_to_ipv6(host)
+    hostv6 = name_to_ipv6(host)
 
-    return (host,port)
+    return (hostv6,port,host)
 
 def process_nodes(g, f, structname, defaultport):
     g.write('static SeedSpec6 %s[] = {\n' % structname)
@@ -106,9 +106,9 @@ def process_nodes(g, f, structname, defaultport):
             g.write(',\n')
         first = False
 
-        (host,port) = parse_spec(line, defaultport)
-        hoststr = ','.join(('0x%02x' % b) for b in host)
-        g.write('    {{%s}, %i}' % (hoststr, port))
+        (hostv6,port, host) = parse_spec(line, defaultport)
+        hoststr = ','.join(('0x%02x' % b) for b in hostv6)
+        g.write('    {{%s}, %i} /* %s */' % (hoststr, port, host))
     g.write('\n};\n')
 
 def main():

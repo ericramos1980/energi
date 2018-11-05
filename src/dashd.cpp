@@ -18,6 +18,7 @@ static_assert<false, "This Dash source is disabled - see energid.cpp instead">
 #include "httpserver.h"
 #include "httprpc.h"
 
+#include "boost_workaround.hpp"
 #include <boost/algorithm/string/predicate.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/thread.hpp>

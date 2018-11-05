@@ -17,6 +17,7 @@
 #include <sys/stat.h>
 #endif
 
+#include "boost_workaround.hpp"
 #include <boost/filesystem.hpp>
 #include <boost/thread.hpp>
 #include <boost/version.hpp>

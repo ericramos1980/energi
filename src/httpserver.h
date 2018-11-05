@@ -7,6 +7,8 @@
 
 #include <string>
 #include <stdint.h>
+
+#include "boost_workaround.hpp"
 #include <boost/thread.hpp>
 #include <boost/scoped_ptr.hpp>
 #include <boost/function.hpp>

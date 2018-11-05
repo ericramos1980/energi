@@ -58,12 +58,12 @@ BOOST_AUTO_TEST_CASE(MempoolRemoveTest)
 
     // Nothing in pool, remove should do nothing:
     testPool.remove(txParent, removed, true);
-    BOOST_CHECK_EQUAL(removed.size(), 0);
+    BOOST_CHECK_EQUAL(removed.size(), 0U);
 
     // Just the parent:
     testPool.addUnchecked(txParent.GetHash(), entry.FromTx(txParent));
     testPool.remove(txParent, removed, true);
-    BOOST_CHECK_EQUAL(removed.size(), 1);
+    BOOST_CHECK_EQUAL(removed.size(), 1U);
     removed.clear();
     
     // Parent, children, grandchildren:
@@ -75,17 +75,17 @@ BOOST_AUTO_TEST_CASE(MempoolRemoveTest)
     }
     // Remove Child[0], GrandChild[0] should be removed:
     testPool.remove(txChild[0], removed, true);
-    BOOST_CHECK_EQUAL(removed.size(), 2);
+    BOOST_CHECK_EQUAL(removed.size(), 2U);
     removed.clear();
     // ... make sure grandchild and child are gone:
     testPool.remove(txGrandChild[0], removed, true);
-    BOOST_CHECK_EQUAL(removed.size(), 0);
+    BOOST_CHECK_EQUAL(removed.size(), 0U);
     testPool.remove(txChild[0], removed, true);
-    BOOST_CHECK_EQUAL(removed.size(), 0);
+    BOOST_CHECK_EQUAL(removed.size(), 0U);
     // Remove parent, all children/grandchildren should go:
     testPool.remove(txParent, removed, true);
-    BOOST_CHECK_EQUAL(removed.size(), 5);
-    BOOST_CHECK_EQUAL(testPool.size(), 0);
+    BOOST_CHECK_EQUAL(removed.size(), 5U);
+    BOOST_CHECK_EQUAL(testPool.size(), 0U);
     removed.clear();
 
     // Add children and grandchildren, but NOT the parent (simulate the parent being in a block)
@@ -97,8 +97,8 @@ BOOST_AUTO_TEST_CASE(MempoolRemoveTest)
     // Now remove the parent, as might happen if a block-re-org occurs but the parent cannot be
     // put into the mempool (maybe because it is non-standard):
     testPool.remove(txParent, removed, true);
-    BOOST_CHECK_EQUAL(removed.size(), 6);
-    BOOST_CHECK_EQUAL(testPool.size(), 0);
+    BOOST_CHECK_EQUAL(removed.size(), 6U);
+    BOOST_CHECK_EQUAL(testPool.size(), 0U);
     removed.clear();
 }
 
@@ -155,7 +155,7 @@ BOOST_AUTO_TEST_CASE(MempoolIndexingTest)
     entry.nTime = 1;
     entry.dPriority = 10.0;
     pool.addUnchecked(tx5.GetHash(), entry.Fee(10000LL).FromTx(tx5));
-    BOOST_CHECK_EQUAL(pool.size(), 5);
+    BOOST_CHECK_EQUAL(pool.size(), 5U);
 
     std::vector<std::string> sortedOrder;
     sortedOrder.resize(5);
@@ -173,7 +173,7 @@ BOOST_AUTO_TEST_CASE(MempoolIndexingTest)
     tx6.vout[0].scriptPubKey = CScript() << OP_11 << OP_EQUAL;
     tx6.vout[0].nValue = 20 * COIN;
     pool.addUnchecked(tx6.GetHash(), entry.Fee(0LL).FromTx(tx6));
-    BOOST_CHECK_EQUAL(pool.size(), 6);
+    BOOST_CHECK_EQUAL(pool.size(), 6U);
     // Check that at this point, tx6 is sorted low
     sortedOrder.insert(sortedOrder.begin(), tx6.GetHash().ToString());
     CheckSort<1>(pool, sortedOrder);
@@ -196,7 +196,7 @@ BOOST_AUTO_TEST_CASE(MempoolIndexingTest)
     BOOST_CHECK(setAncestorsCalculated == setAncestors);
 
     pool.addUnchecked(tx7.GetHash(), entry.FromTx(tx7), setAncestors);
-    BOOST_CHECK_EQUAL(pool.size(), 7);
+    BOOST_CHECK_EQUAL(pool.size(), 7U);
 
     // Now tx6 should be sorted higher (high fee child): tx7, tx6, tx2, ...
     sortedOrder.erase(sortedOrder.begin());
@@ -230,7 +230,7 @@ BOOST_AUTO_TEST_CASE(MempoolIndexingTest)
     pool.addUnchecked(tx9.GetHash(), entry.Fee(0LL).Time(3).FromTx(tx9), setAncestors);
 
     // tx9 should be sorted low
-    BOOST_CHECK_EQUAL(pool.size(), 9);
+    BOOST_CHECK_EQUAL(pool.size(), 9U);
     sortedOrder.insert(sortedOrder.begin(), tx9.GetHash().ToString());
     CheckSort<1>(pool, sortedOrder);
 
@@ -277,7 +277,7 @@ BOOST_AUTO_TEST_CASE(MempoolIndexingTest)
     CheckSort<1>(pool, sortedOrder);
 
     // there should be 10 transactions in the mempool
-    BOOST_CHECK_EQUAL(pool.size(), 10);
+    BOOST_CHECK_EQUAL(pool.size(), 10U);
 
     // Now try removing tx10 and verify the sort order returns to normal
     std::list<CTransaction> removed;

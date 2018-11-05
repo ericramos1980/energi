@@ -37,7 +37,14 @@ if test "x${CXXFLAGS+set}" = "xset"; then
 else
   CXXFLAGS_overridden=no
 fi
-AC_PROG_CXX
+
+AC_PROG_CXX([clang++-5.0 clang++-6.0 clang++-7.0 clang++ g++])
+AC_PROG_CC([clang-5.0 clang-6.0 clang-7.0 clang gcc])
+
+AC_COMPILE_IFELSE([AC_LANG_DEFINES_PROVIDED
+int main(){ return __clang__; }], [CLANG=yes], [CLANG=no])
+AM_CONDITIONAL([IS_GCC],[test x$GCC = xyes && test x$CLANG != xyes])
+AM_CONDITIONAL([IS_CLANG],[test x$CLANG = xyes])
 
 dnl By default, libtool for mingw refuses to link static libs into a dll for
 dnl fear of mixing pic/non-pic objects, and import/export complications. Since
@@ -198,12 +205,13 @@ if test "x$enable_debug" = xyes; then
     fi
 fi
 
-## TODO: Remove these hard-coded paths and flags. They are here for the sake of
-##       compatibility with the legacy buildsystem.
-##
-if test "x$CXXFLAGS_overridden" = "xno"; then
-  CXXFLAGS="$CXXFLAGS -Wall -Wextra -Wformat -Wformat-security -Wno-unused-parameter -Wno-self-assign -Wno-implicit-fallthrough"
-fi
+AC_ARG_ENABLE([pch],
+  [AS_HELP_STRING([--enable-pch],
+  [enable use of PreCompiled Header])],
+  [use_pch=$enableval],
+  [use_pch=no])
+AM_CONDITIONAL([ENABLE_PCH],[test x$use_pch = xyes])
+
 CPPFLAGS="$CPPFLAGS -DHAVE_BUILD_INFO -D__STDC_FORMAT_MACROS"
 
 AC_ARG_WITH([utils],
@@ -462,6 +470,36 @@ if test x$TARGET_OS != xwindows; then
   AX_CHECK_COMPILE_FLAG([-fPIC],[PIC_FLAGS="-fPIC"])
 fi
 
+# Enabled warnings
+#---
+WARN_TMP="-Wall -Wextra -Wno-unused-parameter"
+AX_CHECK_COMPILE_FLAG([$WARN_TMP],[WARN_CFLAGS="$WARN_CFLAGS $WARN_TMP"])
+
+WARN_TMP="-Wformat -Wformat-security"
+AX_CHECK_COMPILE_FLAG([$WARN_TMP],[WARN_CFLAGS="$WARN_CFLAGS $WARN_TMP"])
+
+WARN_TMP="-Wno-self-assign -Wno-implicit-fallthrough"
+AX_CHECK_COMPILE_FLAG([$WARN_TMP],[WARN_CFLAGS="$WARN_CFLAGS $WARN_TMP"])
+
+WARN_TMP="-Wdate-time"
+AX_CHECK_COMPILE_FLAG([$WARN_TMP],[WARN_CFLAGS="$WARN_CFLAGS $WARN_TMP"])
+
+#WARN_TMP="-Winvalid-pch"
+#AX_CHECK_COMPILE_FLAG([$WARN_TMP],[WARN_CFLAGS="$WARN_CFLAGS $WARN_TMP"])
+
+# Force warnings as error
+#---
+# TODO: fix Darwin build issues
+if test x$TARGET_OS != xdarwin; then
+	WARN_TMP="-Werror"
+	AX_CHECK_COMPILE_FLAG([$WARN_TMP],[WARN_CFLAGS="$WARN_CFLAGS $WARN_TMP"])
+fi
+
+# C++-specific warnings
+#---
+WARN_CXXFLAGS="$WARN_CFLAGS"
+
+#---
 if test x$use_hardening != xno; then
   AX_CHECK_COMPILE_FLAG([-Wstack-protector],[HARDENED_CXXFLAGS="$HARDENED_CXXFLAGS -Wstack-protector"])
   AX_CHECK_COMPILE_FLAG([-fstack-protector-all],[HARDENED_CXXFLAGS="$HARDENED_CXXFLAGS -fstack-protector-all"])
@@ -1004,6 +1042,7 @@ if test x$build_bitcoin_utils$build_bitcoin_libs$build_bitcoind$bitcoin_enable_q
   AC_MSG_ERROR([No targets! Please specify at least one of: --with-utils --with-libs --with-daemon --with-gui or --enable-tests])
 fi
 
+AM_CONDITIONAL([TARGET_LINUX], [test x$TARGET_OS = xlinux])
 AM_CONDITIONAL([TARGET_DARWIN], [test x$TARGET_OS = xdarwin])
 AM_CONDITIONAL([BUILD_DARWIN], [test x$BUILD_OS = xdarwin])
 AM_CONDITIONAL([TARGET_WINDOWS], [test x$TARGET_OS = xwindows])
@@ -1033,6 +1072,8 @@ AC_SUBST(CLIENT_VERSION_IS_RELEASE, _CLIENT_VERSION_IS_RELEASE)
 AC_SUBST(COPYRIGHT_YEAR, _COPYRIGHT_YEAR)
 
 AC_SUBST(RELDFLAGS)
+AC_SUBST(WARN_CFLAGS)
+AC_SUBST(WARN_CXXFLAGS)
 AC_SUBST(HARDENED_CXXFLAGS)
 AC_SUBST(HARDENED_CPPFLAGS)
 AC_SUBST(HARDENED_LDFLAGS)

@@ -28,6 +28,7 @@
 #include "masternode-sync.h"
 #include "validationinterface.h"
 
+#include "boost_workaround.hpp"
 #include <boost/thread.hpp>
 #include <boost/tuple/tuple.hpp>
 #include <queue>

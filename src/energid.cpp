@@ -16,6 +16,7 @@
 #include "httpserver.h"
 #include "httprpc.h"
 
+#include "boost_workaround.hpp"
 #include <boost/algorithm/string/predicate.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/thread.hpp>
@@ -38,7 +39,6 @@
  * Use the buttons <code>Namespaces</code>, <code>Classes</code> or <code>Files</code> at the top of the page to start navigating the code.
  */
 
-static bool fDaemon;
 
 void WaitForShutdown(boost::thread_group* threadGroup)
 {
@@ -136,7 +136,7 @@ bool AppInit(int argc, char* argv[])
             exit(EXIT_FAILURE);
         }
 #ifndef WIN32
-        fDaemon = GetBoolArg("-daemon", false);
+        bool fDaemon = GetBoolArg("-daemon", false);
         if (fDaemon)
         {
             fprintf(stdout, "Energi Core server starting\n");

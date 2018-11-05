@@ -9,6 +9,7 @@
 
 #include <stdio.h>
 
+#include "boost_workaround.hpp"
 #include <boost/foreach.hpp>
 #include <boost/thread.hpp>
 

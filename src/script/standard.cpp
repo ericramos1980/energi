@@ -163,6 +163,9 @@ bool Solver(const CScript& scriptPubKey, txnouttype& typeRet, vector<vector<unsi
 
 bool ExtractDestination(const CScript& scriptPubKey, CTxDestination& addressRet)
 {
+    if (scriptPubKey.empty()) {
+        return false;
+    }
     vector<valtype> vSolutions;
     txnouttype whichType;
     if (!Solver(scriptPubKey, whichType, vSolutions))

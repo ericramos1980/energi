@@ -43,6 +43,11 @@
 
 #include <sstream>
 
+#ifdef WIN32
+#   define BOOST_USE_WINDOWS_H
+#endif
+
+#include "boost_workaround.hpp"
 #include <boost/algorithm/string/replace.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/filesystem/fstream.hpp>
@@ -3370,7 +3375,7 @@ static bool AcceptBlockHeader(const CBlockHeader& block, CValidationState& state
         pindexPrev = (*mi).second;
         if (pindexPrev->nStatus & BLOCK_FAILED_MASK)
             return state.DoS(100, error("%s: prev block invalid", __func__), REJECT_INVALID, "bad-prevblk");
-        if (block.nHeight != (pindexPrev->nHeight + 1))
+        if (int(block.nHeight) != (pindexPrev->nHeight + 1))
             return state.DoS(100, error("%s: invalid block height", __func__), REJECT_INVALID, "bad-blk-height");
 
         assert(pindexPrev);
@@ -3731,7 +3736,7 @@ bool static ValidateLoadedBlocks()
     BOOST_FOREACH(const PAIRTYPE(uint256, CBlockIndex*)& item, mapBlockIndex)
     {
         CBlockIndex* pindex = item.second;
-        if (validateAllBlocks || pindex->nHeight >= mapBlockIndex.size() - validationBlocksCount) {
+        if (validateAllBlocks || (pindex->nHeight >= int(mapBlockIndex.size() - validationBlocksCount))) {
             if(!CheckProofOfWork(pindex->GetBlockHeader().GetPOWHash(), pindex->nBits, Params().GetConsensus())) {
                 error("%s: CheckProofOfWork failed: %s", __func__, pindex->ToString());
                 return false;

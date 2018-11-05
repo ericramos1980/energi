@@ -7,6 +7,7 @@
 
 #include "test/test_energi.h"
 
+#include "boost_workaround.hpp"
 #include <boost/bind.hpp>
 #include <boost/random/mersenne_twister.hpp>
 #include <boost/random/uniform_int_distribution.hpp>

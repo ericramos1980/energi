@@ -203,7 +203,7 @@ BOOST_AUTO_TEST_CASE(BlockPolicyEstimates)
     for (int i = 1; i < 10; i++) {
         BOOST_CHECK(mpool.estimateSmartFee(i).GetFeePerK() >= mpool.estimateFee(i).GetFeePerK());
         BOOST_CHECK(mpool.estimateSmartFee(i).GetFeePerK() >= mpool.GetMinFee(1).GetFeePerK());
-        BOOST_CHECK(mpool.estimateSmartPriority(i) == INF_PRIORITY);
+        BOOST_CHECK(mpool.estimateSmartPriority(i) == INF_FEE_PRIORITY);
     }
 }
 

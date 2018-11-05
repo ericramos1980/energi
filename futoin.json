@@ -1,0 +1,53 @@
+{
+  "name": "energi",
+  "version": "1.1.0",
+  "vcs": "git",
+  "tools": {
+    "make": "*",
+    "cmake": "*",
+    "python": "2"
+  },
+  "actions": {
+    "clean" : "cte git clean -ffdx -e depends/ -e .vagrant/ . || true",
+    "full-clean" : "cte git clean -ffdx -e .vagrant/ . || true",
+    "prepare": [
+      "cte cmake -E make_directory ${ENERGI_BUILD_DIR:-build/$(hostname -s)-release}",
+      "cte cmake -E create_symlink ${ENERGI_BUILD_DIR:-$(pwd)/build/$(hostname -s)-release} build/current",
+      "cte cmake -E chdir build/current $(pwd)/autogen.sh",
+      "cte cmake -E chdir build/current $(pwd)/configure --prefix=$(pwd)/build/${ENERGI_VER:-energi} ${ENERGI_CONFIG_ALL}"
+    ],
+    "prepare-release": "ENERGI_BUILD_DIR=${ENERGI_BUILD_DIR:-$(pwd)/build/$(hostname -s)-release} ENERGI_CONFIG_ALL='' cid prepare",
+    "prepare-debug": "ENERGI_BUILD_DIR=${ENERGI_BUILD_DIR:-$(pwd)/build/$(hostname -s)-debug} ENERGI_CONFIG_ALL='--enable-debug' cid prepare",
+    "prepare-coverage": "ENERGI_BUILD_DIR=${ENERGI_BUILD_DIR:-$(pwd)/build/$(hostname -s)-coverage} ENERGI_CONFIG_ALL='--enable-debug --enable-lcov' LIBS='-lgcov' cid prepare",
+    "build": [
+      "cte make -C ${ENERGI_BUILD_DIR:-build/current} -j${MAKEJOBS:-$(nproc)}",
+      "cte make -C ${ENERGI_BUILD_DIR:-build/current} install"
+    ],
+    "check" : [
+        "check-cpp"
+    ],
+    "check-all": [
+      "check-cpp",
+      "check-rpc"
+    ],
+    "check-make": "cte make -C ${ENERGI_BUILD_DIR:-build/current} check",
+    "check-cpp": [
+        "cte cmake -E make_directory ./test_results",
+        "./build/${ENERGI_VER:-energi}/bin/test_energi${EXE_EXT} --log_format=XML --log_level=warning --log_sink=./test_results/results.xml --report_format=XML --report_level=detailed --report_sink=./test_results/report.xml --result_code=no",
+        "./build/${ENERGI_VER:-energi}/bin/test_energi-qt${EXE_EXT} -xml -o ./test_results/test_energi-qt.xml"
+    ],
+    "check-rpc": "cte python qa/pull-tester/rpc-tests.py",
+    "package" : "cte make -C ${ENERGI_BUILD_DIR:-build/current} deploy",
+    "energid" : "build/current/src/energid",
+    "energi-cli" : "build/current/src/energi-cli",
+    "energi-qt" : "build/current/src/qt/energi-qt",
+    "gdbserver" : "gdbserver ${GDBSERVER_COMM:-127.0.0.1:2000}",
+    "gdbserver-energid" : "@cid run gdbserver build/current/src/energid",
+    "gdbserver-energi-cli" : "@cid run gdbserver build/current/src/energi-cli",
+    "gdbserver-energi-qt" : "@cid run gdbserver build/current/src/qt/energi-qt",
+    "gdbgui" : "gdbgui --host ${GDBGUI_HOST:-127.0.0.1} --port ${GDBGUI_PORT:-2000} --no-browser",
+    "gdbgui-energid" : "@cid run gdbgui build/current/src/energid",
+    "gdbgui-energi-cli" : "@cid run gdbgui build/current/src/energi-cli",
+    "gdbgui-energi-qt" : "@cid run gdbgui build/current/src/qt/energi-qt"
+  }
+}

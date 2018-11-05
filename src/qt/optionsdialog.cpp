@@ -23,6 +23,7 @@
 
 #include "privatesend-client.h"
 
+#include "boost_workaround.hpp"
 #include <boost/thread.hpp>
 
 #include <QDataWidgetMapper>
@@ -205,6 +206,7 @@ void OptionsDialog::setMapper()
     mapper->addMapping(ui->lowKeysWarning, OptionsModel::LowKeysWarning);
     mapper->addMapping(ui->privateSendMultiSession, OptionsModel::PrivateSendMultiSession);
     mapper->addMapping(ui->spendZeroConfChange, OptionsModel::SpendZeroConfChange);
+    mapper->addMapping(ui->showNotifications, OptionsModel::ShowNotifications);
     mapper->addMapping(ui->privateSendRounds, OptionsModel::PrivateSendRounds);
     mapper->addMapping(ui->privateSendAmount, OptionsModel::PrivateSendAmount);
 

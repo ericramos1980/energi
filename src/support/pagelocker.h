@@ -10,6 +10,7 @@
 
 #include <map>
 
+#include "boost_workaround.hpp"
 #include <boost/thread/mutex.hpp>
 #include <boost/thread/once.hpp>
 

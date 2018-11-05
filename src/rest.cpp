@@ -16,6 +16,7 @@
 #include "utilstrencodings.h"
 #include "version.h"
 
+#include "boost_workaround.hpp"
 #include <boost/algorithm/string.hpp>
 #include <boost/dynamic_bitset.hpp>
 

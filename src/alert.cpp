@@ -18,6 +18,7 @@
 #include <algorithm>
 #include <map>
 
+#include "boost_workaround.hpp"
 #include <boost/algorithm/string/classification.hpp>
 #include <boost/algorithm/string/replace.hpp>
 #include <boost/foreach.hpp>

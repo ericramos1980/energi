@@ -17,6 +17,18 @@
 
 #include "chainparamsseeds.h"
 #include "arith_uint256.h"
+#include "hdchain.h"
+
+int CChainParams::ExtCoinType(int version) const {
+    switch(version) {
+    case HDVersion::LEGACY:
+        return nLegacyExtCoinType;
+    case HDVersion::CURRENT:
+    default:
+        return nExtCoinType;
+    }
+}
+
 
 static CBlock CreateGenesisBlock(const char* pszTimestamp, const CScript& genesisOutputScript, uint32_t nTime, uint64_t nNonce, uint32_t nBits, int32_t nVersion, const CAmount& genesisReward)
 {
@@ -314,8 +326,10 @@ public:
         // Energi BIP32 prvkeys start with 'nprv'
         base58Prefixes[EXT_SECRET_KEY] = boost::assign::list_of(0xD7)(0xDC)(0x6E)(0x9F).convert_to_container<std::vector<unsigned char> >();
 
-        // Energi BIP44 coin type is '5'
-        nExtCoinType = 5;
+        // Energi BIP44/SLIP44 coin type is '9797'
+        nExtCoinType = 9797;
+        // Legacy inherited from Dash
+        nLegacyExtCoinType = 5;
 
         vFixedSeeds = std::vector<SeedSpec6>(pnSeed6_main, pnSeed6_main + ARRAYLEN(pnSeed6_main));
 
@@ -338,7 +352,13 @@ public:
             (  32000, uint256S("0x423d1fcaef88449d94a74b803055f165b1b2c677e10487e63cf3a55b53cff82a"))
             (  50000, uint256S("0x0823370fb037369fcbf28e0de607733bbad1133343c58674a48654dfa690b15c"))
             (  75000, uint256S("0x50b98feae42b5acdd36c5f75582e4eb9780a5ae0901992985b9aaf58ba6e4e71"))
-            (  94800, uint256S("0x8cddf9609d578281ed60a79900522f45c4eab1406f336d2109c61619c370828f")),
+            (  94800, uint256S("0x8cddf9609d578281ed60a79900522f45c4eab1406f336d2109c61619c370828f"))
+            ( 100000, uint256S("0x165dd668bb60e90752161dc777a89946d224769ed3b1a10ccfca5693db999b03"))
+            ( 150000, uint256S("0x47947121d1025b7881fd7583df130f2bbb60a36fa73fe2ca41fe30419a4d0aab"))
+            ( 200000, uint256S("0xbf363e6e74c2bf2f1eba5ee4afb85f48d29fc44ceb8260e847b76dfa70c8868b"))
+            ( 250000, uint256S("0x835d278a931b3b39ed42ebdad1402fff51c1de05cbd3660a8877c989f1e3d202"))
+            ( 281000, uint256S("0x64e17d3d00946e8fd82ef4991ca864d63b7274a8c89809c9bef9a3c60e713f95"))
+            ,
 
             1529671563,     // * UNIX timestamp of last checkpoint block
             100461,         // * total number of transactions between genesis and last checkpoint
@@ -386,7 +406,7 @@ public:
         consensus.nSpecialTreasuryBudget = 400000000000000ULL + consensus.nRegularTreasuryBudget; // 4 million extra coins for the special budget cycle
         consensus.nSpecialTreasuryBudgetBlock = consensus.nSuperblockCycle * 50;
 
-        consensus.nMasternodePaymentsStartBlock = 21600; // should be about 15 days after genesis
+        consensus.nMasternodePaymentsStartBlock = 17630; // should be about 15 days after genesis
         consensus.nInstantSendKeepLock = 6;
         consensus.nBudgetProposalEstablishingTime = 60*60;
         consensus.nGovernanceMinQuorum = 1;
@@ -455,8 +475,10 @@ public:
         // Testnet Dash BIP32 prvkeys start with 'tprv' (Bitcoin defaults)
         base58Prefixes[EXT_SECRET_KEY] = boost::assign::list_of(0x04)(0x35)(0x83)(0x94).convert_to_container<std::vector<unsigned char> >();
 
-        // Testnet Dash BIP44 coin type is '1' (All coin's testnet default)
-        nExtCoinType = 1;
+        // Dedicated NRG testnet for BIP44
+        nExtCoinType = 19797;
+        // BIP44 test coin type is '1' (All coin's testnet default)
+        nLegacyExtCoinType = 1;
 
         vFixedSeeds = std::vector<SeedSpec6>(pnSeed6_test, pnSeed6_test + ARRAYLEN(pnSeed6_test));
 
@@ -474,10 +496,15 @@ public:
             boost::assign::map_list_of
             (  1000, uint256S("0x48357913ab6aeff3ac5d8a7120cdf991ca7b598f40c30efbc66b32ce343c8596"))
             (  5000, uint256S("0x50d6318ae28e2d46d3aa5ecb4a7566ec3e9f8b9542e9a84a744d3c8eb815f405"))
-            (  9000, uint256S("0x263bb5d663abbbff11318d82c93249c63523f6b48535f81acf194e45e353be59a")),
+            (  9000, uint256S("0x263bb5d663abbbff11318d82c93249c63523f6b48535f81acf194e45e353be59a"))
+            (  17606, uint256S("0xa3a707f57db9100fcc949609394c2ab164e51892f1b3810bbedad8f9cfb87f91"))
+            (  20000, uint256S("0x8085fb36bd44f4e238b10f948f9c944f2185f93164f567e43f477097dad59dda"))
+            (  25000, uint256S("0x59049b920a2cbf4f61fce77ef3341ff9a393e0b70b734cc5812902dd105f4de8"))
+            (  31000, uint256S("0xf2b400d4d516ac50cfb806d365e26e55c4e216e21f678f3e60405942bf266409"))
+            ,
 
-            1526823627,     // * UNIX timestamp of last checkpoint block
-            9049,           // * total number of transactions between genesis and last checkpoint
+            1537290164,     // * UNIX timestamp of last checkpoint block
+            19601,          // * total number of transactions between genesis and last checkpoint
                             //   (the tx=... number in the SetBestChain debug.log lines)
             1440,           // * estimated number of transactions per day after checkpoint
         };
@@ -592,8 +619,10 @@ public:
         // Testnet Dash BIP32 prvkeys start with 'tprv' (Bitcoin defaults)
         base58Prefixes[EXT_SECRET_KEY] = boost::assign::list_of(0x04)(0x35)(0x83)(0x94).convert_to_container<std::vector<unsigned char> >();
 
-        // Testnet Dash BIP44 coin type is '1' (All coin's testnet default)
-        nExtCoinType = 1;
+        // Dedicated NRG testnet for BIP44
+        nExtCoinType = 19797;
+        // BIP44 test coin type is '1' (All coin's testnet default)
+        nLegacyExtCoinType = 1;
 
         vFixedSeeds = std::vector<SeedSpec6>(pnSeed6_test60x, pnSeed6_test60x + ARRAYLEN(pnSeed6_test60x));
 
@@ -746,8 +775,10 @@ public:
         // Testnet Dash BIP32 prvkeys start with 'tprv' (Bitcoin defaults)
         base58Prefixes[EXT_SECRET_KEY] = boost::assign::list_of(0x04)(0x35)(0x83)(0x94).convert_to_container<std::vector<unsigned char> >();
 
-        // Regtest Dash BIP44 coin type is '1' (All coin's testnet default)
-        nExtCoinType = 1;
+        // Dedicated NRG testnet for BIP44
+        nExtCoinType = 19797;
+        // BIP44 test coin type is '1' (All coin's testnet default)
+        nLegacyExtCoinType = 1;
    }
 };
 static CRegTestParams regTestParams;

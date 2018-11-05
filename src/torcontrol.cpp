@@ -359,7 +359,6 @@ public:
     /** Reconnect, after getting disconnected */
     void Reconnect();
 private:
-    struct event_base* base;
     std::string target;
     TorControlConnection conn;
     std::string private_key;
@@ -391,7 +390,6 @@ private:
 };
 
 TorController::TorController(struct event_base* base, const std::string& target):
-    base(base),
     target(target), conn(base), reconnect(true), reconnect_ev(0),
     reconnect_timeout(RECONNECT_TIMEOUT_START)
 {
@@ -656,26 +654,26 @@ void TorController::reconnect_cb(evutil_socket_t fd, short what, void *arg)
 }
 
 /****** Thread ********/
-struct event_base *base;
+struct event_base *g_base;
 boost::thread torControlThread;
 
 static void TorControlThread()
 {
-    TorController ctrl(base, GetArg("-torcontrol", DEFAULT_TOR_CONTROL));
+    TorController ctrl(g_base, GetArg("-torcontrol", DEFAULT_TOR_CONTROL));
 
-    event_base_dispatch(base);
+    event_base_dispatch(g_base);
 }
 
 void StartTorControl(boost::thread_group& threadGroup, CScheduler& scheduler)
 {
-    assert(!base);
+    assert(!g_base);
 #ifdef WIN32
     evthread_use_windows_threads();
 #else
     evthread_use_pthreads();
 #endif
-    base = event_base_new();
-    if (!base) {
+    g_base = event_base_new();
+    if (!g_base) {
         LogPrintf("tor: Unable to create event_base\n");
         return;
     }
@@ -685,9 +683,9 @@ void StartTorControl(boost::thread_group& threadGroup, CScheduler& scheduler)
 
 void InterruptTorControl()
 {
-    if (base) {
+    if (g_base) {
         LogPrintf("tor: Thread interrupt\n");
-        event_base_loopbreak(base);
+        event_base_loopbreak(g_base);
     }
 }
 
@@ -695,13 +693,13 @@ void StopTorControl()
 {
     // timed_join() avoids the wallet not closing during a repair-restart. For a 'normal' wallet exit
     // it behaves for our cases exactly like the normal join()
-    if (base) {
+    if (g_base) {
 #if BOOST_VERSION >= 105000
         torControlThread.try_join_for(boost::chrono::seconds(1));
 #else
         torControlThread.timed_join(boost::posix_time::seconds(1));
 #endif
-        event_base_free(base);
-        base = 0;
+        event_base_free(g_base);
+        g_base = 0;
     }
 }

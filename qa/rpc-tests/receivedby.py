@@ -17,7 +17,7 @@ def get_sub_array_from_array(object_array, to_match):
     num_matched = 0
     for item in object_array:
         all_match = True
-        for key,value in to_match.items():
+        for key,value in list(to_match.items()):
             if item[key] != value:
                 all_match = False
         if not all_match:
@@ -36,6 +36,9 @@ class ReceivedByTest(BitcoinTestFramework):
         '''
         listreceivedbyaddress Test
         '''
+        self.nodes[0].generate(101)
+        self.sync_all()
+
         # Send from node 0 to 1
         addr = self.nodes[1].getnewaddress()
         txid = self.nodes[0].sendtoaddress(addr, 0.1)

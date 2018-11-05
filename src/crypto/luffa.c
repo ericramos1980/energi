@@ -77,6 +77,8 @@ static const sph_u32 V_INIT[5][8] = {
 	}
 };
 
+#if !SPH_LUFFA_PARALLEL
+
 static const sph_u32 RC00[8] = {
 	SPH_C32(0x303994a6), SPH_C32(0xc0e65299),
 	SPH_C32(0x6cc33a12), SPH_C32(0xdc56983e),
@@ -105,7 +107,7 @@ static const sph_u32 RC14[8] = {
 	SPH_C32(0x2e48f1c1), SPH_C32(0xb923c704)
 };
 
-#if SPH_LUFFA_PARALLEL
+#else
 
 static const sph_u64 RCW010[8] = {
 	SPH_C64(0xb6de10ed303994a6), SPH_C64(0x70f47aaec0e65299),
@@ -137,6 +139,8 @@ static const sph_u32 RC24[8] = {
 	SPH_C32(0x36eda57f), SPH_C32(0x703aace7)
 };
 
+#if !SPH_LUFFA_PARALLEL
+
 static const sph_u32 RC30[8] = {
 	SPH_C32(0xb213afa5), SPH_C32(0xc84ebe95),
 	SPH_C32(0x4e608a22), SPH_C32(0x56d858fe),
@@ -151,7 +155,7 @@ static const sph_u32 RC34[8] = {
 	SPH_C32(0x5944a28e), SPH_C32(0xa1c4c355)
 };
 
-#if SPH_LUFFA_PARALLEL
+#else
 
 static const sph_u64 RCW230[8] = {
 	SPH_C64(0xb213afa5fc20d9d2), SPH_C64(0xc84ebe9534552e25),

@@ -8,6 +8,7 @@
 
 #include "threadsafety.h"
 
+#include "boost_workaround.hpp"
 #include <boost/thread/condition_variable.hpp>
 #include <boost/thread/locks.hpp>
 #include <boost/thread/mutex.hpp>
