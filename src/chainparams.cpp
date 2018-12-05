@@ -438,7 +438,7 @@ public:
         vAlertPubKey = ParseHex("04da7109a0215bf7bb19ecaf9e4295104142b4e03579473c1083ad44e8195a13394a8a7e51ca223fdbc5439420fd08963e491007beab68ac65c5b1c842c8635b37");
         nDefaultPort = 19797;
         nMaxTipAge = 0x7fffffff; // allow mining on top of old blocks for testnet
-        nDelayGetHeadersTime = 24 * 60 * 60;
+        nDelayGetHeadersTime = 30 * 24 * 60 * 60;
         nPruneAfterHeight = 1000;
 
         genesis = CreateGenesisBlock(1524344801, 16880322, 0x207fffff, 1, consensus.nBlockSubsidyBackbone + consensus.nBlockSubsidyMiners);
