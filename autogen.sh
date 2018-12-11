@@ -66,6 +66,38 @@ elif which apt-get >/dev/null 2>&1; then
 
         CC=gcc CXX=g++ /usr/bin/pip install --user "$@"
     }
+elif which yum >/dev/null 2>&1; then
+    rpm_list=""
+    rpm_list="${rpm_list} python-setuptools python2-pip python-devel"
+    rpm_list="${rpm_list} boost-devel ccache"
+    rpm_list="${rpm_list} automake autoconf autoconf213 autoconf-archive"
+    rpm_list="${rpm_list} qt5-qtbase-devel qt5-qtbase-gui qt5-qttools-devel"
+    rpm_list="${rpm_list} protobuf-devel"
+    rpm_list="${rpm_list} qrencode-devel"
+    rpm_list="${rpm_list} libevent-devel"
+    rpm_list="${rpm_list} miniupnpc-devel czmq-devel"
+    rpm_list="${rpm_list} libdb4-devel libdb4-cxx-devel"
+    rpm_list="${rpm_list} openssl-devel"
+    
+    rpm_to_install=""
+    for d in $rpm_list; do
+        if ! rpm -q $d >/dev/null 2>&1; then
+            rpm_to_install="${rpm_to_install} ${d}"
+        fi
+    done
+    
+    if [ -n "${rpm_to_install}" ]; then
+        echo "Auto-trying to install RPM deps"
+        set -x
+        sudo -n /usr/bin/yum install -y ${rpm_to_install}
+        set +x
+    fi
+    
+    pip_install() {
+        ( which futoin-cid && cd $srcdir && CC=gcc CXX=g++ cte pip install "$@" )
+
+        CC=gcc CXX=g++ /bin/pip install --user "$@"
+    }
 elif which brew >/dev/null 2>&1; then
     brew_list=""
     brew_list="${brew_list} ccache"
