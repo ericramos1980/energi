@@ -619,4 +619,50 @@ void RPCRunLater(const std::string& name, boost::function<void(void)> func, int6
     deadlineTimers.insert(std::make_pair(name, boost::shared_ptr<RPCTimerBase>(timerInterface->NewTimer(func, nSeconds*1000))));
 }
 
+constexpr auto RPC_AUTH_CODE_LEN = 6;
+static std::string g_RPCAuthCode;
+
+bool RPCCheckAuthCode(const UniValue& value)
+{
+    LOCK(cs_rpcWarmup);
+
+    if (Params().NetworkIDString() == CBaseChainParams::REGTEST) {
+        return true;
+    }
+
+    auto arg = value.getValStr();
+    auto req = g_RPCAuthCode;
+    g_RPCAuthCode.clear();
+
+    if (req.empty()) {
+        return false;
+    }
+
+    return (arg == req);
+}
+
+std::string RPCGetAuthCodeHelp()
+{
+    LOCK(cs_rpcWarmup);
+
+    g_RPCAuthCode = GetRandHash().GetHex();
+    g_RPCAuthCode.resize(RPC_AUTH_CODE_LEN);
+
+    return
+        "\n"
+        "WARNING: This info contains your private keys.\n"
+        "!!!\n"
+        "DO NOT GIVE THIS INFORMATION TO ANYONE FOR ANY REASON OR YOU WILL LOSE YOUR COINS\n"
+        "!!!\n"
+        "Scammers often ask for the results of this command.\n"
+        "\n"
+        "If anyone asks you for the results then please contact us immediately:\n"
+        "- Discord: https://discordapp.com/invite/sCtgNC3\n"
+        "- Telegram: https://t.me/energicrypto\n"
+        "- Email: contact@energi.team\n"
+        "\n"
+        "ONE TIME SECURITY CODE: " + g_RPCAuthCode + "\n"
+        "\n";
+}
+
 const CRPCTable tableRPC;

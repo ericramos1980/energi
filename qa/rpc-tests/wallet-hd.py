@@ -48,11 +48,11 @@ class WalletHDTest(BitcoinTestFramework):
 
         # Import a non-HD private key in the HD wallet
         non_hd_add = self.nodes[0].getnewaddress()
-        self.nodes[1].importprivkey(self.nodes[0].dumpprivkey(non_hd_add))
+        self.nodes[1].importprivkey(self.nodes[0].dumpprivkey(non_hd_add, 'regtest'))
 
         # This should be enough to keep the master key and the non-HD key
         self.nodes[1].backupwallet(tmpdir + "/hd.bak")
-        #self.nodes[1].dumpwallet(tmpdir + "/hd.dump")
+        #self.nodes[1].dumpwallet(tmpdir + "/hd.dump", 'regtest')
 
         # Derive some HD addresses and remember the last
         # Also send funds to each add

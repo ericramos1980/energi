@@ -292,7 +292,7 @@ class WalletTest (BitcoinTestFramework):
                            {"spendable": False})
 
         # 5. Import private key of the previously imported address on node1
-        priv_key = self.nodes[2].dumpprivkey(address_to_import)
+        priv_key = self.nodes[2].dumpprivkey(address_to_import, 'regtest')
         self.nodes[1].importprivkey(priv_key)
 
         # 6. Check that the unspents are now spendable on node1

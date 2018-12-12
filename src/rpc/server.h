@@ -168,6 +168,8 @@ extern double GetDifficulty(const CBlockIndex* blockindex = NULL);
 extern std::string HelpRequiringPassphrase();
 extern std::string HelpExampleCli(const std::string& methodname, const std::string& args);
 extern std::string HelpExampleRpc(const std::string& methodname, const std::string& args);
+extern bool RPCCheckAuthCode(const UniValue& value);
+extern std::string RPCGetAuthCodeHelp();
 
 extern void EnsureWalletIsUnlocked();
 

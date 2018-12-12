@@ -123,11 +123,11 @@ class WalletBackupTest(BitcoinTestFramework):
         logging.info("Backing up")
         tmpdir = self.options.tmpdir
         self.nodes[0].backupwallet(tmpdir + "/node0/wallet.bak")
-        self.nodes[0].dumpwallet(tmpdir + "/node0/wallet.dump")
+        self.nodes[0].dumpwallet(tmpdir + "/node0/wallet.dump", 'regtest')
         self.nodes[1].backupwallet(tmpdir + "/node1/wallet.bak")
-        self.nodes[1].dumpwallet(tmpdir + "/node1/wallet.dump")
+        self.nodes[1].dumpwallet(tmpdir + "/node1/wallet.dump", 'regtest')
         self.nodes[2].backupwallet(tmpdir + "/node2/wallet.bak")
-        self.nodes[2].dumpwallet(tmpdir + "/node2/wallet.dump")
+        self.nodes[2].dumpwallet(tmpdir + "/node2/wallet.dump", 'regtest')
 
         logging.info("More transactions")
         for i in range(5):
