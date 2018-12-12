@@ -74,6 +74,14 @@ public:
         MSG_ERROR = (ICON_ERROR | BTN_OK | MODAL)
     };
 
+    bool isRealUI() const {
+        return real_ui_;
+    }
+
+    void setRealUI(bool real_ui) {
+        real_ui_ = real_ui;
+    }
+
     /** Show message box. */
     boost::signals2::signal<bool (const std::string& message, const std::string& caption, unsigned int style), boost::signals2::last_value<bool> > ThreadSafeMessageBox;
 
@@ -115,6 +123,9 @@ public:
 
     /** Banlist did change. */
     boost::signals2::signal<void (void)> BannedListChanged;
+
+private:
+    bool real_ui_ = true;
 };
 
 extern CClientUIInterface uiInterface;

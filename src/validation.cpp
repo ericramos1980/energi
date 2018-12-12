@@ -2456,6 +2456,11 @@ void CreateDAG(int height, egihash::progress_callback_type callback)
         return;
     }
 
+    if (uiInterface.isRealUI()) {
+        LogPrintf("WARN: Operating in light mode, not loading a DAG for UI\n");
+        return;
+    }
+
     auto const epoch = height / constants::EPOCH_LENGTH;
     auto const & seedhash = cache_t::get_seedhash(height).to_hex();
     stringstream ss;
