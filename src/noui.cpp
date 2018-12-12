@@ -52,6 +52,8 @@ static void noui_InitMessage(const std::string& message)
 
 void noui_connect()
 {
+    uiInterface.setRealUI(false);
+
     // Connect energid signal handlers
     uiInterface.ThreadSafeMessageBox.connect(noui_ThreadSafeMessageBox);
     uiInterface.ThreadSafeQuestion.connect(noui_ThreadSafeQuestion);
