@@ -21,9 +21,9 @@ elif which apt-get >/dev/null 2>&1; then
     elif [ "$HOST" = "x86_64-w64-mingw32" ] || [ "$HOST" = "i686-w64-mingw32" ]; then
         deb_list="${deb_list} mingw-w64 nsis"
 
-        if [ "$(lsb_release -rs)" = "16.04" ]; then
+        if [ "$(lsb_release -is)" = "Ubuntu" ]; then
             # old CI node
-            deb_list="${deb_list} wine64-development"
+            deb_list="${deb_list} wine-development wine64-development wine-binfmt"
         else
             deb_list="${deb_list} wine wine64 wine-binfmt"
         fi
