@@ -148,5 +148,10 @@ if [ -n "$HOST" ]; then
 
     install_dir=$srcdir/build/${ENERGI_VER:-energi}
     mkdir -p $install_dir
-    cp -rau $srcdir/depends/$HOST/* $install_dir
+
+    if [ "$(uname)" == "Darwin" ]; then
+        cp -Rpf $srcdir/depends/$HOST/* $install_dir/
+    else
+        cp -rauf $srcdir/depends/$HOST/* $install_dir/
+    fi
 fi
