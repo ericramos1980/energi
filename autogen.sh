@@ -15,12 +15,12 @@ elif which apt-get >/dev/null 2>&1; then
     deb_list="${deb_list} python3-pip python3-setuptools python3-dev"
     deb_list="${deb_list} build-essential g++ libtool autotools-dev automake bsdmainutils pkg-config"
     deb_list="${deb_list} autoconf autoconf2.13 autoconf2.64"
-    
+
     if [ "$HOST" = "x86_64-linux-musl" ]; then
         deb_list="${deb_list} musl-dev musl-tools"
     elif [ "$HOST" = "x86_64-w64-mingw32" ]; then
         deb_list="${deb_list} mingw-w64"
-        
+
         if [ "$(lsb_release -rs)" = "16.04" ]; then
             # old CI node
             deb_list="${deb_list} wine64-development"
@@ -40,7 +40,7 @@ elif which apt-get >/dev/null 2>&1; then
         deb_list="${deb_list} ccache"
         deb_list="${deb_list} clang-5.0"
     fi
-    
+
     deb_to_install=""
     for d in $deb_list; do
         if ! dpkg -s $d >/dev/null 2>&1; then
@@ -56,14 +56,14 @@ elif which apt-get >/dev/null 2>&1; then
             esac
         fi
     done
-    
+
     if [ -n "${deb_to_install}" ]; then
         echo "Auto-trying to install Debian/Ubuntu deps"
         set -x
         sudo -n /usr/bin/apt-get install --no-install-recommends -y ${deb_to_install}
         set +x
     fi
-    
+
     pip_install() {
         ( which futoin-cid && cd $srcdir && CC=gcc CXX=g++ cte pip install "$@" )
 
@@ -85,21 +85,21 @@ elif which yum >/dev/null 2>&1; then
     rpm_list="${rpm_list} miniupnpc-devel czmq-devel"
     rpm_list="${rpm_list} libdb4-devel libdb4-cxx-devel"
     rpm_list="${rpm_list} openssl-devel"
-    
+
     rpm_to_install=""
     for d in $rpm_list; do
         if ! rpm -q $d >/dev/null 2>&1; then
             rpm_to_install="${rpm_to_install} ${d}"
         fi
     done
-    
+
     if [ -n "${rpm_to_install}" ]; then
         echo "Auto-trying to install RPM deps"
         set -x
         sudo -n /usr/bin/yum install -y ${rpm_to_install}
         set +x
     fi
-    
+
     pip_install() {
         ( which futoin-cid && cd $srcdir && CC=gcc CXX=g++ cte pip install "$@" )
 
@@ -108,11 +108,11 @@ elif which yum >/dev/null 2>&1; then
 elif which brew >/dev/null 2>&1; then
     brew_list=""
     brew_list="${brew_list} ccache"
-    
+
     for f in $brew_list; do
         brew install $f || true
     done
-    
+
     pip_install() {
         ( which futoin-cid && cd $srcdir && cte pip install "$@" )
 
@@ -142,6 +142,8 @@ if [ -n "$HOST" ]; then
 
     # TODO: create a separate Energi SDK
     echo "Preparing dependencies"
+    # Ensure sysroot is clean of older versions which are unpacked from built folder
+    rm -rf depends/$HOST
     make -C $srcdir/depends HOST=$HOST -j${MAKEJOBS:-$(nproc)}
 
     install_dir=$srcdir/build/${ENERGI_VER:-energi}
