@@ -1,6 +1,11 @@
 #!/bin/sh
+# Copyright (c) 2012-2016 The Bitcoin Core developers
+# Distributed under the MIT software license, see the accompanying
+# file COPYING or http://www.opensource.org/licenses/mit-license.php.
+
+export LC_ALL=C
 if [ $# -gt 1 ]; then
-    cd "$2"
+    cd "$2" || exit 1
 fi
 if [ $# -gt 0 ]; then
     FILE="$1"
@@ -12,6 +17,10 @@ else
     echo "Usage: $0 <filename> <srcroot>"
     exit 1
 fi
+
+git_check_in_repo() {
+    ! { git status --porcelain -uall --ignored "$@" 2>/dev/null || echo '??'; } | grep -q '?'
+}
 
 DESC=""
 SUFFIX=""

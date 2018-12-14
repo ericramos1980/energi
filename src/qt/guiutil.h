@@ -16,6 +16,7 @@
 #include <QTableView>
 #include <QLabel>
 
+#include "boost_workaround.hpp"
 #include <boost/filesystem.hpp>
 
 class QValidatedLineEdit;
