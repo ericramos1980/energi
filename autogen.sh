@@ -15,19 +15,10 @@ elif which apt-get >/dev/null 2>&1; then
     deb_list="${deb_list} python3-pip python3-setuptools python3-dev"
     deb_list="${deb_list} build-essential g++ libtool autotools-dev automake bsdmainutils pkg-config"
     deb_list="${deb_list} autoconf autoconf2.13 autoconf2.64"
-    deb_list="${deb_list} libssl-dev libevent-dev"
-    deb_list="${deb_list} libboost-system-dev libboost-filesystem-dev libboost-chrono-dev"
-    deb_list="${deb_list} libboost-program-options-dev libboost-test-dev libboost-thread-dev"
-    deb_list="${deb_list} libqt5gui5 libqt5core5a libqt5dbus5 qttools5-dev qttools5-dev-tools"
-    deb_list="${deb_list} libprotobuf-dev protobuf-compiler"
-    deb_list="${deb_list} libqrencode-dev"
-    deb_list="${deb_list} libminiupnpc-dev libzmq3-dev"
-    deb_list="${deb_list} libdb4.8-dev libdb4.8++-dev"
-    deb_list="${deb_list} lcov default-jre-headless"
-    deb_list="${deb_list} ccache"
-    deb_list="${deb_list} clang-5.0"
     
-    if [ "$HOST" = "x86_64-w64-mingw32" ]; then
+    if [ "$HOST" = "x86_64-linux-musl" ]; then
+        deb_list="${deb_list} musl-dev musl-tools"
+    elif [ "$HOST" = "x86_64-w64-mingw32" ]; then
         deb_list="${deb_list} mingw-w64"
         
         if [ "$(lsb_release -rs)" = "16.04" ]; then
@@ -36,6 +27,18 @@ elif which apt-get >/dev/null 2>&1; then
         else
             deb_list="${deb_list} wine64 wine-binfmt"
         fi
+    elif [ -z "$HOST" ]; then
+        deb_list="${deb_list} libssl-dev libevent-dev"
+        deb_list="${deb_list} libboost-system-dev libboost-filesystem-dev libboost-chrono-dev"
+        deb_list="${deb_list} libboost-program-options-dev libboost-test-dev libboost-thread-dev"
+        deb_list="${deb_list} libqt5gui5 libqt5core5a libqt5dbus5 qttools5-dev qttools5-dev-tools"
+        deb_list="${deb_list} libprotobuf-dev protobuf-compiler"
+        deb_list="${deb_list} libqrencode-dev"
+        deb_list="${deb_list} libminiupnpc-dev libzmq3-dev"
+        deb_list="${deb_list} libdb4.8-dev libdb4.8++-dev"
+        deb_list="${deb_list} lcov default-jre-headless"
+        deb_list="${deb_list} ccache"
+        deb_list="${deb_list} clang-5.0"
     fi
     
     deb_to_install=""
@@ -64,7 +67,11 @@ elif which apt-get >/dev/null 2>&1; then
     pip_install() {
         ( which futoin-cid && cd $srcdir && CC=gcc CXX=g++ cte pip install "$@" )
 
-        CC=gcc CXX=g++ /usr/bin/pip install --user "$@"
+        if [ -e /usr/local/bin/pip ]; then
+            CC=gcc CXX=g++ /usr/local/bin/pip install --user "$@"
+        else
+            CC=gcc CXX=g++ /usr/bin/pip install --user "$@"
+        fi
     }
 elif which yum >/dev/null 2>&1; then
     rpm_list=""
@@ -124,17 +131,20 @@ pip_install -U -e $srcdir/qa/nrghash/
 #---
 autoreconf --install --force --warnings=all $srcdir
 
-if [ "$HOST" = "x86_64-w64-mingw32" ]; then
-	# Need to update alternatives, ignore failure
-	sudo -n update-alternatives --set x86_64-w64-mingw32-gcc /usr/bin/x86_64-w64-mingw32-gcc-posix || true
-	sudo -n update-alternatives --set x86_64-w64-mingw32-g++ /usr/bin/x86_64-w64-mingw32-g++-posix || true
+if [ -n "$HOST" ]; then
+    case "$HOST" in
+    *-w64-mingw32)
+        # Need to update alternatives, ignore failure
+        sudo -n update-alternatives --set $HOST-gcc /usr/bin/$HOST-gcc-posix || true
+        sudo -n update-alternatives --set $HOST-g++ /usr/bin/$HOST-g++-posix || true
+        ;;
+    esac
 
     # TODO: create a separate Energi SDK
-    echo "Preparing Win64 deps"
-    make -C $srcdir/depends HOST=x86_64-w64-mingw32 -j${MAKEJOBS:-$(nproc)}
-    
+    echo "Preparing dependencies"
+    make -C $srcdir/depends HOST=$HOST -j${MAKEJOBS:-$(nproc)}
+
     install_dir=$srcdir/build/${ENERGI_VER:-energi}
     mkdir -p $install_dir
-    cp -rau $srcdir/depends/x86_64-w64-mingw32/* $install_dir
+    cp -rau $srcdir/depends/$HOST/* $install_dir
 fi
-
