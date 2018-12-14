@@ -18,14 +18,14 @@ elif which apt-get >/dev/null 2>&1; then
 
     if [ "$HOST" = "x86_64-linux-musl" ]; then
         deb_list="${deb_list} musl-dev musl-tools"
-    elif [ "$HOST" = "x86_64-w64-mingw32" ]; then
-        deb_list="${deb_list} mingw-w64"
+    elif [ "$HOST" = "x86_64-w64-mingw32" ] || [ "$HOST" = "i686-w64-mingw32" ]; then
+        deb_list="${deb_list} mingw-w64 nsis"
 
         if [ "$(lsb_release -rs)" = "16.04" ]; then
             # old CI node
             deb_list="${deb_list} wine64-development"
         else
-            deb_list="${deb_list} wine64 wine-binfmt"
+            deb_list="${deb_list} wine wine64 wine-binfmt"
         fi
     elif [ -z "$HOST" ]; then
         deb_list="${deb_list} libssl-dev libevent-dev"
