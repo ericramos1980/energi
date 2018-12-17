@@ -126,7 +126,7 @@ fi
 
 #---
 pip_install pyzmq
-pip_install -U -e $srcdir/qa/nrghash/
+pip_install -U nrghash
 
 #---
 autoreconf --install --force --warnings=all $srcdir
