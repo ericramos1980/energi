@@ -11,6 +11,7 @@
     "clean" : "cte git clean -ffdx -e depends/ -e .vagrant/ . || true",
     "full-clean" : "cte git clean -ffdx -e .vagrant/ . || true",
     "prepare": [
+      "require-host-env",
       "cte cmake -E make_directory ${ENERGI_BUILD_DIR:-build/$(hostname -s)-release}",
       "cte cmake -E create_symlink ${ENERGI_BUILD_DIR:-$(pwd)/build/$(hostname -s)-release} build/current",
       "cte cmake -E chdir build/current $(pwd)/autogen.sh",
@@ -20,8 +21,12 @@
     "prepare-debug": "ENERGI_BUILD_DIR=${ENERGI_BUILD_DIR:-$(pwd)/build/$(hostname -s)-debug} ENERGI_CONFIG_ALL='--enable-debug' cid prepare",
     "prepare-coverage": "ENERGI_BUILD_DIR=${ENERGI_BUILD_DIR:-$(pwd)/build/$(hostname -s)-coverage} ENERGI_CONFIG_ALL='--enable-debug --enable-lcov' LIBS='-lgcov' cid prepare",
     "build": [
+      "require-host-env",
       "cte make -C ${ENERGI_BUILD_DIR:-build/current} -j${MAKEJOBS:-$(nproc)}",
       "cte make -C ${ENERGI_BUILD_DIR:-build/current} install"
+    ],
+    "require-host-env": [
+      "if [ -z \"$HOST\" ]; then echo 'Please set HOST env (e.g. x86_64-linux-gnu)'; exit 1; fi"
     ],
     "check" : [
         "check-cpp"

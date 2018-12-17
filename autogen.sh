@@ -143,7 +143,7 @@ if [ -n "$HOST" ]; then
     # TODO: create a separate Energi SDK
     echo "Preparing dependencies"
     # Ensure sysroot is clean of older versions which are unpacked from built folder
-    rm -rf depends/$HOST
+    rm -rf $srcdir/depends/$HOST
     make -C $srcdir/depends HOST=$HOST -j${MAKEJOBS:-$(nproc)}
 
     install_dir=$srcdir/build/${ENERGI_VER:-energi}
