@@ -44,6 +44,7 @@ Minor changes:
 - CHANGED: upgraded to newer versions of dependencies
     - Boost 1.69, Qt 5.9, OpenSSL 1.0.2q and others
 - CHANGED: minor build system improvements
+- CHANGED: enforced MN Sentinel spork 14 also in code
 - FIXED: not to aggressively connect on lack of suitable peers
 - FIXED: unknown version bit 1 warning
 - NEW: added CentOS 7 build support
