@@ -1894,7 +1894,7 @@ public:
     {
         return ((pindex->nVersion & VERSIONBITS_TOP_MASK) == VERSIONBITS_TOP_BITS) &&
                ((pindex->nVersion >> bit) & 1) != 0 &&
-               ((ComputeBlockVersion(pindex->pprev, params) >> bit) & 1) == 0;
+               ((ComputeBlockVersion(pindex->pprev, params, true) >> bit) & 1) == 0;
     }
 };
 
@@ -2453,6 +2453,11 @@ void CreateDAG(int height, egihash::progress_callback_type callback)
 
     if (!GetBoolArg("-usedag", DEFAULT_USEDAG)) {
         LogPrint("nrghash", "Operating in light mode, not loading a DAG\n");
+        return;
+    }
+
+    if (uiInterface.isRealUI()) {
+        LogPrintf("WARN: Operating in light mode, not loading a DAG for UI\n");
         return;
     }
 

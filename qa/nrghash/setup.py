@@ -2,9 +2,6 @@
 from setuptools import setup, Extension
 import os
 
-this_dir = os.path.realpath(os.path.join(__file__, '..'))
-src_dir = os.path.realpath(os.path.join(this_dir,'..','..','src'))
-
 nrghash = Extension(
     'nrghash',
     define_macros = [
@@ -12,19 +9,17 @@ nrghash = Extension(
         ('USE_SECURE_MEMZERO',1),
     ],
     include_dirs = [
-        this_dir,
-        src_dir,
+        'include',
     ],
     sources = [
         'nrghashmodule.cpp',
-        os.path.join(src_dir, 'crypto', 'egihash.cpp'),
-        #os.path.join(src_dir, 'crypto', 'keccak-tiny.c'),
+        'egihash.cpp',
     ],
     language='c++',
     extra_compile_args=['-std=c++11'])
 
 setup(
     name = 'nrghash',
-    version = '1.0',
+    version = '1.0.2',
     description = 'Energi Hash function',
     ext_modules = [nrghash])

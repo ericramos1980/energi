@@ -10,6 +10,7 @@
 #include <map>
 #include <stdint.h>
 #include <string>
+#include "boost_workaround.hpp"
 #include <boost/filesystem.hpp>
 
 #include <univalue.h>

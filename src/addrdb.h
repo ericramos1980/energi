@@ -7,6 +7,7 @@
 #define BITCOIN_ADDRDB_H
 
 #include "serialize.h"
+#include "boost_workaround.hpp"
 
 #include <string>
 #include <map>

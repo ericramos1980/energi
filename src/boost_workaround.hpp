@@ -12,15 +12,19 @@
 
 #pragma GCC diagnostic push
 
+// General GCC+Boost issue
+#pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
+
 #ifdef WIN32
 #   pragma GCC diagnostic ignored "-Wstrict-aliasing"
-#   pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
 #	pragma GCC diagnostic ignored "-Wshift-negative-value"
+#	pragma GCC diagnostic ignored "-Wstack-protector"
 #endif
 
 #include <boost/thread.hpp> // TODO: change to c++11
 #include <boost/signals2/last_value.hpp>
 #include <boost/dynamic_bitset.hpp>
+#include <boost/filesystem.hpp>
 
 #pragma GCC diagnostic pop
 

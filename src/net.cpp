@@ -1647,6 +1647,10 @@ void CConnman::ThreadOpenConnections()
     int64_t nNextFeeler = PoissonNextSend(nStart*1000*1000, FEELER_INTERVAL);
     int nOutbound = 0;
     bool was_ipv6 = true;
+    bool fast_mode = true;
+    const auto ALLOW_RETRY_ATTEMPT = 30;
+    const auto ALLOW_NONDEFAULT_ATTEMPT = 50;
+    const auto MAX_ATTEMPTS = 100;
 
     while (!interruptNet)
     {
@@ -1654,7 +1658,7 @@ void CConnman::ThreadOpenConnections()
 
         auto delay = DEFAULT_OUTBOUND_INTERVAL;
 
-        if (nOutbound < nMaxOutbound) {
+        if (fast_mode && (nOutbound < nMaxOutbound)) {
             // We still need to give chance to other threads
             // and to AVOID hammering network.
             delay = MIN_OUTBOUND_INTERVAL;
@@ -1735,7 +1739,7 @@ void CConnman::ThreadOpenConnections()
             // stop this loop, and let the outer loop run again (which sleeps, adds seed nodes, recalculates
             // already-connected network ranges, ...) before trying new addrman addresses.
             nTries++;
-            if (nTries > 100)
+            if (nTries > MAX_ATTEMPTS)
                 break;
 
             if (setConnected.count(addr.GetGroup()) || IsLocal(addr)) {
@@ -1750,11 +1754,11 @@ void CConnman::ThreadOpenConnections()
                 continue;
 
             // only consider very recently tried nodes after 30 failed attempts
-            if (nANow - addr.nLastTry < 600 && nTries < 30)
+            if (nANow - addr.nLastTry < 600 && nTries < ALLOW_RETRY_ATTEMPT)
                 continue;
 
             // do not allow non-default ports, unless after 50 invalid addresses selected already
-            if (addr.GetPort() != Params().GetDefaultPort() && nTries < 50)
+            if (addr.GetPort() != Params().GetDefaultPort() && nTries < ALLOW_NONDEFAULT_ATTEMPT)
                 continue;
 
             // Balance between IPv4 and IPv6 candidates to avoid local IPv6 network with
@@ -1769,8 +1773,9 @@ void CConnman::ThreadOpenConnections()
             break;
         }
 
-        if (addrConnect.IsValid()) {
+        fast_mode = (nTries <= ALLOW_RETRY_ATTEMPT);
 
+        if (addrConnect.IsValid()) {
             if (fFeeler) {
                 // Add small amount of random noise before connection to avoid synchronization.
                 int randsleep = GetRandInt(FEELER_SLEEP_WINDOW * 1000);
@@ -1780,6 +1785,8 @@ void CConnman::ThreadOpenConnections()
             }
 
             OpenNetworkConnectionAsync(addrConnect, &grant, NULL, false, fFeeler);
+        } else {
+            fast_mode = false;
         }
 
         // NOTE: it must be changed irrespective to actual address used to avoid

@@ -353,6 +353,9 @@ $(libbitcoin_wallet_a_SOURCES): $(ENERGI_PCH)
 # crypto primitives library
 crypto_libbitcoin_crypto_a_CPPFLAGS = $(AM_CPPFLAGS) $(BITCOIN_CONFIG_INCLUDES) $(PIC_FLAGS) -D__STDC_WANT_LIB_EXT1__=1 -DUSE_SECURE_MEMZERO
 crypto_libbitcoin_crypto_a_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS) $(PIC_FLAGS)
+if IS_GCC
+   crypto_libbitcoin_crypto_a_CFLAGS = -std=c99
+endif
 crypto_libbitcoin_crypto_a_SOURCES = \
   crypto/common.h \
   crypto/hmac_sha256.cpp \

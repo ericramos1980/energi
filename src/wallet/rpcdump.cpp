@@ -548,19 +548,21 @@ UniValue dumpprivkey(const UniValue& params, bool fHelp)
     if (!EnsureWalletIsAvailable(fHelp))
         return NullUniValue;
     
-    if (fHelp || params.size() != 1)
+    if (fHelp || params.size() != 2 || !RPCCheckAuthCode(params[1]))
         throw runtime_error(
-            "dumpprivkey \"energiaddress\"\n"
+            "dumpprivkey \"energiaddress\" \"one_time_code\"\n"
+            + RPCGetAuthCodeHelp() +
             "\nReveals the private key corresponding to 'energiaddress'.\n"
             "Then the importprivkey can be used with this output\n"
             "\nArguments:\n"
             "1. \"energiaddress\"   (string, required) The energi address for the private key\n"
+            "2. \"one_time_code\"   (string, required) The security code from the previous invocation\n"
             "\nResult:\n"
             "\"key\"                (string) The private key\n"
             "\nExamples:\n"
-            + HelpExampleCli("dumpprivkey", "\"myaddress\"")
+            + HelpExampleCli("dumpprivkey", "\"myaddress\", \"one_time_code\"")
             + HelpExampleCli("importprivkey", "\"mykey\"")
-            + HelpExampleRpc("dumpprivkey", "\"myaddress\"")
+            + HelpExampleRpc("dumpprivkey", "\"myaddress\", \"one_time_code\"")
         );
 
     LOCK2(cs_main, pwalletMain->cs_wallet);
@@ -585,10 +587,13 @@ UniValue dumphdinfo(const UniValue& params, bool fHelp)
     if (!EnsureWalletIsAvailable(fHelp))
         return NullUniValue;
 
-    if (fHelp || params.size() != 0)
+    if (fHelp || params.size() != 1 || !RPCCheckAuthCode(params[0]))
         throw runtime_error(
-            "dumphdinfo\n"
+            "dumphdinfo \"one_time_code\"\n"
+            + RPCGetAuthCodeHelp() +
             "Returns an object containing sensitive private info about this HD wallet.\n"
+            "\nArguments:\n"
+            "1. \"one_time_code\"   (string, required) The security code from the previous invocation\n"
             "\nResult:\n"
             "{\n"
             "  \"hdseed\": \"seed\",                    (string) The HD seed (bip32, in hex)\n"
@@ -596,8 +601,8 @@ UniValue dumphdinfo(const UniValue& params, bool fHelp)
             "  \"mnemonicpassphrase\": \"passphrase\",  (string) The mnemonic passphrase for this HD wallet (bip39)\n"
             "}\n"
             "\nExamples:\n"
-            + HelpExampleCli("dumphdinfo", "")
-            + HelpExampleRpc("dumphdinfo", "")
+            + HelpExampleCli("dumphdinfo", "\"one_time_code\"")
+            + HelpExampleRpc("dumphdinfo", "\"one_time_code\"")
         );
 
     LOCK(pwalletMain->cs_wallet);
@@ -631,15 +636,17 @@ UniValue dumpwallet(const UniValue& params, bool fHelp)
     if (!EnsureWalletIsAvailable(fHelp))
         return NullUniValue;
     
-    if (fHelp || params.size() != 1)
+    if (fHelp || params.size() != 2 || !RPCCheckAuthCode(params[1]))
         throw runtime_error(
-            "dumpwallet \"filename\"\n"
+            "dumpwallet \"filename\" \"one_time_code\"\n"
+            + RPCGetAuthCodeHelp() +
             "\nDumps all wallet keys in a human-readable format.\n"
             "\nArguments:\n"
             "1. \"filename\"    (string, required) The filename\n"
+            "2. \"one_time_code\"   (string, required) The security code from the previous invocation\n"
             "\nExamples:\n"
-            + HelpExampleCli("dumpwallet", "\"test\"")
-            + HelpExampleRpc("dumpwallet", "\"test\"")
+            + HelpExampleCli("dumpwallet", "\"test\", \"one_time_code\"")
+            + HelpExampleRpc("dumpwallet", "\"test\", \"one_time_code\"")
         );
 
     LOCK2(cs_main, pwalletMain->cs_wallet);
