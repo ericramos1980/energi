@@ -38,6 +38,7 @@ Major changes:
 - NEW: windows 32-bit builds.
 - CHANGED: to forcibly disable full DAG in UI
     > Solves long startup issue with not justified configuration `usedag=1`.
+- CHANGED: updated to latest checkpoints
 
 Minor changes:
 
