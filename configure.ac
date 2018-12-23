@@ -214,6 +214,9 @@ AC_ARG_ENABLE([debug],
     [enable_debug=$enableval],
     [enable_debug=no])
 
+AC_LANG_PUSH([C++])
+AX_CHECK_COMPILE_FLAG([-Werror],[CXXFLAG_WERROR="-Werror"],[CXXFLAG_WERROR=""])
+
 if test "x$enable_debug" = xyes; then
     CPPFLAGS="$CPPFLAGS -DDEBUG"
     if test "x$GCC" = xyes; then
@@ -232,6 +235,29 @@ AC_ARG_ENABLE([pch],
   [use_pch=no])
 AM_CONDITIONAL([ENABLE_PCH],[test x$use_pch = xyes])
 
+if test "x$CXXFLAGS_overridden" = "xno"; then
+  WARN_CFLAGS=""
+  WARN_CXXFLAGS=""
+  AX_CHECK_COMPILE_FLAG([-Wall],[WARN_CFLAGS="$WARN_CFLAGS -Wall"],,[[$CXXFLAG_WERROR]])
+  AX_CHECK_COMPILE_FLAG([-Wextra],[WARN_CFLAGS="$WARN_CFLAGS -Wextra"],,[[$CXXFLAG_WERROR]])
+  AX_CHECK_COMPILE_FLAG([-Wformat],[WARN_CFLAGS="$WARN_CFLAGS -Wformat"],,[[$CXXFLAG_WERROR]])
+  AX_CHECK_COMPILE_FLAG([-Wformat-security],[WARN_CFLAGS="$WARN_CFLAGS -Wformat-security"],,[[$CXXFLAG_WERROR]])
+  AX_CHECK_COMPILE_FLAG([-Wdate-time],[WARN_CFLAGS="$WARN_CFLAGS -Wdate-time"],,[[$CXXFLAG_WERROR]])
+
+  ## Some compilers (gcc) ignore unknown -Wno-* options, but warn about all
+  ## unknown options if any other warning is produced. Test the -Wfoo case, and
+  ## set the -Wno-foo case if it works.
+  AX_CHECK_COMPILE_FLAG([-Wunused-parameter],[WARN_CFLAGS="$WARN_CFLAGS -Wno-unused-parameter"],,[[$CXXFLAG_WERROR]])
+  AX_CHECK_COMPILE_FLAG([-Wself-assign],[WARN_CFLAGS="$WARN_CFLAGS -Wno-self-assign"],,[[$CXXFLAG_WERROR]])
+  AX_CHECK_COMPILE_FLAG([-Wunused-local-typedef],[WARN_CFLAGS="$WARN_CFLAGS -Wno-unused-local-typedef"],,[[$CXXFLAG_WERROR]])
+  AX_CHECK_COMPILE_FLAG([-Wdeprecated-register],[WARN_CFLAGS="$WARN_CFLAGS -Wno-deprecated-register"],,[[$CXXFLAG_WERROR]])
+  AX_CHECK_COMPILE_FLAG([-Wimplicit-fallthrough],[WARN_CFLAGS="$WARN_CFLAGS -Wno-implicit-fallthrough"],,[[$CXXFLAG_WERROR]])
+
+  if test x$TARGET_OS != xdarwin; then
+    WARN_CFLAGS="$WARN_CFLAGS $CXXFLAG_WERROR"
+    WARN_CXXFLAGS="$WARN_CXXFLAGS $CXXFLAG_WERROR"
+  fi
+fi
 CPPFLAGS="$CPPFLAGS -DHAVE_BUILD_INFO -D__STDC_FORMAT_MACROS"
 
 AC_ARG_WITH([utils],
@@ -251,8 +277,6 @@ AC_ARG_WITH([daemon],
   [build energid daemon (default=yes)])],
   [build_bitcoind=$withval],
   [build_bitcoind=yes])
-
-AC_LANG_PUSH([C++])
 
 use_pkgconfig=yes
 case $host in
@@ -516,36 +540,6 @@ if test x$TARGET_OS != xwindows; then
   AX_CHECK_COMPILE_FLAG([-fPIC],[PIC_FLAGS="-fPIC"])
 fi
 
-# Enabled warnings
-#---
-WARN_TMP="-Wall -Wextra -Wno-unused-parameter"
-AX_CHECK_COMPILE_FLAG([$WARN_TMP],[WARN_CFLAGS="$WARN_CFLAGS $WARN_TMP"])
-
-WARN_TMP="-Wformat -Wformat-security"
-AX_CHECK_COMPILE_FLAG([$WARN_TMP],[WARN_CFLAGS="$WARN_CFLAGS $WARN_TMP"])
-
-WARN_TMP="-Wno-self-assign -Wno-implicit-fallthrough"
-AX_CHECK_COMPILE_FLAG([$WARN_TMP],[WARN_CFLAGS="$WARN_CFLAGS $WARN_TMP"])
-
-WARN_TMP="-Wdate-time"
-AX_CHECK_COMPILE_FLAG([$WARN_TMP],[WARN_CFLAGS="$WARN_CFLAGS $WARN_TMP"])
-
-#WARN_TMP="-Winvalid-pch"
-#AX_CHECK_COMPILE_FLAG([$WARN_TMP],[WARN_CFLAGS="$WARN_CFLAGS $WARN_TMP"])
-
-# Force warnings as error
-#---
-# TODO: fix Darwin build issues
-if test x$TARGET_OS != xdarwin; then
-	WARN_TMP="-Werror"
-	AX_CHECK_COMPILE_FLAG([$WARN_TMP],[WARN_CFLAGS="$WARN_CFLAGS $WARN_TMP"])
-fi
-
-# C++-specific warnings
-#---
-WARN_CXXFLAGS="$WARN_CFLAGS"
-
-#---
 if test x$use_hardening != xno; then
   AX_CHECK_COMPILE_FLAG([-Wstack-protector],[HARDENED_CXXFLAGS="$HARDENED_CXXFLAGS -Wstack-protector"])
   AX_CHECK_COMPILE_FLAG([-fstack-protector-all],[HARDENED_CXXFLAGS="$HARDENED_CXXFLAGS -fstack-protector-all"])
