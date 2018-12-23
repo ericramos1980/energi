@@ -100,12 +100,11 @@ enum WalletFeature
 
 enum AvailableCoinsType
 {
-    ALL_COINS = 1,
-    ONLY_DENOMINATED = 2,
-    ONLY_NOTCOLLATERALIFMN = 3,
-    ONLY_NONDENOMINATED_NOTCOLLATERALIFMN = 4,
-    ONLY_MN_COLLATERAL= 5, // find masternode outputs including locked ones (use with caution)
-    ONLY_PRIVATESEND_COLLATERAL = 6
+    ALL_COINS,
+    ONLY_DENOMINATED,
+    ONLY_NONDENOMINATED,
+    ONLY_MN_COLLATERAL, // find masternode outputs including locked ones (use with caution)
+    ONLY_PRIVATESEND_COLLATERAL
 };
 
 struct CompactTallyItem

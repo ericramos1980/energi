@@ -119,7 +119,6 @@ UniValue masternode(const UniValue& params, bool fHelp)
                 "  debug        - Print masternode status\n"
                 "  genkey       - Generate new masternodeprivkey\n"
                 "  outputs      - Print masternode compatible outputs\n"
-                "  start        - Start local Hot masternode configured in energi.conf\n"
                 "  start-alias  - Start single remote masternode by assigned alias configured in masternode.conf\n"
                 "  start-<mode> - Start remote masternodes configured in masternode.conf (<mode>: 'all', 'missing', 'disabled')\n"
                 "  status       - Print masternode status information\n"
@@ -226,24 +225,6 @@ UniValue masternode(const UniValue& params, bool fHelp)
 
         if(!pwalletMain || !pwalletMain->GetMasternodeOutpointAndKeys(outpoint, pubkey, key))
             throw JSONRPCError(RPC_INVALID_PARAMETER, "Missing masternode input, please look at the documentation for instructions on masternode creation");
-
-        return activeMasternode.GetStatus();
-    }
-
-    if (strCommand == "start")
-    {
-        if(!fMasterNode)
-            throw JSONRPCError(RPC_INTERNAL_ERROR, "You must set masternode=1 in the configuration");
-
-        {
-            LOCK(pwalletMain->cs_wallet);
-            EnsureWalletIsUnlocked();
-        }
-
-        if(activeMasternode.nState != ACTIVE_MASTERNODE_STARTED){
-            activeMasternode.nState = ACTIVE_MASTERNODE_INITIAL; // TODO: consider better way
-            activeMasternode.ManageState(*g_connman);
-        }
 
         return activeMasternode.GetStatus();
     }

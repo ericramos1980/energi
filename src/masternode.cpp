@@ -123,16 +123,16 @@ CMasternode::CollateralStatus CMasternode::CheckCollateral(const COutPoint& outp
 {
     AssertLockHeld(cs_main);
 
-    CCoins coins;
-    if(!GetUTXOCoins(outpoint, coins)) {
+    Coin coin;
+    if(!GetUTXOCoin(outpoint, coin)) {
         return COLLATERAL_UTXO_NOT_FOUND;
     }
 
-    if(coins.vout[outpoint.n].nValue != MASTERNODE_COLLATERAL_AMOUNT) {
+    if(coin.out.nValue != MASTERNODE_COLLATERAL_AMOUNT) {
         return COLLATERAL_INVALID_AMOUNT;
     }
 
-    nHeightRet = coins.nHeight;
+    nHeightRet = coin.nHeight;
     return COLLATERAL_OK;
 }
 
