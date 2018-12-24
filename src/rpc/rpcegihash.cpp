@@ -2,21 +2,27 @@
 #include "dag_singleton.h"
 #include "validation.h"
 #include "crypto/egihash.h"
+#include "rpc/server.h"
+#include "utilstrencodings.h"
 
 using namespace egihash;
 
-UniValue getepoch(const UniValue& params, bool fHelp)
+UniValue getepoch(const JSONRPCRequest& request)
 {
-    if (fHelp || params.size() > 0) {
+    auto& params = request.params;
+
+    if (request.fHelp || params.size() > 0) {
         throw std::runtime_error("getepoch\n"
                                  "\nReturns current epoch number");
     }
     return static_cast<int>(chainActive.Height() / constants::EPOCH_LENGTH);
 }
 
-UniValue getseedhash(const UniValue& params, bool fHelp)
+UniValue getseedhash(const JSONRPCRequest& request)
 {
-    if (fHelp || params.size() > 1) {
+    auto& params = request.params;
+
+    if (request.fHelp || params.size() > 1) {
         throw std::runtime_error("getseedhash\n \"epoch\" "
                                  "\nReturns the hex encoded seedhash for specified epoch n or current epoch if n is not specified"
                                  "\nArguments"
@@ -35,9 +41,11 @@ UniValue getseedhash(const UniValue& params, bool fHelp)
     return cache_t::get_seedhash(epoch * constants::EPOCH_LENGTH).to_hex();
 }
 
-UniValue getdagsize(const UniValue& params, bool fHelp)
+UniValue getdagsize(const JSONRPCRequest& request)
 {
-    if (fHelp || params.size() > 1) {
+    auto& params = request.params;
+
+    if (request.fHelp || params.size() > 1) {
         throw std::runtime_error("getdagsize\n \"epoch\" "
                                  "\nReturns the size of the DAG in bytes for the specified epoch n or the current epoch if n is not specified"
                                  "\nArguments"
@@ -56,9 +64,11 @@ UniValue getdagsize(const UniValue& params, bool fHelp)
     return static_cast<uint64_t>(dag_t::get_full_size(epoch * constants::EPOCH_LENGTH));
 }
 
-UniValue getdagcachesize(const UniValue& params, bool fHelp)
+UniValue getdagcachesize(const JSONRPCRequest& request)
 {
-    if (fHelp || params.size() > 1) {
+    auto& params = request.params;
+
+    if (request.fHelp || params.size() > 1) {
         throw std::runtime_error("getdagcachesize\n \"epoch\" "
                                  "\nReturns the size of the DAG chache in bytes for the specified epoch n or the current epoch if n is not specified"
                                  "\nArguments"
@@ -77,9 +87,11 @@ UniValue getdagcachesize(const UniValue& params, bool fHelp)
     return cache_t::get_cache_size(epoch * constants::EPOCH_LENGTH);
 }
 
-UniValue getdag(const UniValue& params, bool fHelp)
+UniValue getdag(const JSONRPCRequest& request)
 {
-    if (fHelp || params.size() > 1) {
+    auto& params = request.params;
+
+    if (request.fHelp || params.size() > 1) {
         throw std::runtime_error("getdag\n \"epoch\" "
                                  "\nReturns a JSON object specifying DAG information for the specified epoch n or the current epoch if n is not specified"
                                  "\nArguments"
@@ -104,9 +116,11 @@ UniValue getdag(const UniValue& params, bool fHelp)
     return result;
 }
 
-UniValue getcache(const UniValue& params, bool fHelp)
+UniValue getcache(const JSONRPCRequest& request)
 {
-    if (fHelp || params.size() > 1) {
+    auto& params = request.params;
+
+    if (request.fHelp || params.size() > 1) {
         throw std::runtime_error("getcache\n \"epoch\" "
                                  "\nReturns a JSON object specifying DAG cache information for the specified epoch n or the current epoch if n is not specified"
                                  "\nArguments"
@@ -130,9 +144,9 @@ UniValue getcache(const UniValue& params, bool fHelp)
     return result;
 }
 
-UniValue getactivedag(const UniValue& params, bool fHelp)
+UniValue getactivedag(const JSONRPCRequest& request)
 {
-    if (fHelp || params.size() > 1) {
+    if (request.fHelp || request.params.size() > 1) {
         throw std::runtime_error("getactivedag\n"
                                  "\nReturns a JSON list specifying loaded DAG");
     }
@@ -147,3 +161,23 @@ UniValue getactivedag(const UniValue& params, bool fHelp)
     result.push_back(Pair("size", static_cast<uint64_t>(dag->size())));
     return result;
 }
+
+
+static const CRPCCommand commands[] =
+{ //  category              name                      actor (function)         okSafeMode
+  //  --------------------- ------------------------  -----------------------  ----------
+    { "egihash",            "getepoch",               &getepoch,               true  },
+    { "egihash",            "getseedhash",            &getseedhash,            true  },
+    { "egihash",            "getdagsize",             &getdagsize,             true  },
+    { "egihash",            "getdagcachesize",        &getdagcachesize,        true  },
+    { "egihash",            "getdag",                 &getdag,                 true  },
+    { "egihash",            "getcache",               &getcache,               true  },
+    { "egihash",            "getactivedag",           &getactivedag,           true  },
+};
+
+void RegisterEGIHashRPCCommands(CRPCTable &t)
+{
+    for (unsigned int vcidx = 0; vcidx < ARRAYLEN(commands); vcidx++)
+        t.appendCommand(commands[vcidx].name, &commands[vcidx]);
+}
+

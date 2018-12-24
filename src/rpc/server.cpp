@@ -274,14 +274,6 @@ static const CRPCCommand vRPCCommands[] =
     /* Overall control/query calls */
     { "control",            "help",                   &help,                   true  },
     { "control",            "stop",                   &stop,                   true  },
-
-    { "egihash",            "getepoch",               &getepoch,               true  },
-    { "egihash",            "getseedhash",            &getseedhash,            true  },
-    { "egihash",            "getdagsize",             &getdagsize,             true  },
-    { "egihash",            "getdagcachesize",        &getdagcachesize,        true  },
-    { "egihash",            "getdag",                 &getdag,                 true  },
-    { "egihash",            "getcache",               &getcache,               true  },
-    { "egihash",            "getactivedag",           &getactivedag,           true  },
 };
 
 CRPCTable::CRPCTable()
