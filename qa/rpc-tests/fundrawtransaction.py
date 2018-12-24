@@ -232,9 +232,9 @@ class RawTransactionsTest(BitcoinTestFramework):
 
         try:
             self.nodes[2].fundrawtransaction(rawtx, {'changeAddress': 'foobar'})
-            raise AssertionError("Accepted invalid bitcoin address")
+            raise AssertionError("Accepted invalid Energi address")
         except JSONRPCException,e:
-            assert("changeAddress must be a valid bitcoin address" in e.error['message'])
+            assert("changeAddress must be a valid Energi address" in e.error['message'])
 
 
 
