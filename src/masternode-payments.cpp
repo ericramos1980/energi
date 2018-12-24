@@ -46,7 +46,7 @@ bool IsBlockValueValid(const CBlock& block, int nBlockHeight, CAmount blockRewar
 
     // verify the Energi Backbone address payment
     bool isBackboneRewardValueMet = false;
-    for (auto const & i : block.vtx[0].vout)
+    for (auto const & i : block.vtx[0]->vout)
     {
         if ((i.scriptPubKey == consensusParams.energiBackboneScript) && (i.nValue >= consensusParams.nBlockSubsidyBackbone))
         {
