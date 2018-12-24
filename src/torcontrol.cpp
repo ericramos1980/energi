@@ -363,6 +363,7 @@ public:
     /** Reconnect, after getting disconnected */
     void Reconnect();
 private:
+    struct event_base* base;
     std::string target;
     TorControlConnection conn;
     std::string private_key;
