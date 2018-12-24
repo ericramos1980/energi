@@ -28,7 +28,7 @@
 #include "masternode-sync.h"
 #include "validationinterface.h"
 
-s#include "boost_workaround.hpp"
+#include "boost_workaround.hpp"
 #include <algorithm>
 #include <boost/thread.hpp>
 #include <boost/tuple/tuple.hpp>
@@ -149,7 +149,7 @@ std::unique_ptr<CBlockTemplate> BlockAssembler::CreateNewBlock(const CScript& sc
     coinbaseTx.vout[0].scriptPubKey = scriptPubKeyIn;
 
     // NOTE: unlike in bitcoin, we need to pass PREVIOUS block height here
-    CAmount blockReward = nFees + GetBlockSubsidy(pindexPrev->nBits, pindexPrev->nHeight, Params().GetConsensus());
+    CAmount blockReward = nFees + GetBlockSubsidy(pindexPrev->nHeight, Params().GetConsensus());
 
     // Compute regular coinbase transaction.
     coinbaseTx.vout[0].nValue = blockReward;
@@ -157,7 +157,7 @@ std::unique_ptr<CBlockTemplate> BlockAssembler::CreateNewBlock(const CScript& sc
 
     // Update coinbase transaction with additional info about masternode and governance payments,
     // get some info back to pass to getblocktemplate
-    FillBlockPayments(coinbaseTx, nHeight, blockReward, pblock->txoutMasternode, pblock->voutSuperblock);
+    FillBlockPayments(coinbaseTx, nHeight, blockReward, pblock->txoutBackbone, pblock->txoutMasternode, pblock->voutSuperblock);
     // LogPrintf("CreateNewBlock -- nBlockHeight %d blockReward %lld txoutMasternode %s coinbaseTx %s",
     //             nHeight, blockReward, pblock->txoutMasternode.ToString(), coinbaseTx.ToString());
 
@@ -500,7 +500,7 @@ void BlockAssembler::addPriorityTxs()
             continue;
         }
         
-        pblock->nHeight        = pindexPrev->nHeight + 1;
+        pblock->nHeight        = nHeight;
         pblock->hashMix        = uint256();
 
         // If tx is dependent on other mempool txs which haven't yet been included

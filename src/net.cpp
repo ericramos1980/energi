@@ -1918,7 +1918,7 @@ void CConnman::ThreadMnbRequestConnections()
 // Due to poor original design of Bitcoin network stack, we need
 // this thread-pool approach to minimize impact on fragile functionality.
 void CConnman::OpenNetworkConnectionAsync(
-    const CAddress& addrConnect, CSemaphoreGrant *grantOutbound,
+    const CAddress& addrConnect, bool fCountFailure, CSemaphoreGrant *grantOutbound,
     const char *strDest, bool fOneShot, bool fFeeler)
 {
     struct AsyncHelper {
@@ -1941,6 +1941,7 @@ void CConnman::OpenNetworkConnectionAsync(
 
             connman.OpenNetworkConnection(
                 addr,
+                conn_failure,
                 &grant,
                 have_dest ? dest.c_str() : nullptr, // see below
                 one_shot,
@@ -1950,6 +1951,7 @@ void CConnman::OpenNetworkConnectionAsync(
 
         CConnman &connman;
         CAddress addr;
+        bool conn_failure;
         CSemaphoreGrant grant;
         std::string dest;
         bool have_dest;
@@ -1963,6 +1965,7 @@ void CConnman::OpenNetworkConnectionAsync(
     };
     std::unique_ptr<AsyncHelper> ah(new AsyncHelper(*this));
 
+    ah->conn_failure = fCountFailure;
     ah->addr = addrConnect;
     ah->one_shot = fOneShot;
     ah->feeler = fFeeler;
