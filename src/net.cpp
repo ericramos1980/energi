@@ -1913,7 +1913,7 @@ void CConnman::ThreadMnbRequestConnections()
 // this thread-pool approach to minimize impact on fragile functionality.
 void CConnman::OpenNetworkConnectionAsync(
     const CAddress& addrConnect, bool fCountFailure, CSemaphoreGrant *grantOutbound,
-    const char *strDest, bool fOneShot, bool fFeeler)
+    const char *strDest, bool fOneShot, bool fFeeler, bool fAddnode)
 {
     struct AsyncHelper {
         AsyncHelper(CConnman& connman) :
@@ -1939,7 +1939,8 @@ void CConnman::OpenNetworkConnectionAsync(
                 &grant,
                 have_dest ? dest.c_str() : nullptr, // see below
                 one_shot,
-                feeler
+                feeler,
+                add_node
             );
         }
 
@@ -1951,6 +1952,7 @@ void CConnman::OpenNetworkConnectionAsync(
         bool have_dest;
         bool one_shot;
         bool feeler;
+        bool add_node;
 
         static void exec(AsyncHelper* ah) {
             std::unique_ptr<AsyncHelper> sah(ah); // not in formal arg due to std::thread details
@@ -1963,6 +1965,7 @@ void CConnman::OpenNetworkConnectionAsync(
     ah->addr = addrConnect;
     ah->one_shot = fOneShot;
     ah->feeler = fFeeler;
+    ah->add_node = fAddnode;
 
     if (grantOutbound != nullptr) {
         grantOutbound->MoveTo(ah->grant);

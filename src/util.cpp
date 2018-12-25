@@ -577,29 +577,13 @@ boost::filesystem::path GetDefaultDataDir()
 #endif
 }
 
-// these are construct on first use in order that GetDataDir() may be called from a static context safely
-namespace
-{
-    boost::filesystem::path & getPathCached()
-    {
-        static boost::filesystem::path pathCached;
-        return pathCached;
-    }
-
-    boost::filesystem::path & getPathCachedNetSpecific()
-    {
-        static boost::filesystem::path pathCachedNetSpecific;
-        return pathCachedNetSpecific;
-    }
-}
+static boost::filesystem::path pathCached;
+static boost::filesystem::path pathCachedNetSpecific;
+static CCriticalSection csPathCached;
 
 const boost::filesystem::path &GetDataDir(bool fNetSpecific)
 {
     namespace fs = boost::filesystem;
-
-    static boost::filesystem::path & pathCached = getPathCached();
-    static boost::filesystem::path & pathCachedNetSpecific = getPathCachedNetSpecific();
-    static CCriticalSection csPathCached;
 
     LOCK(csPathCached);
 

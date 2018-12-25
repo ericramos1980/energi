@@ -809,7 +809,7 @@ public:
 
         devnetGenesis = FindDevNetGenesisBlock(consensus, genesis, 50 * COIN);
 
-        consensus.BIP34Hash = devnetGenesis.GetHash();
+        //consensus.BIP34Hash = devnetGenesis.GetHash();
 
         vFixedSeeds.clear();
         vSeeds.clear();

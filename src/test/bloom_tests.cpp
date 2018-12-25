@@ -16,6 +16,7 @@
 #include "utilstrencodings.h"
 #include "test/test_energi.h"
 
+#include <string>
 #include <vector>
 
 #include <boost/test/unit_test.hpp>
@@ -85,7 +86,7 @@ BOOST_AUTO_TEST_CASE(bloom_create_insert_serialize_with_tweak)
 BOOST_AUTO_TEST_CASE(bloom_create_insert_key)
 {
 
-    std::string strSecret = string("Gh3RtaeBBCKAkBrE6apZy9mi7FgwfGba6V5cdk8dvegzfhe18Y4v");
+    std::string strSecret = "Gh3RtaeBBCKAkBrE6apZy9mi7FgwfGba6V5cdk8dvegzfhe18Y4v";
     CBitcoinSecret vchSecret;
     BOOST_CHECK(vchSecret.SetString(strSecret));
 

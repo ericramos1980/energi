@@ -16,8 +16,6 @@
 
 #include <boost/test/unit_test.hpp>
 
-static const std::string strSecret1     ("7qh6LYnLN2w2ntz2wwUhRUEgkQ2j8XB16FGw77ZRDZmC29bn7cD");
-static const std::string strSecret2     ("7rve4MxeWFQHGbSYH6J2yaaZd3MBUqoDEwN6ZAZ6ZHmhTT4r3hW");
 static const std::string strSecret1     ("4ZZcwP6utR94jqhqXNKeYX19VU5rokGJqNFhaScKNpTRCs5kF6L");
 static const std::string strSecret2     ("4ZXhhzWHZ4XyYFtbJr4SKVayaRv7994s9uQQ9YHQDGkL46UBYdy");
 static const std::string strSecret1C    ("Giiyd2Z6RwYbW5yFB37Ji7ReUeYSqKxZiUot6c2t7JTbq8Uo5GqR");

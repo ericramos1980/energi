@@ -80,16 +80,21 @@ bool AppInit(int argc, char* argv[])
 
     // Process help and version before taking care about datadir
     if (IsArgSet("-?") || IsArgSet("-h") ||  IsArgSet("-help") || IsArgSet("-version"))
+    {
         std::string strUsage = strprintf(_("%s Daemon"), _(PACKAGE_NAME)) + " " + _("version") + " " + FormatFullVersion() + "\n";
 
         if (IsArgSet("-version"))
+        {
             strUsage += FormatParagraph(LicenseInfo());
-        } else {
+        }
+        else
+        {
             strUsage += "\n" + _("Usage:") + "\n" +
                   "  energid [options]                     " + strprintf(_("Start %s Daemon"), _(PACKAGE_NAME)) + "\n";
 
             strUsage += "\n" + HelpMessage(HMM_BITCOIND);
         }
+
         fprintf(stdout, "%s", strUsage.c_str());
         return true;
     }
