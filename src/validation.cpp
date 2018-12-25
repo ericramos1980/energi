@@ -2546,6 +2546,7 @@ static int64_t nTimePostConnect = 0;
 
 void CreateDAG(int height, egihash::progress_callback_type callback)
 {
+    using namespace std;
     using namespace egihash;
 
     if (!GetBoolArg("-usedag", DEFAULT_USEDAG)) {
@@ -2604,7 +2605,7 @@ void InitDAG(egihash::progress_callback_type callback)
     auto const & dag = ActiveDAG();
     if (!dag)
     {
-        auto const height = (max)(GetHeight(), 0);
+        auto const height = std::max<int>(GetHeight(), 0);
         CreateDAG(height, callback);
         LogPrint("nrghash", "Loaded or created DAG for epoch %d\n", height / egihash::constants::EPOCH_LENGTH);
     }
@@ -3545,7 +3546,6 @@ static bool AcceptBlockHeader(const CBlockHeader& block, CValidationState& state
             return error("%s: Consensus::CheckBlockHeader: %s, %s", __func__, hash.ToString(), FormatStateMessage(state));
 
         if (!ContextualCheckBlockHeader(block, state, chainparams.GetConsensus(), pindexPrev, GetAdjustedTime()))
-
             return error("%s: Consensus::ContextualCheckBlockHeader: %s, %s", __func__, hash.ToString(), FormatStateMessage(state));
     }
     if (pindex == NULL)

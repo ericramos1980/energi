@@ -946,7 +946,7 @@ UniValue getgovernanceinfo(const JSONRPCRequest& request)
     }
 
     LOCK(cs_main);
-    int const nNextSuperblock = nLastSuperblock + nSuperblockCycle;
+
     int nLastSuperblock = 0, nNextSuperblock = 0;
     int nBlockHeight = chainActive.Height();
 

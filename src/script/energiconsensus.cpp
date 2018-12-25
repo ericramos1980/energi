@@ -73,7 +73,7 @@ ECCryptoClosure instance_of_eccryptoclosure;
 /** Check that all specified flags are part of the libconsensus interface. */
 static bool verify_flags(unsigned int flags)
 {
-    return (flags & ~(dnergiconsensus_SCRIPT_FLAGS_VERIFY_ALL)) == 0;
+    return (flags & ~(energiconsensus_SCRIPT_FLAGS_VERIFY_ALL)) == 0;
 }
 
 int energiconsensus_verify_script(const unsigned char *scriptPubKey, unsigned int scriptPubKeyLen,

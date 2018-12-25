@@ -523,7 +523,7 @@ bool CSuperblock::IsValidBlockHeight(int nBlockHeight)
 void CSuperblock::GetNearestSuperblocksHeights(int nBlockHeight, int& nLastSuperblockRet, int& nNextSuperblockRet)
 {
     const Consensus::Params& consensusParams = Params().GetConsensus();
-    int nSuperblockStartBlock = consensusParams.nSuperblockStartBlock;
+    int nSuperblockStartBlock = consensusParams.nSuperblockCycle;
     int nSuperblockCycle = consensusParams.nSuperblockCycle;
 
     // Get first superblock

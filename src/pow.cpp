@@ -13,7 +13,7 @@
 
 #include <math.h>
 
-unsigned int static DarkGravityWave(const CBlockIndex* pindexLast, const Consensus::Params& params) {
+unsigned int static DarkGravityWave(const CBlockIndex* pindexLast, const CBlockHeader *pblock, const Consensus::Params& params) {
     /* current difficulty formula, dash - DarkGravity v3, written by Evan Duffield - evan@dash.org */
     const arith_uint256 bnPowLimit = UintToArith256(params.powLimit);
     int64_t nPastBlocks = 24;
@@ -23,17 +23,21 @@ unsigned int static DarkGravityWave(const CBlockIndex* pindexLast, const Consens
         return bnPowLimit.GetCompact();
     }
 
-        // NOTE: 000000000000000000000000000000000000000000000000003e9ccfe0e03e01 is the work of the "wrong" chain,
-        // so this rule activates there immediately and new blocks with high diff from that chain are going
-        // to be rejected by updated nodes. Note, that old nodes are going to reject blocks from updated nodes
-        // after the "right" chain reaches this amount of work too. This is a temporary condition which should
-        // be removed when we decide to hard-fork testnet again.
-        // TODO: remove "testnet+work OR devnet" part on next testnet hard-fork
-            // recent block is more than 2 hours old
-            if (pblock->GetBlockTime() > pindexLast->GetBlockTime() + 2 * 60 * 60) {
-                return bnPowLimit.GetCompact();
+    if (params.fPowAllowMinDifficultyBlocks) {
+        // recent block is more than 2 hours old
+        if (pblock->GetBlockTime() > pindexLast->GetBlockTime() + 2 * 60 * 60) {
+            return bnPowLimit.GetCompact();
+        }
+        // recent block is more than 10 minutes old
+        if (pblock->GetBlockTime() > pindexLast->GetBlockTime() + params.nPowTargetSpacing * 4) {
+            arith_uint256 bnNew = arith_uint256().SetCompact(pindexLast->nBits) * 10;
+            if (bnNew > bnPowLimit) {
+                bnNew = bnPowLimit;
             }
-            // recent block is more than 10 minutes old
+            return bnNew.GetCompact();
+        }
+    }
+
     const CBlockIndex *pindex = pindexLast;
     arith_uint256 bnPastTargetAvg;
 
@@ -80,7 +84,7 @@ unsigned int GetNextWorkRequired(const CBlockIndex* pindexLast, const CBlockHead
     if (params.fPowNoRetargeting) {
         return pindexLast->nBits;
     }
-    return DarkGravityWave(pindexLast, params);
+    return DarkGravityWave(pindexLast, pblock, params);
 }
 
 bool CheckProofOfWork(uint256 hash, unsigned int nBits, const Consensus::Params& params)

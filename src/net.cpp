@@ -1480,7 +1480,7 @@ void ThreadMapPort()
             }
         }
 
-        string strDesc = "Energi Core " + FormatFullVersion();
+        std::string strDesc = "Energi Core " + FormatFullVersion();
 
         try {
             while (true) {
