@@ -374,6 +374,12 @@ bool CBlockTreeDB::LoadBlockIndexGuts(boost::function<CBlockIndex*(const uint256
                 pindexNew->nStatus        = diskindex.nStatus;
                 pindexNew->nTx            = diskindex.nTx;
 
+                // TODO: 1. check PoW only after the last checkpoint
+                // TODO: 2. validate checkpoints as we progress
+
+                if (!CheckProofOfWork(pindexNew->GetBlockHash(), pindexNew->nBits, Params().GetConsensus()))
+                    return error("%s: CheckProofOfWork failed: %s", __func__, pindexNew->ToString());
+
                 pcursor->Next();
             } else {
                 return error("%s: failed to read value", __func__);

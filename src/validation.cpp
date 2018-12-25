@@ -93,7 +93,6 @@ uint64_t nPruneTarget = 0;
 bool fAlerts = DEFAULT_ALERTS;
 int64_t nMaxTipAge = DEFAULT_MAX_TIP_AGE;
 bool fEnableReplacement = DEFAULT_ENABLE_REPLACEMENT;
-const int validationBlocksCount = 1000;
 
 std::atomic<bool> fDIP0001ActiveAtTip{false};
 
@@ -3315,6 +3314,8 @@ bool CheckBlockHeader(const CBlockHeader& block, CValidationState& state, const 
                          REJECT_INVALID, "devnet-genesis");
     }
 
+    // TODO: process checkpoints
+
     return true;
 }
 
@@ -3527,6 +3528,9 @@ static bool AcceptBlockHeader(const CBlockHeader& block, CValidationState& state
             return true;
         }
 
+        if (!CheckBlockHeader(block, state, chainparams.GetConsensus()))
+            return error("%s: Consensus::CheckBlockHeader: %s, %s", __func__, hash.ToString(), FormatStateMessage(state));
+
         // Get prev block index
         CBlockIndex* pindexPrev = NULL;
         BlockMap::iterator mi = mapBlockIndex.find(block.hashPrevBlock);
@@ -3535,15 +3539,10 @@ static bool AcceptBlockHeader(const CBlockHeader& block, CValidationState& state
         pindexPrev = (*mi).second;
         if (pindexPrev->nStatus & BLOCK_FAILED_MASK)
             return state.DoS(100, error("%s: prev block invalid", __func__), REJECT_INVALID, "bad-prevblk");
-        if (int(block.nHeight) != (pindexPrev->nHeight + 1))
-            return state.DoS(100, error("%s: invalid block height", __func__), REJECT_INVALID, "bad-blk-height");
 
         assert(pindexPrev);
         if (fCheckpointsEnabled && !CheckIndexAgainstCheckpoint(pindexPrev, state, chainparams, hash))
             return error("%s: CheckIndexAgainstCheckpoint(): %s", __func__, state.GetRejectReason().c_str());
-
-        if (!CheckBlockHeader(block, state, chainparams.GetConsensus(), GetAdjustedTime()))
-            return error("%s: Consensus::CheckBlockHeader: %s, %s", __func__, hash.ToString(), FormatStateMessage(state));
 
         if (!ContextualCheckBlockHeader(block, state, chainparams.GetConsensus(), pindexPrev, GetAdjustedTime()))
             return error("%s: Consensus::ContextualCheckBlockHeader: %s, %s", __func__, hash.ToString(), FormatStateMessage(state));
@@ -3921,33 +3920,11 @@ CBlockIndex * InsertBlockIndex(uint256 hash)
     return pindexNew;
 }
 
-bool static ValidateLoadedBlocks()
-{
-    // if we have dag in memory then validation is much faster, no need to skip any
-    // or if number of blocks is smaller than validation count then validate all blocks
-    bool validateAllBlocks = ActiveDAG() || mapBlockIndex.size() <= validationBlocksCount;
-
-    BOOST_FOREACH(const PAIRTYPE(uint256, CBlockIndex*)& item, mapBlockIndex)
-    {
-        CBlockIndex* pindex = item.second;
-        if (validateAllBlocks || (pindex->nHeight >= int(mapBlockIndex.size() - validationBlocksCount))) {
-            if(!CheckProofOfWork(pindex->GetBlockHeader().GetPOWHash(), pindex->nBits, Params().GetConsensus())) {
-                error("%s: CheckProofOfWork failed: %s", __func__, pindex->ToString());
-                return false;
-            }
-        }
-    }
-    return true;
-}
-
 bool static LoadBlockIndexDB(const CChainParams& chainparams)
 {
     if (!pblocktree->LoadBlockIndexGuts(InsertBlockIndex))
         return false;
 
-    if (!ValidateLoadedBlocks()) {
-        return false;
-    }
     boost::this_thread::interruption_point();
 
     // Calculate nChainWork
