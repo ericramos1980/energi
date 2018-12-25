@@ -1829,7 +1829,7 @@ void CConnman::ThreadOpenConnections()
                 continue;
 
             // only consider nodes missing relevant services after 40 failed attempts
-            if ((addr.nServices & nRelevantServices) != nRelevantServices && nTries < 40)
+            if ((addr.nServices & nRelevantServices) != nRelevantServices && nTries < ALLOW_NONRELEVANT_ATTEMPT)
                 continue;
 
             // do not allow non-default ports, unless after 50 invalid addresses selected already
