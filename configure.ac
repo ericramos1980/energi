@@ -214,19 +214,12 @@ AC_ARG_ENABLE([debug],
     [enable_debug=$enableval],
     [enable_debug=no])
 
-
-if test x$TARGET_OS != xdarwin; then
-  def_werror=yes
-else
-  def_werror=no
-fi
-
 # Turn warnings into errors
 AC_ARG_ENABLE([werror],
     [AS_HELP_STRING([--enable-werror],
                     [Treat certain compiler warnings as errors (default is no)])],
     [enable_werror=$enableval],
-    [enable_werror=$def_werror])
+    [enable_werror=no])
 
 AC_LANG_PUSH([C++])
 TMPFLAGS=$CXXFLAGS
