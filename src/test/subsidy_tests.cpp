@@ -13,11 +13,11 @@ BOOST_FIXTURE_TEST_SUITE(subsidy_tests, TestingSetup)
 
 BOOST_AUTO_TEST_CASE(block_subsidy_test)
 {
+#if 0
     const Consensus::Params& consensusParams = Params(CBaseChainParams::MAIN).GetConsensus();
 
     // TODO
 
-#if 0
     uint32_t nPrevBits;
     int32_t nPrevHeight;
     CAmount nSubsidy;

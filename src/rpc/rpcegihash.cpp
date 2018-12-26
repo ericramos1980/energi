@@ -166,13 +166,13 @@ UniValue getactivedag(const JSONRPCRequest& request)
 static const CRPCCommand commands[] =
 { //  category              name                      actor (function)         okSafeMode
   //  --------------------- ------------------------  -----------------------  ----------
-    { "egihash",            "getepoch",               &getepoch,               true  },
-    { "egihash",            "getseedhash",            &getseedhash,            true  },
-    { "egihash",            "getdagsize",             &getdagsize,             true  },
-    { "egihash",            "getdagcachesize",        &getdagcachesize,        true  },
-    { "egihash",            "getdag",                 &getdag,                 true  },
-    { "egihash",            "getcache",               &getcache,               true  },
-    { "egihash",            "getactivedag",           &getactivedag,           true  },
+    { "egihash",            "getepoch",               &getepoch,               true,  {}  },
+    { "egihash",            "getseedhash",            &getseedhash,            true,  {}  },
+    { "egihash",            "getdagsize",             &getdagsize,             true,  {}  },
+    { "egihash",            "getdagcachesize",        &getdagcachesize,        true,  {}  },
+    { "egihash",            "getdag",                 &getdag,                 true,  {}  },
+    { "egihash",            "getcache",               &getcache,               true,  {}  },
+    { "egihash",            "getactivedag",           &getactivedag,           true,  {}  },
 };
 
 void RegisterEGIHashRPCCommands(CRPCTable &t)

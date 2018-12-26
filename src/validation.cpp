@@ -3422,10 +3422,10 @@ static bool CheckIndexAgainstCheckpoint(const CBlockIndex* pindexPrev, CValidati
 
 bool ContextualCheckBlockHeader(const CBlockHeader& block, CValidationState& state, const Consensus::Params& consensusParams, const CBlockIndex* pindexPrev, int64_t nAdjustedTime)
 {
-    const uint32_t nHeight = pindexPrev == NULL ? 0 : pindexPrev->nHeight + 1;
+    const int nHeight = pindexPrev == NULL ? 0 : pindexPrev->nHeight + 1;
 
     // height check
-    if (block.nHeight != nHeight)
+    if (int(block.nHeight) != nHeight)
     {
         return state.DoS(100, error("%s: block height is invalid", __func__),
                             REJECT_INVALID, "bad-blk-height");

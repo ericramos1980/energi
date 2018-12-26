@@ -9,6 +9,8 @@
 #include <boost/lexical_cast.hpp>
 #include <string>
 
+#pragma GCC diagnostic warning "-Wunused-value"
+
 template <typename T>
 std::string NumberToString(T Number){
     std::ostringstream oss;

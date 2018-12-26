@@ -475,8 +475,8 @@ BOOST_FIXTURE_TEST_CASE(importwallet_rescan, TestChain100Setup)
         ::pwalletMain = &wallet;
         ::importwallet(request);
 
-        BOOST_CHECK_EQUAL(wallet.mapWallet.size(), 3);
-        BOOST_CHECK_EQUAL(coinbaseTxns.size(), 103);
+        BOOST_CHECK_EQUAL(wallet.mapWallet.size(), 3U);
+        BOOST_CHECK_EQUAL(coinbaseTxns.size(), 103U);
         for (size_t i = 0; i < coinbaseTxns.size(); ++i) {
             bool found = wallet.GetWalletTx(coinbaseTxns[i].GetHash());
             bool expected = i >= 100;
