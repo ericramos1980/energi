@@ -182,6 +182,8 @@ std::unique_ptr<CBlockTemplate> BlockAssembler::CreateNewBlock(const CScript& sc
     pblock->hashPrevBlock  = pindexPrev->GetBlockHash();
     UpdateTime(pblock, chainparams.GetConsensus(), pindexPrev);
     pblock->nBits          = GetNextWorkRequired(pindexPrev, pblock, chainparams.GetConsensus());
+    pblock->nHeight        = pindexPrev->nHeight + 1;
+    pblock->hashMix        = uint256();
     pblock->nNonce         = 0;
     pblocktemplate->vTxSigOps[0] = GetLegacySigOpCount(*pblock->vtx[0]);
 
@@ -538,9 +540,6 @@ void BlockAssembler::addPriorityTxs()
             assert(false); // shouldn't happen for priority txs
             continue;
         }
-        
-        pblock->nHeight        = nHeight;
-        pblock->hashMix        = uint256();
 
         // If tx is dependent on other mempool txs which haven't yet been included
         // then put it in the waitSet

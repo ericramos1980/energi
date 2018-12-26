@@ -18,6 +18,7 @@ QT_TS = \
   qt/locale/energi_ja.ts \
   qt/locale/energi_nl.ts \
   qt/locale/energi_pl.ts \
+  qt/locale/energi_pt_BR.ts \
   qt/locale/energi_pt.ts \
   qt/locale/energi_ru.ts \
   qt/locale/energi_sk.ts \

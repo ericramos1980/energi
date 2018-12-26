@@ -1,10 +1,10 @@
 <!--- Remove sections that do not apply -->
 
-This issue tracker is only for technical issues related to Dash Core.
+This issue tracker is only for technical issues related to Energi Core.
 
-General Dash questions and/or support requests and are best directed to the [Dashpay Reddit](https://www.reddit.com/r/dashpay/).
+General Energi questions and/or support requests and are best directed through one of the [Community channels](https://www.energi.world/).
 
-To report critical security issues, email infosec@dash.org instead of creating Github issues.
+To report critical security issues, email dev@energi.world instead of creating Github issues.
 
 ### Describe the issue
 

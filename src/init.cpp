@@ -614,8 +614,8 @@ std::string HelpMessage(HelpMessageMode mode)
 
 std::string LicenseInfo()
 {
-    const std::string URL_SOURCE_CODE = "<https://github.com/dashpay/dash>";
-    const std::string URL_WEBSITE = "<https://dash.org>";
+    const std::string URL_SOURCE_CODE = "<https://github.com/energicryptocurrency/energi";
+    const std::string URL_WEBSITE = "<https://www.energi.world>";
 
     return CopyrightHolders(_("Copyright (C)"), 2017, COPYRIGHT_YEAR) + "\n" +
            "\n" +
