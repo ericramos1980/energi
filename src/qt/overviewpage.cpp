@@ -123,6 +123,7 @@ public:
 
 OverviewPage::OverviewPage(const PlatformStyle *platformStyle, QWidget *parent) :
     QWidget(parent),
+    timer(nullptr),
     ui(new Ui::OverviewPage),
     clientModel(0),
     walletModel(0),
@@ -195,7 +196,7 @@ void OverviewPage::handleOutOfSyncWarningClicks()
 
 OverviewPage::~OverviewPage()
 {
-    if(!fLiteMode && !fMasterNode) disconnect(timer, SIGNAL(timeout()), this, SLOT(privateSendStatus()));
+    if(timer) disconnect(timer, SIGNAL(timeout()), this, SLOT(privateSendStatus()));
     delete ui;
 }
 
