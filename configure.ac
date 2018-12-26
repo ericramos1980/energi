@@ -231,7 +231,10 @@ AC_ARG_ENABLE([werror],
     [enable_werror=$def_werror])
 
 AC_LANG_PUSH([C++])
+TMPFLAGS=$CXXFLAGS
+CXXFLAGS=
 AX_CHECK_COMPILE_FLAG([-Werror],[CXXFLAG_WERROR="-Werror"],[CXXFLAG_WERROR=""])
+CXXFLAGS=$CXXFLAGS
 
 if test "x$enable_debug" = xyes; then
     CPPFLAGS="$CPPFLAGS -DDEBUG"
@@ -252,15 +255,13 @@ AC_ARG_ENABLE([pch],
 AM_CONDITIONAL([ENABLE_PCH],[test x$use_pch = xyes])
 
 
-ERROR_CXXFLAGS=
 if test "x$enable_werror" = "xyes"; then
   if test "x$CXXFLAG_WERROR" = "x"; then
     AC_MSG_ERROR("enable-werror set but -Werror is not usable")
   fi
-  AX_CHECK_COMPILE_FLAG([-Werror=vla],[ERROR_CXXFLAGS="$ERROR_CXXFLAGS -Werror=vla"],,[[$CXXFLAG_WERROR]])
 fi
 
-if test "x$CXXFLAGS_overridden" = "xno"; then
+#if test "x$CXXFLAGS_overridden" = "xno"; then
   WARN_CFLAGS=""
   WARN_CXXFLAGS=""
   AX_CHECK_COMPILE_FLAG([-Wall],[WARN_CFLAGS="$WARN_CFLAGS -Wall"],,[[$CXXFLAG_WERROR]])
@@ -280,9 +281,9 @@ if test "x$CXXFLAGS_overridden" = "xno"; then
   AX_CHECK_COMPILE_FLAG([-Wdeprecated-register],[WARN_CFLAGS="$WARN_CFLAGS -Wno-deprecated-register"],,[[$CXXFLAG_WERROR]])
   AX_CHECK_COMPILE_FLAG([-Wimplicit-fallthrough],[WARN_CFLAGS="$WARN_CFLAGS -Wno-implicit-fallthrough"],,[[$CXXFLAG_WERROR]])
 
-  WARN_CFLAGS="$WARN_CFLAGS $ERROR_CXXFLAGS"
-  WARN_CXXFLAGS="$WARN_CFLAGS $WARN_CXXFLAGS $ERROR_CXXFLAGS"
-fi
+  WARN_CFLAGS="$WARN_CFLAGS $CXXFLAG_WERROR"
+  WARN_CXXFLAGS="$WARN_CFLAGS $WARN_CXXFLAGS $CXXFLAG_WERROR"
+#fi
 CPPFLAGS="$CPPFLAGS -DHAVE_BUILD_INFO -D__STDC_FORMAT_MACROS"
 
 AC_ARG_WITH([utils],
@@ -1260,9 +1261,9 @@ echo "  target os     = $TARGET_OS"
 echo "  build os      = $BUILD_OS"
 echo
 echo "  CC            = $CC"
-echo "  CFLAGS        = $CFLAGS"
-echo "  CPPFLAGS      = $CPPFLAGS"
+echo "  CFLAGS        = $CFLAGS  $HARDENED_CXXFLAGS  $WARN_CFLAGS"
+echo "  CPPFLAGS      = $CPPFLAGS  $HARDENED_CPPFLAGS"
 echo "  CXX           = $CXX"
-echo "  CXXFLAGS      = $CXXFLAGS"
-echo "  LDFLAGS       = $LDFLAGS"
+echo "  CXXFLAGS      = $CXXFLAGS  $HARDENED_CXXFLAGS  $WARN_CXXFLAGS"
+echo "  LDFLAGS       = $LDFLAGS  $HARDENED_LDFLAGS"
 echo 
