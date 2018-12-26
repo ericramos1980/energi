@@ -236,6 +236,14 @@ if test "x$enable_debug" = xyes; then
     if test "x$GXX" = xyes; then
         CXXFLAGS="$CXXFLAGS -g3 -O0"
     fi
+else
+    # Enforce default optimization
+    OPT_FLAGS=
+    AX_CHECK_COMPILE_FLAG([-O2],[OPT_FLAGS="$OPT_FLAGS -O2"],,[[$CXXFLAG_WERROR]])
+    AX_CHECK_COMPILE_FLAG([-g],[OPT_FLAGS="$OPT_FLAGS -g"],,[[$CXXFLAG_WERROR]])
+
+    CFLAGS="$OPT_FLAGS $CFLAGS"
+    CXXFLAGS="$OPT_FLAGS $CXXFLAGS"
 fi
 
 AC_ARG_ENABLE([pch],
