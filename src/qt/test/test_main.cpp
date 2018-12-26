@@ -75,6 +75,7 @@ int main(int argc, char *argv[])
         fInvalid = true;
 #endif
     RPCNestedTests test3;
+    test3.setObjectName("RPCNestedTests");
     if (QTest::qExec(&test3) != 0)
         fInvalid = true;
 

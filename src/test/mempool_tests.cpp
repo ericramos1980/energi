@@ -88,6 +88,7 @@ BOOST_AUTO_TEST_CASE(MempoolRemoveTest)
     poolSize = testPool.size();
     testPool.removeRecursive(txParent);
     BOOST_CHECK_EQUAL(testPool.size(), poolSize - 5);
+    BOOST_CHECK_EQUAL(testPool.size(), 0);
 
     // Add children and grandchildren, but NOT the parent (simulate the parent being in a block)
     for (int i = 0; i < 3; i++)
@@ -100,6 +101,7 @@ BOOST_AUTO_TEST_CASE(MempoolRemoveTest)
     poolSize = testPool.size();
     testPool.removeRecursive(txParent);
     BOOST_CHECK_EQUAL(testPool.size(), poolSize - 6);
+    BOOST_CHECK_EQUAL(testPool.size(), 0);
 }
 
 template<typename name>

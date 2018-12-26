@@ -120,8 +120,7 @@ BOOST_AUTO_TEST_CASE(rpc_rawsign)
     r = CallRPC(std::string("signrawtransaction ")+notsigned+" "+prevout+" "+"[]");
     BOOST_CHECK(find_value(r.get_obj(), "complete").get_bool() == false);
     r = CallRPC(std::string("signrawtransaction ")+notsigned+" "+prevout+" "+"["+privkey1+","+privkey2+"]");
-    //TODO change testcase after runing mainnet
-    BOOST_CHECK(find_value(r.get_obj(), "complete").get_bool() == false);
+    BOOST_CHECK(find_value(r.get_obj(), "complete").get_bool() == true);
 }
 
 BOOST_AUTO_TEST_CASE(rpc_createraw_op_return)

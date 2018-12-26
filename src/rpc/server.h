@@ -199,14 +199,6 @@ extern std::string RPCGetAuthCodeHelp();
 
 extern void EnsureWalletIsUnlocked();
 
-
-extern UniValue getepoch(const UniValue& params, bool fHelp);
-extern UniValue getseedhash(const UniValue& params, bool fHelp);
-extern UniValue getdagsize(const UniValue& params, bool fHelp);
-extern UniValue getdagcachesize(const UniValue& params, bool fHelp);
-extern UniValue getdag(const UniValue& params, bool fHelp);
-extern UniValue getcache(const UniValue& params, bool fHelp);
-extern UniValue getactivedag(const UniValue& params, bool fHelp);
 bool StartRPC();
 void InterruptRPC();
 void StopRPC();

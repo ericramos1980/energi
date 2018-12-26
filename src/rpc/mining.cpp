@@ -483,30 +483,29 @@ UniValue getblocktemplate(const JSONRPCRequest& request)
     if (strMode != "template")
         throw JSONRPCError(RPC_INVALID_PARAMETER, "Invalid mode");
 
-    if (Params().NetworkIDString() != CBaseChainParams::REGTEST)
-    {
-        if(!g_connman)
-            throw JSONRPCError(RPC_CLIENT_P2P_DISABLED, "Error: Peer-to-peer functionality missing or disabled");
+    if(!g_connman)
+        throw JSONRPCError(RPC_CLIENT_P2P_DISABLED, "Error: Peer-to-peer functionality missing or disabled");
 
+    if (Params().MiningRequiresPeers()) {
         if (g_connman->GetNodeCount(CConnman::CONNECTIONS_ALL) == 0)
             throw JSONRPCError(RPC_CLIENT_NOT_CONNECTED, "Energi Core is not connected!");
 
         if (IsInitialBlockDownload())
             throw JSONRPCError(RPC_CLIENT_IN_INITIAL_DOWNLOAD, "Energi Core is downloading blocks...");
-
-        // when enforcement is on we need information about a masternode payee or otherwise our block is going to be orphaned by the network
-        CScript payee;
-        if (sporkManager.IsSporkActive(SPORK_8_MASTERNODE_PAYMENT_ENFORCEMENT)
-            && !masternodeSync.IsWinnersListSynced()
-            && !mnpayments.GetBlockPayee(chainActive.Height() + 1, payee))
-                throw JSONRPCError(RPC_CLIENT_IN_INITIAL_DOWNLOAD, "Dash Core is downloading masternode winners...");
-
-        // next bock is a superblock and we need governance info to correctly construct it
-        if (sporkManager.IsSporkActive(SPORK_9_SUPERBLOCKS_ENABLED)
-            && !masternodeSync.IsSynced()
-            && CSuperblock::IsValidBlockHeight(chainActive.Height() + 1))
-                throw JSONRPCError(RPC_CLIENT_IN_INITIAL_DOWNLOAD, "Dash Core is syncing with network...");
     }
+
+    // when enforcement is on we need information about a masternode payee or otherwise our block is going to be orphaned by the network
+    CScript payee;
+    if (sporkManager.IsSporkActive(SPORK_8_MASTERNODE_PAYMENT_ENFORCEMENT)
+        && !masternodeSync.IsWinnersListSynced()
+        && !mnpayments.GetBlockPayee(chainActive.Height() + 1, payee))
+            throw JSONRPCError(RPC_CLIENT_IN_INITIAL_DOWNLOAD, "Energi Core is downloading masternode winners...");
+
+    // next bock is a superblock and we need governance info to correctly construct it
+    if (sporkManager.IsSporkActive(SPORK_9_SUPERBLOCKS_ENABLED)
+        && !masternodeSync.IsSynced()
+        && CSuperblock::IsValidBlockHeight(chainActive.Height() + 1))
+            throw JSONRPCError(RPC_CLIENT_IN_INITIAL_DOWNLOAD, "Energi Core is syncing with network...");
 
     static unsigned int nTransactionsUpdatedLast;
 

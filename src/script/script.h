@@ -422,7 +422,7 @@ public:
 
     CScript& operator<<(opcodetype opcode)
     {
-        if (opcode > OP_INVALIDOPCODE)
+        if (opcode < 0 || opcode > 0xff)
             throw std::runtime_error("CScript::operator<<(): invalid opcode");
         insert(end(), (unsigned char)opcode);
         return *this;

@@ -161,6 +161,7 @@ bool Solver(const CScript& scriptPubKey, txnouttype& typeRet, std::vector<std::v
 
 bool ExtractDestination(const CScript& scriptPubKey, CTxDestination& addressRet)
 {
+    // issue #268 - `getblocktemplate` returns bad data for the backbone on a superblock
     if (scriptPubKey.empty()) {
         return false;
     }
