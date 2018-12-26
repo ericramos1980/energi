@@ -327,6 +327,15 @@ case $host in
      # In libtool-speak, it's -all-static.
      AX_CHECK_LINK_FLAG([[-static]],[LIBTOOL_APP_LDFLAGS="$LIBTOOL_APP_LDFLAGS -all-static"])
 
+     CFLAGS_bigobj=-Wa,-mbig-obj
+     AX_CHECK_COMPILE_FLAG([$CFLAGS_bigobj],,[CFLAGS_bigobj=],[[$CXXFLAG_WERROR]])
+     CFLAGS="$CFLAGS $CFLAGS_bigobj"
+     CXXFLAGS="$CXXFLAGS $CFLAGS_bigobj"
+
+     if test x$CFLAGS_bigobj = x; then
+       AC_MSG_WARN("MinGW does not support big objects")
+     fi
+
      AC_PATH_PROG([MAKENSIS], [makensis], none)
      if test x$MAKENSIS = xnone; then
        AC_MSG_WARN("makensis not found. Cannot create installer.")
