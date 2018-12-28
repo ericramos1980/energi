@@ -1125,10 +1125,31 @@ UniValue echo(const JSONRPCRequest& request)
             "echo|echojson \"message\" ...\n"
             "\nSimply echo back the input arguments. This command is for testing.\n"
             "\nThe difference between echo and echojson is that echojson has argument conversion enabled in the client-side table in"
-            "bitcoin-cli and the GUI. There is no server-side difference."
+            "energi-cli and the GUI. There is no server-side difference."
         );
 
     return request.params;
+}
+
+UniValue genauthcode(const JSONRPCRequest& request)
+{
+    if (request.fHelp) {
+        throw std::runtime_error(
+            "genauthcode\n"
+            "\nGenerate a new RPC authentication code for tests.\n"
+        );
+    }
+
+    if(Params().NetworkIDString() == CBaseChainParams::MAIN) {
+        throw std::runtime_error(
+            "This is test API which is not available for production use!"
+        );
+    }
+
+    UniValue obj(UniValue::VOBJ);
+    obj.push_back(Pair("auth_code", RPCGenAuthCode()));
+
+    return obj;
 }
 
 static const CRPCCommand commands[] =
@@ -1158,6 +1179,7 @@ static const CRPCCommand commands[] =
     { "hidden",             "setmocktime",            &setmocktime,            true,  {"timestamp"}},
     { "hidden",             "echo",                   &echo,                   true,  {"arg0","arg1","arg2","arg3","arg4","arg5","arg6","arg7","arg8","arg9"}},
     { "hidden",             "echojson",               &echo,                  true,  {"arg0","arg1","arg2","arg3","arg4","arg5","arg6","arg7","arg8","arg9"}},
+    { "hidden",             "genauthcode",            &genauthcode,            true,  {}},
 };
 
 void RegisterMiscRPCCommands(CRPCTable &t)

@@ -195,6 +195,7 @@ extern std::string HelpRequiringPassphrase();
 extern std::string HelpExampleCli(const std::string& methodname, const std::string& args);
 extern std::string HelpExampleRpc(const std::string& methodname, const std::string& args);
 extern bool RPCCheckAuthCode(const UniValue& value);
+extern std::string RPCGenAuthCode();
 extern std::string RPCGetAuthCodeHelp();
 
 extern void EnsureWalletIsUnlocked();

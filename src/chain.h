@@ -284,6 +284,11 @@ public:
         return *phashBlock;
     }
 
+    uint256 GetPOWHash() const
+    {
+        return hashMix;
+    }
+
     int64_t GetBlockTime() const
     {
         return (int64_t)nTime;

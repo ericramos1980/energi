@@ -571,12 +571,19 @@ bool RPCCheckAuthCode(const UniValue& value)
     return (arg == req);
 }
 
+std::string RPCGenAuthCode()
+{
+    g_RPCAuthCode = GetRandHash().GetHex();
+    g_RPCAuthCode.resize(RPC_AUTH_CODE_LEN);
+
+    return g_RPCAuthCode;
+}
+
 std::string RPCGetAuthCodeHelp()
 {
     LOCK(cs_rpcWarmup);
 
-    g_RPCAuthCode = GetRandHash().GetHex();
-    g_RPCAuthCode.resize(RPC_AUTH_CODE_LEN);
+    RPCGenAuthCode();
 
     return
         "\n"
