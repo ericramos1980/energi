@@ -67,23 +67,23 @@ BITCOIN_INCLUDES=-I$(builddir) -I$(builddir)/obj $(BDB_CPPFLAGS) $(BOOST_CPPFLAG
 BITCOIN_INCLUDES += -I$(srcdir)/secp256k1/include
 BITCOIN_INCLUDES += $(UNIVALUE_CFLAGS)
 
-LIBBITCOIN_SERVER=libbitcoin_server.a
-LIBBITCOIN_COMMON=libbitcoin_common.a
-LIBBITCOIN_CONSENSUS=libbitcoin_consensus.a
-LIBBITCOIN_CLI=libbitcoin_cli.a
-LIBBITCOIN_UTIL=libbitcoin_util.a
-LIBBITCOIN_CRYPTO=crypto/libbitcoin_crypto.a
-LIBBITCOINQT=qt/libbitcoinqt.a
+LIBBITCOIN_SERVER=libenergi_server.a
+LIBBITCOIN_COMMON=libenergi_common.a
+LIBBITCOIN_CONSENSUS=libenergi_consensus.a
+LIBBITCOIN_CLI=libenergi_cli.a
+LIBBITCOIN_UTIL=libenergi_util.a
+LIBBITCOIN_CRYPTO=crypto/libenergi_crypto.a
+LIBBITCOINQT=qt/libenergiqt.a
 LIBSECP256K1=secp256k1/libsecp256k1.la
 
 if ENABLE_ZMQ
-LIBBITCOIN_ZMQ=libbitcoin_zmq.a
+LIBBITCOIN_ZMQ=libenergi_zmq.a
 endif
 if BUILD_BITCOIN_LIBS
 LIBBITCOINCONSENSUS=libenergiconsensus.la
 endif
 if ENABLE_WALLET
-LIBBITCOIN_WALLET=libbitcoin_wallet.a
+LIBBITCOIN_WALLET=libenergi_wallet.a
 endif
 
 $(LIBSECP256K1): $(wildcard secp256k1/src/*) $(wildcard secp256k1/include/*)
@@ -245,13 +245,13 @@ obj/build.h: FORCE
 	@$(MKDIR_P) $(builddir)/obj
 	@$(top_srcdir)/share/genbuild.sh $(abs_top_builddir)/src/obj/build.h \
 	  $(abs_top_srcdir)
-libbitcoin_util_a-clientversion.$(OBJEXT): obj/build.h
+libenergi_util_a-clientversion.$(OBJEXT): obj/build.h
 
 # server: shared between energid and energi-qt
-libbitcoin_server_a_CPPFLAGS = $(AM_CPPFLAGS) $(BITCOIN_INCLUDES) $(PIC_FLAGS) \
+libenergi_server_a_CPPFLAGS = $(AM_CPPFLAGS) $(BITCOIN_INCLUDES) $(PIC_FLAGS) \
   $(MINIUPNPC_CPPFLAGS) $(EVENT_CFLAGS) $(EVENT_PTHREADS_CFLAGS) $(ENERGI_PCH_CPPFLAGS)
-libbitcoin_server_a_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
-libbitcoin_server_a_SOURCES = \
+libenergi_server_a_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
+libenergi_server_a_SOURCES = \
   activemasternode.cpp \
   addrman.cpp \
   addrdb.cpp \
@@ -313,25 +313,25 @@ libbitcoin_server_a_SOURCES = \
   versionbits.cpp \
   $(BITCOIN_CORE_H)
   
-$(libbitcoin_server_a_SOURCES): $(ENERGI_PCH)
+$(libenergi_server_a_SOURCES): $(ENERGI_PCH)
 
 if ENABLE_ZMQ
-libbitcoin_zmq_a_CPPFLAGS = $(BITCOIN_INCLUDES) $(ZMQ_CFLAGS) $(PIC_FLAGS) $(ENERGI_PCH_CPPFLAGS)
-libbitcoin_zmq_a_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
-libbitcoin_zmq_a_SOURCES = \
+libenergi_zmq_a_CPPFLAGS = $(BITCOIN_INCLUDES) $(ZMQ_CFLAGS) $(PIC_FLAGS) $(ENERGI_PCH_CPPFLAGS)
+libenergi_zmq_a_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
+libenergi_zmq_a_SOURCES = \
   zmq/zmqabstractnotifier.cpp \
   zmq/zmqnotificationinterface.cpp \
   zmq/zmqpublishnotifier.cpp
 endif
 
-$(libbitcoin_zmq_a_SOURCES): $(ENERGI_PCH)
+$(libenergi_zmq_a_SOURCES): $(ENERGI_PCH)
 
 
 # wallet: shared between energid and energi-qt, but only linked
 # when wallet enabled
-libbitcoin_wallet_a_CPPFLAGS = $(AM_CPPFLAGS) $(BITCOIN_INCLUDES) $(PIC_FLAGS) $(ENERGI_PCH_CPPFLAGS)
-libbitcoin_wallet_a_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
-libbitcoin_wallet_a_SOURCES = \
+libenergi_wallet_a_CPPFLAGS = $(AM_CPPFLAGS) $(BITCOIN_INCLUDES) $(PIC_FLAGS) $(ENERGI_PCH_CPPFLAGS)
+libenergi_wallet_a_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
+libenergi_wallet_a_SOURCES = \
   keepass.cpp \
   privatesend-client.cpp \
   privatesend-util.cpp \
@@ -344,15 +344,15 @@ libbitcoin_wallet_a_SOURCES = \
   policy/rbf.cpp \
   $(BITCOIN_CORE_H)
   
-$(libbitcoin_wallet_a_SOURCES): $(ENERGI_PCH)
+$(libenergi_wallet_a_SOURCES): $(ENERGI_PCH)
 
 # crypto primitives library
-crypto_libbitcoin_crypto_a_CPPFLAGS = $(AM_CPPFLAGS) $(BITCOIN_CONFIG_INCLUDES) $(PIC_FLAGS) -D__STDC_WANT_LIB_EXT1__=1 -DUSE_SECURE_MEMZERO
-crypto_libbitcoin_crypto_a_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS) $(PIC_FLAGS)
+crypto_libenergi_crypto_a_CPPFLAGS = $(AM_CPPFLAGS) $(BITCOIN_CONFIG_INCLUDES) $(PIC_FLAGS) -D__STDC_WANT_LIB_EXT1__=1 -DUSE_SECURE_MEMZERO
+crypto_libenergi_crypto_a_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS) $(PIC_FLAGS)
 if IS_GCC
-   crypto_libbitcoin_crypto_a_CFLAGS = -std=c99
+   crypto_libenergi_crypto_a_CFLAGS = -std=c99
 endif
-crypto_libbitcoin_crypto_a_SOURCES = \
+crypto_libenergi_crypto_a_SOURCES = \
   crypto/aes.cpp \
   crypto/aes.h \
   crypto/common.h \
@@ -370,7 +370,7 @@ crypto_libbitcoin_crypto_a_SOURCES = \
   crypto/sha512.h
 
 # x11
-crypto_libbitcoin_crypto_a_SOURCES += \
+crypto_libenergi_crypto_a_SOURCES += \
   crypto/blake.c \
   crypto/bmw.c \
   crypto/cubehash.c \
@@ -400,12 +400,12 @@ crypto_libbitcoin_crypto_a_SOURCES += \
   crypto/keccak-tiny.c \
   crypto/secure_memzero.h
 
-$(crypto_libbitcoin_crypto_a_SOURCES): $(ENERGI_PCH)
+$(crypto_libenergi_crypto_a_SOURCES): $(ENERGI_PCH)
 
 # consensus: shared between all executables that validate any consensus rules.
-libbitcoin_consensus_a_CPPFLAGS = $(AM_CPPFLAGS) $(BITCOIN_INCLUDES)
-libbitcoin_consensus_a_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
-libbitcoin_consensus_a_SOURCES = \
+libenergi_consensus_a_CPPFLAGS = $(AM_CPPFLAGS) $(BITCOIN_INCLUDES)
+libenergi_consensus_a_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
+libenergi_consensus_a_SOURCES = \
   amount.h \
   arith_uint256.cpp \
   arith_uint256.h \
@@ -440,9 +440,9 @@ libbitcoin_consensus_a_SOURCES = \
   version.h
 
 # common: shared between energid, and energi-qt and non-server tools
-libbitcoin_common_a_CPPFLAGS = $(AM_CPPFLAGS) $(BITCOIN_INCLUDES) $(PIC_FLAGS) $(ENERGI_PCH_CPPFLAGS)
-libbitcoin_common_a_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
-libbitcoin_common_a_SOURCES = \
+libenergi_common_a_CPPFLAGS = $(AM_CPPFLAGS) $(BITCOIN_INCLUDES) $(PIC_FLAGS) $(ENERGI_PCH_CPPFLAGS)
+libenergi_common_a_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
+libenergi_common_a_SOURCES = \
   amount.cpp \
   base58.cpp \
   bip39.cpp \
@@ -463,14 +463,14 @@ libbitcoin_common_a_SOURCES = \
   warnings.cpp \
   $(BITCOIN_CORE_H)
   
-$(libbitcoin_common_a_SOURCES): $(ENERGI_PCH)
+$(libenergi_common_a_SOURCES): $(ENERGI_PCH)
 
 # util: shared between all executables.
 # This library *must* be included to make sure that the glibc
 # backward-compatibility objects and their sanity checks are linked.
-libbitcoin_util_a_CPPFLAGS = $(AM_CPPFLAGS) $(BITCOIN_INCLUDES) $(PIC_FLAGS) $(ENERGI_PCH_CPPFLAGS)
-libbitcoin_util_a_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
-libbitcoin_util_a_SOURCES = \
+libenergi_util_a_CPPFLAGS = $(AM_CPPFLAGS) $(BITCOIN_INCLUDES) $(PIC_FLAGS) $(ENERGI_PCH_CPPFLAGS)
+libenergi_util_a_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
+libenergi_util_a_SOURCES = \
   support/lockedpool.cpp \
   chainparamsbase.cpp \
   clientversion.cpp \
@@ -489,21 +489,21 @@ libbitcoin_util_a_SOURCES = \
   $(BITCOIN_CORE_H)
 
 if GLIBC_BACK_COMPAT
-libbitcoin_util_a_SOURCES += compat/glibc_compat.cpp
+libenergi_util_a_SOURCES += compat/glibc_compat.cpp
 endif
 
-$(libbitcoin_util_a_SOURCES): $(ENERGI_PCH)
+$(libenergi_util_a_SOURCES): $(ENERGI_PCH)
 
 # cli: shared between energi-cli and energi-qt
-libbitcoin_cli_a_CPPFLAGS = $(AM_CPPFLAGS) $(BITCOIN_INCLUDES) $(PIC_FLAGS) $(ENERGI_PCH_CPPFLAGS)
-libbitcoin_cli_a_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
-libbitcoin_cli_a_SOURCES = \
+libenergi_cli_a_CPPFLAGS = $(AM_CPPFLAGS) $(BITCOIN_INCLUDES) $(PIC_FLAGS) $(ENERGI_PCH_CPPFLAGS)
+libenergi_cli_a_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
+libenergi_cli_a_SOURCES = \
   rpc/client.cpp \
   $(BITCOIN_CORE_H)
   
-$(libbitcoin_cli_a_SOURCES): $(ENERGI_PCH)
+$(libenergi_cli_a_SOURCES): $(ENERGI_PCH)
 
-nodist_libbitcoin_util_a_SOURCES = $(srcdir)/obj/build.h
+nodist_libenergi_util_a_SOURCES = $(srcdir)/obj/build.h
 #
 
 # bitcoind binary #
@@ -579,7 +579,7 @@ energi_tx_LDADD += $(BOOST_LIBS) $(CRYPTO_LIBS)
 # energiconsensus library #
 if BUILD_BITCOIN_LIBS
 include_HEADERS = script/energiconsensus.h
-libenergiconsensus_la_SOURCES = $(crypto_libbitcoin_crypto_a_SOURCES) $(libbitcoin_consensus_a_SOURCES)
+libenergiconsensus_la_SOURCES = $(crypto_libenergi_crypto_a_SOURCES) $(libenergi_consensus_a_SOURCES)
 
 if GLIBC_BACK_COMPAT
   libenergiconsensus_la_SOURCES += compat/glibc_compat.cpp
