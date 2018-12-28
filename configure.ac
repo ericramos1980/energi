@@ -2,9 +2,9 @@ dnl require autoconf 2.60 (AS_ECHO/AS_ECHO_N)
 AC_PREREQ([2.60])
 define(_CLIENT_VERSION_MAJOR, 1)
 define(_CLIENT_VERSION_MINOR, 3)
-define(_CLIENT_VERSION_REVISION, 0)
+define(_CLIENT_VERSION_REVISION, 2)
 define(_CLIENT_VERSION_BUILD, 0)
-define(_CLIENT_VERSION_IS_RELEASE, false)
+define(_CLIENT_VERSION_IS_RELEASE, true)
 define(_COPYRIGHT_YEAR, 2018)
 define(_COPYRIGHT_HOLDERS,[The %s developers])
 define(_COPYRIGHT_HOLDERS_SUBSTITUTION,[[Energi Core]])
@@ -216,19 +216,12 @@ AC_ARG_ENABLE([debug],
     [enable_debug=$enableval],
     [enable_debug=no])
 
-
-if test x$TARGET_OS != xdarwin; then
-  def_werror=yes
-else
-  def_werror=no
-fi
-
 # Turn warnings into errors
 AC_ARG_ENABLE([werror],
     [AS_HELP_STRING([--enable-werror],
                     [Treat certain compiler warnings as errors (default is no)])],
     [enable_werror=$enableval],
-    [enable_werror=$def_werror])
+    [enable_werror=no])
 
 AC_LANG_PUSH([C++])
 TMPFLAGS=$CXXFLAGS
@@ -245,6 +238,14 @@ if test "x$enable_debug" = xyes; then
     if test "x$GXX" = xyes; then
         CXXFLAGS="$CXXFLAGS -g3 -O0"
     fi
+else
+    # Enforce default optimization
+    OPT_FLAGS=
+    AX_CHECK_COMPILE_FLAG([-O2],[OPT_FLAGS="$OPT_FLAGS -O2"],,[[$CXXFLAG_WERROR]])
+    AX_CHECK_COMPILE_FLAG([-g],[OPT_FLAGS="$OPT_FLAGS -g"],,[[$CXXFLAG_WERROR]])
+
+    CFLAGS="$OPT_FLAGS $CFLAGS"
+    CXXFLAGS="$OPT_FLAGS $CXXFLAGS"
 fi
 
 AC_ARG_ENABLE([pch],
@@ -281,8 +282,12 @@ fi
   AX_CHECK_COMPILE_FLAG([-Wdeprecated-register],[WARN_CFLAGS="$WARN_CFLAGS -Wno-deprecated-register"],,[[$CXXFLAG_WERROR]])
   AX_CHECK_COMPILE_FLAG([-Wimplicit-fallthrough],[WARN_CFLAGS="$WARN_CFLAGS -Wno-implicit-fallthrough"],,[[$CXXFLAG_WERROR]])
 
-  WARN_CFLAGS="$WARN_CFLAGS $CXXFLAG_WERROR"
-  WARN_CXXFLAGS="$WARN_CFLAGS $WARN_CXXFLAGS $CXXFLAG_WERROR"
+  WARN_CXXFLAGS="$WARN_CFLAGS $WARN_CXXFLAGS"
+
+  if test "x$enable_werror" = "xyes"; then
+    WARN_CFLAGS="$WARN_CFLAGS $CXXFLAG_WERROR"
+    WARN_CXXFLAGS="$WARN_CXXFLAGS $CXXFLAG_WERROR"
+  fi
 #fi
 CPPFLAGS="$CPPFLAGS -DHAVE_BUILD_INFO -D__STDC_FORMAT_MACROS"
 
@@ -335,6 +340,15 @@ case $host in
      # -static is interpreted by libtool, where it has a different meaning.
      # In libtool-speak, it's -all-static.
      AX_CHECK_LINK_FLAG([[-static]],[LIBTOOL_APP_LDFLAGS="$LIBTOOL_APP_LDFLAGS -all-static"])
+
+     CFLAGS_bigobj=-Wa,-mbig-obj
+     AX_CHECK_COMPILE_FLAG([$CFLAGS_bigobj],,[CFLAGS_bigobj=],[[$CXXFLAG_WERROR]])
+     CFLAGS="$CFLAGS $CFLAGS_bigobj"
+     CXXFLAGS="$CXXFLAGS $CFLAGS_bigobj"
+
+     if test x$CFLAGS_bigobj = x; then
+       AC_MSG_WARN("MinGW does not support big objects")
+     fi
 
      AC_PATH_PROG([MAKENSIS], [makensis], none)
      if test x$MAKENSIS = xnone; then

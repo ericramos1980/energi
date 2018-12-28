@@ -1,9 +1,5 @@
 #!/bin/sh
-# Copyright (c) 2013-2016 The Bitcoin Core developers
-# Distributed under the MIT software license, see the accompanying
-# file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-set -e
 srcdir="$(dirname $0)"
 
 if [ -z ${LIBTOOLIZE} ] && GLIBTOOLIZE="`which glibtoolize 2>/dev/null`"; then
@@ -15,10 +11,13 @@ if [ "${SKIP_AUTO_DEPS}" = "true" ]; then
     :
 elif which apt-get >/dev/null 2>&1; then
     deb_list=""
-    deb_list="${deb_list} python-pip python-setuptools python-dev"
-    deb_list="${deb_list} python3-pip python3-setuptools python3-dev"
+    deb_list="${deb_list} python3-setuptools python3-dev"
     deb_list="${deb_list} build-essential g++ libtool autotools-dev automake bsdmainutils pkg-config"
     deb_list="${deb_list} autoconf autoconf2.13 autoconf2.64"
+
+    if ! which pip >/dev/null; then
+        rpm_list="${rpm_list} python3-pip"
+    fi
 
     if [ "$HOST" = "x86_64-linux-musl" ]; then
         deb_list="${deb_list} musl-dev musl-tools"
@@ -79,7 +78,7 @@ elif which apt-get >/dev/null 2>&1; then
     }
 elif which yum >/dev/null 2>&1; then
     rpm_list=""
-    rpm_list="${rpm_list} python-setuptools python2-pip python-devel"
+    rpm_list="${rpm_list} python-setuptools python-devel"
     rpm_list="${rpm_list} boost-devel ccache"
     rpm_list="${rpm_list} automake autoconf autoconf213 autoconf-archive"
     rpm_list="${rpm_list} qt5-qtbase-devel qt5-qtbase-gui qt5-qttools-devel"
@@ -89,6 +88,10 @@ elif which yum >/dev/null 2>&1; then
     rpm_list="${rpm_list} miniupnpc-devel czmq-devel"
     rpm_list="${rpm_list} libdb4-devel libdb4-cxx-devel"
     rpm_list="${rpm_list} openssl-devel"
+
+    if ! which pip >/dev/null; then
+        rpm_list="${rpm_list} python2-pip"
+    fi
 
     rpm_to_install=""
     for d in $rpm_list; do

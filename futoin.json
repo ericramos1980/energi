@@ -1,6 +1,6 @@
 {
   "name": "energi",
-  "version": "1.3.0",
+  "version": "1.3.2",
   "vcs": "git",
   "tools": {
     "make": "*",
@@ -14,7 +14,7 @@
       "require-host-env",
       "cte cmake -E make_directory ${ENERGI_BUILD_DIR:-build/$(hostname -s)-release}",
       "cte cmake -E create_symlink ${ENERGI_BUILD_DIR:-$(pwd)/build/$(hostname -s)-release} build/current",
-      "cte cmake -E chdir build/current $(pwd)/autogen.sh",
+      "cte cmake -E chdir build/current sh -e $(pwd)/autogen.sh",
       "cte cmake -E chdir build/current $(pwd)/configure --prefix=$(pwd)/build/${ENERGI_VER:-energi} ${ENERGI_CONFIG_ALL}"
     ],
     "prepare-release": "ENERGI_BUILD_DIR=${ENERGI_BUILD_DIR:-$(pwd)/build/$(hostname -s)-release} ENERGI_CONFIG_ALL='' cid prepare",
