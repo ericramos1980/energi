@@ -20,6 +20,6 @@ nrghash = Extension(
 
 setup(
     name = 'nrghash',
-    version = '1.0.2',
+    version = '1.0.3',
     description = 'Energi Hash function',
     ext_modules = [nrghash])

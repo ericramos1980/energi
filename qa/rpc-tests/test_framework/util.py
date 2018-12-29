@@ -38,6 +38,8 @@ PORT_RANGE = 5000
 
 BITCOIND_PROC_WAIT_TIMEOUT = 60
 
+MINER_REWARD_DEC = Decimal('2.28')
+
 
 class PortSeed:
     # Must be initialized with a unique integer for each process
@@ -202,7 +204,7 @@ def initialize_datadir(dirname, n):
     if not os.path.isdir(datadir):
         os.makedirs(datadir)
     rpc_u, rpc_p = rpc_auth_pair(n)
-    with open(os.path.join(datadir, "dash.conf"), 'w', encoding='utf8') as f:
+    with open(os.path.join(datadir, "energi.conf"), 'w', encoding='utf8') as f:
         f.write("regtest=1\n")
         f.write("rpcuser=" + rpc_u + "\n")
         f.write("rpcpassword=" + rpc_p + "\n")

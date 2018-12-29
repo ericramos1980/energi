@@ -87,15 +87,9 @@ for arg in sys.argv[1:]:
     else:
         opts.add(arg)
 
-if len(sys.argv) == 1:
-    print( 'NOTE: auto-enabling coverage for all test mode' )
-    ENABLE_COVERAGE = 1
-
 #Set env vars
-sourceDir = SRCDIR
-
 if "EGID" not in os.environ:
-    os.environ["EGID"] = buildDir + '/src/energid' + EXEEXT
+    os.environ["EGID"] = BUILDDIR + '/src/energid' + EXEEXT
 
 if EXEEXT == ".exe" and "-win" not in opts:
     # https://github.com/bitcoin/bitcoin/commit/d52802551752140cf41f0d9a225a43e84404d3e9
@@ -122,7 +116,7 @@ testScripts = [
     'wallet-hd.py',
     'walletbackup.py',
     # vv Tests less than 5m vv
-    'p2p-fullblocktest.py', # NOTE: needs dash_hash to pass
+    'p2p-fullblocktest.py', # NOTE: needs nrghash to pass
     'fundrawtransaction.py',
     'fundrawtransaction-hd.py',
     # vv Tests less than 2m vv
@@ -132,7 +126,7 @@ testScripts = [
     'wallet-dump.py',
     'listtransactions.py',
     # vv Tests less than 60s vv
-    'sendheaders.py', # NOTE: needs dash_hash to pass
+    'sendheaders.py', # NOTE: needs nrghash to pass
     'zapwallettxes.py',
     'importmulti.py',
     'mempool_limit.py',
@@ -165,8 +159,8 @@ testScripts = [
     'keypool-hd.py',
     'p2p-mempool.py',
     'prioritise_transaction.py',
-    'invalidblockrequest.py', # NOTE: needs dash_hash to pass
-    'invalidtxrequest.py', # NOTE: needs dash_hash to pass
+    'invalidblockrequest.py', # NOTE: needs nrghash to pass
+    'invalidtxrequest.py', # NOTE: needs nrghash to pass
     'p2p-versionbits-warning.py',
     'preciousblock.py',
     'importprunedfunds.py',
@@ -197,8 +191,8 @@ testScriptsExt = [
     'rpcbind_test.py',
     # vv Tests less than 30s vv
     'bip65-cltv.py',
-    'bip65-cltv-p2p.py', # NOTE: needs dash_hash to pass
-    'bipdersig-p2p.py', # NOTE: needs dash_hash to pass
+    'bip65-cltv-p2p.py', # NOTE: needs nrghash to pass
+    'bipdersig-p2p.py', # NOTE: needs nrghash to pass
     'bipdersig.py',
     'getblocktemplate_proposals.py',
     'txn_doublespend.py',
@@ -206,7 +200,7 @@ testScriptsExt = [
     'forknotify.py',
     'invalidateblock.py',
     'maxblocksinflight.py',
-    'p2p-acceptblock.py', # NOTE: needs dash_hash to pass
+    'p2p-acceptblock.py', # NOTE: needs nrghash to pass
     # 'replace-by-fee.py', # RBF is disabled in energi Core
 ]
 
@@ -231,7 +225,7 @@ def runtests():
 
     if ENABLE_COVERAGE:
         coverage = RPCCoverage()
-        print(("Initializing coverage directory at %s\n" % coverage.dir))
+        print("Initializing coverage directory at %s\n" % coverage.dir)
     flags = ["--srcdir=%s/src" % BUILDDIR] + passon_args
     flags.append("--cachedir=%s/qa/cache" % BUILDDIR)
     if coverage:
@@ -244,11 +238,6 @@ def runtests():
     #Run Tests
     max_len_name = len(max(test_list, key=len))
     time_sum = 0
-            print(("Running testscript %s%s%s ..." % (bold[1], testScripts[i], bold[0])))
-
-            try:
-                failed = True
-            print(("Duration: %s s\n" % (int(time.time() - time0))))
     time0 = time.time()
     job_queue = RPCTestHandler(run_parallel, test_list, flags)
     results = BOLD[1] + "%s | %s | %s\n\n" % ("TEST".ljust(max_len_name), "PASSED", "DURATION") + BOLD[0]
@@ -272,7 +261,7 @@ def runtests():
 
         print("Cleaning up coverage data")
         coverage.cleanup()
-    
+
     sys.exit(not all_passed)
 
 
@@ -355,7 +344,7 @@ class RPCCoverage(object):
 
         if uncovered:
             print("Uncovered RPC commands:")
-            print(("".join(("  - %s\n" % i) for i in sorted(uncovered))))
+            print("".join(("  - %s\n" % i) for i in sorted(uncovered)))
         else:
             print("All RPC commands covered.")
 

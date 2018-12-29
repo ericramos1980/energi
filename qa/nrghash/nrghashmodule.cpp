@@ -9,6 +9,12 @@ extern "C" {
 #include "keccak-tiny.c"
 }
 
+#if PY_MAJOR_VERSION >= 3
+#   define NRG_BYTES "y#"
+#else
+#   define NRG_BYTES "s#"
+#endif
+
 static PyObject *
 nrghash(PyObject *self, PyObject *args)
 {
@@ -17,7 +23,7 @@ nrghash(PyObject *self, PyObject *args)
     int data_size;
     uint64_t nonce;
 
-    if (!PyArg_ParseTuple(args, "Ks#K", &height, &data, &data_size, &nonce)) {
+    if (!PyArg_ParseTuple(args, "K" NRG_BYTES "K", &height, &data, &data_size, &nonce)) {
         return NULL;
     }
     
@@ -36,7 +42,7 @@ nrghash(PyObject *self, PyObject *args)
     egihash::h256_t block_hash(&buf.front(), buf.size());
     
     return Py_BuildValue(
-        "(s#,s#,s#)",
+        "(" NRG_BYTES "," NRG_BYTES "," NRG_BYTES ")",
         ret.mixhash.b, sizeof(ret.mixhash.b),
         ret.value.b, sizeof(ret.value.b),
         block_hash.b, sizeof(block_hash.b));

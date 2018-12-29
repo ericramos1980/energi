@@ -6,6 +6,7 @@
 
 from .mininode import *
 from .script import CScript, OP_TRUE, OP_CHECKSIG, OP_HASH160, OP_EQUALVERIFY, OP_DUP
+from binascii import unhexlify, hexlify
 
 # Create a block (with regtest difficulty)
 def create_block(hashprev, coinbase, nTime=None, nHeight=None):

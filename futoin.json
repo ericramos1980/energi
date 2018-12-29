@@ -5,7 +5,7 @@
   "tools": {
     "make": "*",
     "cmake": "*",
-    "python": "2"
+    "python": "3"
   },
   "actions": {
     "clean" : "cte git clean -ffdx -e depends/ -e .vagrant/ . || true",
