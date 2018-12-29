@@ -242,6 +242,8 @@ static CBlock FindDevNetGenesisBlock(const Consensus::Params& params, const CBlo
     // iteration of the above loop will give a result already
     error("FindDevNetGenesisBlock: could not find devnet genesis block for %s", devNetName);
     assert(false);
+
+    return block;
 }
 
 /**

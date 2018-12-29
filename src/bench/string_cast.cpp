@@ -2,6 +2,10 @@
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
+#ifdef _WIN32
+#   pragma GCC diagnostic warning "-Warray-bounds"
+#endif
+
 #include "bench.h"
 #include "tinyformat.h"
 #include "utilstrencodings.h"

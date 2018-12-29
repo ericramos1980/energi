@@ -8,7 +8,15 @@
 #ifndef BITCOIN_TEST_TESTUTIL_H
 #define BITCOIN_TEST_TESTUTIL_H
 
+#pragma GCC diagnostic push
+
+#ifdef _WIN32
+#   pragma GCC diagnostic ignored "-Wstack-protector"
+#endif
+
 #include <boost/filesystem/path.hpp>
+
+#pragma GCC diagnostic pop
 
 boost::filesystem::path GetTempPath();
 

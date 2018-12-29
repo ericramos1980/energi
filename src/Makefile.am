@@ -587,7 +587,7 @@ endif
 
 $(libenergiconsensus_la_SOURCES): $(ENERGI_PCH)
 
-libenergiconsensus_la_LDFLAGS = $(AM_LDFLAGS) -no-undefined $(RELDFLAGS)
+libenergiconsensus_la_LDFLAGS = $(AM_LDFLAGS) $(RELDFLAGS)
 libenergiconsensus_la_LIBADD = $(LIBSECP256K1)
 libenergiconsensus_la_CPPFLAGS = $(AM_CPPFLAGS) -I$(builddir)/obj -I$(srcdir)/secp256k1/include -DBUILD_BITCOIN_INTERNAL -D__STDC_WANT_LIB_EXT1__=1 -DUSE_SECURE_MEMZERO
 libenergiconsensus_la_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)

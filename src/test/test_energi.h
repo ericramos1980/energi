@@ -7,6 +7,12 @@
 #ifndef BITCOIN_TEST_TEST_ENERGI_H
 #define BITCOIN_TEST_TEST_ENERGI_H
 
+#pragma GCC diagnostic push
+
+#ifdef _WIN32
+#   pragma GCC diagnostic ignored "-Wstack-protector"
+#endif
+
 #include "chainparamsbase.h"
 #include "key.h"
 #include "pubkey.h"
@@ -16,6 +22,8 @@
 #include "boost_workaround.hpp"
 #include <boost/filesystem.hpp>
 #include <boost/thread.hpp>
+
+#pragma GCC diagnostic pop
 
 /** Basic testing setup.
  * This just configures logging and chain parameters.
