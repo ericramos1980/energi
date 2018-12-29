@@ -2,9 +2,8 @@
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#ifdef _WIN32
-#   pragma GCC diagnostic warning "-Warray-bounds"
-#endif
+#pragma GCC diagnostic ignored "-Warray-bounds"
+#pragma GCC diagnostic ignored "-Wunused-value"
 
 #include "bench.h"
 #include "tinyformat.h"
@@ -12,8 +11,6 @@
 
 #include <boost/lexical_cast.hpp>
 #include <string>
-
-#pragma GCC diagnostic warning "-Wunused-value"
 
 template <typename T>
 std::string NumberToString(T Number){
