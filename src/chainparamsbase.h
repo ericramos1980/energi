@@ -21,6 +21,7 @@ public:
     #ifdef ENERGI_ENABLE_TESTNET_60X
     static const std::string TESTNET60X;
     #endif
+    static const std::string DEVNET;
     static const std::string REGTEST;
 
     const std::string& DataDir() const { return strDataDir; }
@@ -55,6 +56,8 @@ void SelectBaseParams(const std::string& chain);
  * @return CBaseChainParams::MAX_NETWORK_TYPES if an invalid combination is given. CBaseChainParams::MAIN by default.
  */
 std::string ChainNameFromCommandLine();
+
+std::string GetDevNetName();
 
 /**
  * Return true if SelectBaseParamsFromCommandLine() has been called to select

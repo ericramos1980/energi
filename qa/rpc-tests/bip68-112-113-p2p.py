@@ -1,8 +1,7 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python3
 # Copyright (c) 2015 The Bitcoin Core developers
-# Distributed under the MIT/X11 software license, see the accompanying
+# Distributed under the MIT software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
-#
 
 from test_framework.test_framework import ComparisonTestFramework
 from test_framework.util import *
@@ -11,7 +10,6 @@ from test_framework.blocktools import create_coinbase, create_block
 from test_framework.comptool import TestInstance, TestManager
 from test_framework.script import *
 from io import BytesIO
-import time
 
 '''
 This test is meant to exercise activation of the first version bits soft fork
@@ -95,12 +93,14 @@ def all_rlt_txs(txarray):
 
 class BIP68_112_113Test(ComparisonTestFramework):
     def __init__(self):
+        super().__init__()
         self.num_nodes = 1
 
     def setup_network(self):
         # Must set the blockversion for this test
-        self.nodes = start_nodes(1, self.options.tmpdir,
-                                 extra_args=[['-debug', '-whitelist=127.0.0.1', '-blockversion=4']],
+        # Must also set '-maxtipage=600100' to allow syncing from very old blocks
+        self.nodes = start_nodes(self.num_nodes, self.options.tmpdir,
+                                 extra_args=[['-debug', '-whitelist=127.0.0.1', '-blockversion=4', '-maxtipage=600100']],
                                  binary=[self.options.testbinary])
 
     def run_test(self):
@@ -206,13 +206,13 @@ class BIP68_112_113Test(ComparisonTestFramework):
         return txs
 
     def get_tests(self):
-        long_past_time = int(time.time()) - 600 * 1000 # enough to build up to 1000 blocks 10 minutes apart without worrying about getting into the future
-        self.nodes[0].setmocktime(long_past_time - 100) # enough so that the generated blocks will still all be before long_past_time
         self.coinbase_blocks = self.nodes[0].generate(1 + 16 + 2*32 + 1) # 82 blocks generated for inputs
-        self.nodes[0].setmocktime(0) # set time back to present so yielded blocks aren't in the future as we advance last_block_time
+        # set time so that there was enough time to build up to 1000 blocks 10 minutes apart on top of the last one
+        # without worrying about getting into the future
+        self.nodes[0].setmocktime(GENESISTIME + 600 * 1000 + 100)
         self.tipheight = 82 # height of the next block to build
-        self.last_block_time = long_past_time
-        self.tip = int ("0x" + self.nodes[0].getbestblockhash() + "L", 0)
+        self.last_block_time = GENESISTIME
+        self.tip = int("0x" + self.nodes[0].getbestblockhash(), 0)
         self.nodeaddress = self.nodes[0].getnewaddress()
 
         assert_equal(get_bip9_status(self.nodes[0], 'csv')['status'], 'defined')
@@ -273,8 +273,8 @@ class BIP68_112_113Test(ComparisonTestFramework):
 
         self.nodes[0].setmocktime(self.last_block_time + 600)
         inputblockhash = self.nodes[0].generate(1)[0] # 1 block generated for inputs to be in chain at height 572
-        self.nodes[0].setmocktime(0)
-        self.tip = int("0x" + inputblockhash + "L", 0)
+        self.nodes[0].setmocktime(GENESISTIME + 600 * 1000 + 100)
+        self.tip = int("0x" + inputblockhash, 0)
         self.tipheight += 1
         self.last_block_time += 600
         assert_equal(len(self.nodes[0].getblock(inputblockhash,True)["tx"]), 82+1)
@@ -289,6 +289,7 @@ class BIP68_112_113Test(ComparisonTestFramework):
         # BIP113 test transaction will be modified before each use to put in appropriate block time
         bip113tx_v1 = self.create_transaction(self.nodes[0], bip113input, self.nodeaddress, Decimal("499.98"))
         bip113tx_v1.vin[0].nSequence = 0xFFFFFFFE
+        bip113tx_v1.nVersion = 1
         bip113tx_v2 = self.create_transaction(self.nodes[0], bip113input, self.nodeaddress, Decimal("499.98"))
         bip113tx_v2.vin[0].nSequence = 0xFFFFFFFE
         bip113tx_v2.nVersion = 2

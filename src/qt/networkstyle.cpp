@@ -8,6 +8,9 @@
 #include "guiconstants.h"
 #include "guiutil.h"
 
+#include "chainparams.h"
+#include "tinyformat.h"
+
 #include <QApplication>
 
 static const struct {
@@ -15,13 +18,14 @@ static const struct {
     const char *appName;
     const int iconColorHueShift;
     const int iconColorSaturationReduction;
-    const char *titleAddText;
+    const std::string titleAddText;
 } network_styles[] = {
     {"main", QAPP_APP_NAME_DEFAULT, 0, 0, ""},
     {"test", QAPP_APP_NAME_TESTNET, 190, 20, QT_TRANSLATE_NOOP("SplashScreen", "[testnet]")},
     #ifdef ENERGI_ENABLE_TESTNET_60X
     {"test60", QAPP_APP_NAME_TESTNET, 190, 20, QT_TRANSLATE_NOOP("SplashScreen", "[testnet60x]")},
     #endif
+    {"dev", QAPP_APP_NAME_DEVNET, 190, 20, "[devnet: %s]"},
     {"regtest", QAPP_APP_NAME_TESTNET, 160, 30, "[regtest]"}
 };
 static const unsigned network_styles_count = sizeof(network_styles)/sizeof(*network_styles);
@@ -61,9 +65,9 @@ void NetworkStyle::rotateColors(QImage& img, const int iconColorHueShift, const 
 }
 
 // titleAddText needs to be const char* for tr()
-NetworkStyle::NetworkStyle(const QString &appName, const int iconColorHueShift, const int iconColorSaturationReduction, const char *titleAddText):
-    appName(appName),
-    titleAddText(qApp->translate("SplashScreen", titleAddText))
+NetworkStyle::NetworkStyle(const QString &_appName, const int iconColorHueShift, const int iconColorSaturationReduction, const char *_titleAddText):
+    appName(_appName),
+    titleAddText(qApp->translate("SplashScreen", _titleAddText))
 {
     // Allow for separate UI settings for testnets
     QApplication::setApplicationName(appName);
@@ -105,11 +109,19 @@ const NetworkStyle *NetworkStyle::instantiate(const QString &networkId)
     {
         if (networkId == network_styles[x].networkId)
         {
+            std::string appName = network_styles[x].appName;
+            std::string titleAddText = network_styles[x].titleAddText;
+
+            if (networkId == QString(CBaseChainParams::DEVNET.c_str())) {
+                appName = strprintf(appName, GetDevNetName());
+                titleAddText = strprintf(titleAddText, GetDevNetName());
+            }
+
             return new NetworkStyle(
-                    network_styles[x].appName,
+                    appName.c_str(),
                     network_styles[x].iconColorHueShift,
                     network_styles[x].iconColorSaturationReduction,
-                    network_styles[x].titleAddText);
+                    titleAddText.c_str());
         }
     }
     return 0;

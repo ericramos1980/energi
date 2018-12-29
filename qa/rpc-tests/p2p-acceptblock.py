@@ -1,8 +1,7 @@
-#!/usr/bin/env python2
-#
-# Distributed under the MIT/X11 software license, see the accompanying
+#!/usr/bin/env python3
+# Copyright (c) 2015-2016 The Bitcoin Core developers
+# Distributed under the MIT software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
-#
 
 from test_framework.mininode import *
 from test_framework.test_framework import BitcoinTestFramework
@@ -112,8 +111,10 @@ class AcceptBlockTest(BitcoinTestFramework):
                           default=os.getenv("EGID", "energid"),
                           help="bitcoind binary to test")
 
-    def setup_chain(self):
-        initialize_chain_clean(self.options.tmpdir, 2)
+    def __init__(self):
+        super().__init__()
+        self.setup_clean_chain = True
+        self.num_nodes = 2
 
     def setup_network(self):
         # Node0 will be used to test behavior of processing unrequested blocks
@@ -145,14 +146,14 @@ class AcceptBlockTest(BitcoinTestFramework):
 
         # 1. Have both nodes mine a block (leave IBD)
         [ n.generate(1) for n in self.nodes ]
-        tips = [ int ("0x" + n.getbestblockhash() + "L", 0) for n in self.nodes ]
+        tips = [ int("0x" + n.getbestblockhash(), 0) for n in self.nodes ]
 
         # 2. Send one block that builds on each tip.
         # This should be accepted.
         blocks_h2 = []  # the height 2 blocks on each node's chain
-        block_time = int(time.time()) + 1
+        block_time = get_mocktime() + 1
         for i in range(2):
-            blocks_h2.append(create_block(tips[i], create_coinbase(2), block_time))
+            blocks_h2.append(create_block(tips[i], create_coinbase(2), block_time + 1))
             blocks_h2[i].solve()
             block_time += 1
         test_node.send_message(msg_block(blocks_h2[0]))
@@ -225,7 +226,8 @@ class AcceptBlockTest(BitcoinTestFramework):
                     headers_message.headers.append(CBlockHeader(next_block))
                 tips[j] = next_block
 
-        time.sleep(2)
+        set_mocktime(get_mocktime() + 2)
+        set_node_times(self.nodes, get_mocktime())
         for x in all_blocks:
             try:
                 self.nodes[0].getblock(x.hash)

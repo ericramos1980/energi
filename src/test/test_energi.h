@@ -1,5 +1,17 @@
+// Copyright (c) 2015 The Bitcoin Core developers
+// Copyright (c) 2014-2017 The Dash Core developers
+// Copyright (c) 2017-2018 The Energi Core developers
+// Distributed under the MIT software license, see the accompanying
+// file COPYING or http://www.opensource.org/licenses/mit-license.php.
+
 #ifndef BITCOIN_TEST_TEST_ENERGI_H
 #define BITCOIN_TEST_TEST_ENERGI_H
+
+#pragma GCC diagnostic push
+
+#ifdef _WIN32
+#   pragma GCC diagnostic ignored "-Wstack-protector"
+#endif
 
 #include "chainparamsbase.h"
 #include "key.h"
@@ -10,6 +22,8 @@
 #include "boost_workaround.hpp"
 #include <boost/filesystem.hpp>
 #include <boost/thread.hpp>
+
+#pragma GCC diagnostic pop
 
 /** Basic testing setup.
  * This just configures logging and chain parameters.
@@ -22,8 +36,7 @@ struct BasicTestingSetup {
 };
 
 /** Testing setup that configures a complete environment.
- * Included are data directory, coins database, script check threads
- * and wallet (if enabled) setup.
+ * Included are data directory, coins database, script check threads setup.
  */
 class CConnman;
 struct TestingSetup: public BasicTestingSetup {
@@ -32,7 +45,7 @@ struct TestingSetup: public BasicTestingSetup {
     boost::thread_group threadGroup;
     CConnman* connman;
 
-    TestingSetup(const std::string& chainName = CBaseChainParams::TESTNET);
+    TestingSetup(const std::string& chainName = CBaseChainParams::MAIN);
     ~TestingSetup();
 };
 
@@ -68,23 +81,22 @@ struct TestMemPoolEntryHelper
     int64_t nTime;
     double dPriority;
     unsigned int nHeight;
-    bool hadNoDependencies;
     bool spendsCoinbase;
     unsigned int sigOpCount;
     LockPoints lp;
 
     TestMemPoolEntryHelper() :
         nFee(0), nTime(0), dPriority(0.0), nHeight(1),
-        hadNoDependencies(false), spendsCoinbase(false), sigOpCount(1) { }
+        spendsCoinbase(false), sigOpCount(4) { }
     
-    CTxMemPoolEntry FromTx(CMutableTransaction &tx, CTxMemPool *pool = NULL);
+    CTxMemPoolEntry FromTx(const CMutableTransaction &tx, CTxMemPool *pool = NULL);
+    CTxMemPoolEntry FromTx(const CTransaction &tx, CTxMemPool *pool = NULL);
 
     // Change the default value
     TestMemPoolEntryHelper &Fee(CAmount _fee) { nFee = _fee; return *this; }
     TestMemPoolEntryHelper &Time(int64_t _time) { nTime = _time; return *this; }
     TestMemPoolEntryHelper &Priority(double _priority) { dPriority = _priority; return *this; }
     TestMemPoolEntryHelper &Height(unsigned int _height) { nHeight = _height; return *this; }
-    TestMemPoolEntryHelper &HadNoDependencies(bool _hnd) { hadNoDependencies = _hnd; return *this; }
     TestMemPoolEntryHelper &SpendsCoinbase(bool _flag) { spendsCoinbase = _flag; return *this; }
     TestMemPoolEntryHelper &SigOps(unsigned int _sigops) { sigOpCount = _sigops; return *this; }
 };

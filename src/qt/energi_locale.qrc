@@ -8,7 +8,9 @@
         <file alias="fr">locale/energi_fr.qm</file>
         <file alias="it">locale/energi_it.qm</file>
         <file alias="ja">locale/energi_ja.qm</file>
+        <file alias="nl">locale/energi_nl.qm</file>
         <file alias="pl">locale/energi_pl.qm</file>
+        <file alias="pt_BR">locale/energi_pt_BR.qm</file>
         <file alias="pt">locale/energi_pt.qm</file>
         <file alias="ru">locale/energi_ru.qm</file>
         <file alias="sk">locale/energi_sk.qm</file>
