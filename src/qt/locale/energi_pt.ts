@@ -5493,7 +5493,7 @@ https://www.transifex.com/projects/p/energi-cryptocurrency/</source>
     </message>
     <message>
         <location line="+3"/>
-        <source>You are starting in lite mode, all Dash-specific functionality is disabled.</source>
+        <source>You are starting in lite mode, all Energi-specific functionality is disabled.</source>
         <translation type="unfinished"/>
     </message>
     <message>

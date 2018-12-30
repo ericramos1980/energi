@@ -5503,7 +5503,7 @@ Näillä toiminnoilla voit korjata korruptoituneen lohkoketjun tai puuttuvat/van
     </message>
     <message>
         <location line="+3"/>
-        <source>You are starting in lite mode, all Dash-specific functionality is disabled.</source>
+        <source>You are starting in lite mode, all Energi-specific functionality is disabled.</source>
         <translation type="unfinished"/>
     </message>
     <message>

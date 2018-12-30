@@ -321,7 +321,7 @@ QT_TRANSLATE_NOOP("energi-core", ""
 "Whitelisted peers cannot be DoS banned and their transactions are always "
 "relayed, even if they are already in the mempool, useful e.g. for a gateway"),
 QT_TRANSLATE_NOOP("energi-core", ""
-"You are starting in lite mode, all Dash-specific functionality is disabled."),
+"You are starting in lite mode, all Energi-specific functionality is disabled."),
 QT_TRANSLATE_NOOP("energi-core", ""
 "You must specify a masternodeprivkey in the configuration. Please see "
 "documentation for help."),

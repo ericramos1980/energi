@@ -5500,8 +5500,8 @@ https://www.transifex.com/projects/p/energi-cryptocurrency/</translation>
     </message>
     <message>
         <location line="+3"/>
-        <source>You are starting in lite mode, all Dash-specific functionality is disabled.</source>
-        <translation>You are starting in lite mode, all Dash-specific functionality is disabled.</translation>
+        <source>You are starting in lite mode, all Energi-specific functionality is disabled.</source>
+        <translation>You are starting in lite mode, all Energi-specific functionality is disabled.</translation>
     </message>
     <message>
         <location line="+2"/>
