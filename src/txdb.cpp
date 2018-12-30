@@ -345,8 +345,18 @@ bool CBlockTreeDB::ReadFlag(const std::string &name, bool &fValue) {
     return true;
 }
 
-bool CBlockTreeDB::LoadBlockIndexGuts(boost::function<CBlockIndex*(const uint256&)> insertBlockIndex)
-{
+bool CBlockTreeDB::LoadBlockIndexGuts(
+        boost::function<CBlockIndex*(const uint256&)> insertBlockIndex,
+        const MapCheckpoints &checkpoints,
+        bool enable_checkpoints
+) {
+    const auto LAST_BLOCKS_TO_CHECK = 100;
+    CBlockIndex* pindexNew = nullptr;
+
+    const int last_checkpoint_height = (enable_checkpoints && checkpoints.empty())
+            ? -1
+            : checkpoints.rbegin()->first;
+
     std::unique_ptr<CDBIterator> pcursor(NewIterator());
 
     pcursor->Seek(std::make_pair(DB_BLOCK_INDEX, uint256()));
@@ -358,10 +368,13 @@ bool CBlockTreeDB::LoadBlockIndexGuts(boost::function<CBlockIndex*(const uint256
         if (pcursor->GetKey(key) && key.first == DB_BLOCK_INDEX) {
             CDiskBlockIndex diskindex;
             if (pcursor->GetValue(diskindex)) {
+                auto block_hash = diskindex.GetBlockHash();
+                auto block_height = diskindex.nHeight;
+
                 // Construct block index object
-                CBlockIndex* pindexNew = insertBlockIndex(diskindex.GetBlockHash());
+                pindexNew = insertBlockIndex(block_hash);
                 pindexNew->pprev          = insertBlockIndex(diskindex.hashPrev);
-                pindexNew->nHeight        = diskindex.nHeight;
+                pindexNew->nHeight        = block_height;
                 pindexNew->nFile          = diskindex.nFile;
                 pindexNew->nDataPos       = diskindex.nDataPos;
                 pindexNew->nUndoPos       = diskindex.nUndoPos;
@@ -374,11 +387,15 @@ bool CBlockTreeDB::LoadBlockIndexGuts(boost::function<CBlockIndex*(const uint256
                 pindexNew->nStatus        = diskindex.nStatus;
                 pindexNew->nTx            = diskindex.nTx;
 
-                // TODO: 1. check PoW only after the last checkpoint
-                // TODO: 2. validate checkpoints as we progress
+                if (block_height <= last_checkpoint_height) {
+                    auto checkp = checkpoints.find(block_height);
 
-                if (!CheckProofOfWork(pindexNew->GetPOWHash(), pindexNew->nBits, Params().GetConsensus()))
-                    return error("%s: CheckProofOfWork failed: %s", __func__, pindexNew->ToString());
+                    if ((checkp != checkpoints.end()) &&
+                        (checkp->second != block_hash))
+                    {
+                        return error("%s: Checkpoint failed: %s", __func__, pindexNew->ToString());
+                    }
+                }
 
                 pcursor->Next();
             } else {
@@ -387,6 +404,12 @@ bool CBlockTreeDB::LoadBlockIndexGuts(boost::function<CBlockIndex*(const uint256
         } else {
             break;
         }
+    }
+
+    // The original Energi logic, shortened to actual block confirmation count for faster startups
+    for (auto i = LAST_BLOCKS_TO_CHECK; (i > 0) && (pindexNew != nullptr); --i, pindexNew = pindexNew->pprev) {
+        if (!CheckProofOfWork(pindexNew->GetPOWHash(), pindexNew->nBits, Params().GetConsensus()))
+            return error("%s: CheckProofOfWork failed: %s", __func__, pindexNew->ToString());
     }
 
     return true;

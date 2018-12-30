@@ -16,7 +16,7 @@
 
 namespace Checkpoints {
 
-    CBlockIndex* GetLastCheckpoint(const CCheckpointData& data)
+    CBlockIndex* GetLastSeenCheckpoint(const CCheckpointData& data)
     {
         const MapCheckpoints& checkpoints = data.mapCheckpoints;
 
@@ -30,4 +30,13 @@ namespace Checkpoints {
         return NULL;
     }
 
+    //! Validate block hash against checkpoint, if any
+    bool ValidateCheckpoint(const CCheckpointData& data, int height, const uint256 &hash)
+    {
+        auto& checkpoints = data.mapCheckpoints;
+        auto checkp = checkpoints.find(height);
+
+        // Not a checkoint or hash matches
+        return ((checkp == checkpoints.end()) || (checkp->second == hash));
+    }
 } // namespace Checkpoints

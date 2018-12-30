@@ -19,8 +19,11 @@ struct CCheckpointData;
 namespace Checkpoints
 {
 
-//! Returns last CBlockIndex* in mapBlockIndex that is a checkpoint
-CBlockIndex* GetLastCheckpoint(const CCheckpointData& data);
+//! Returns last CBlockIndex* in mapBlockIndex that is an active checkpoint
+CBlockIndex* GetLastSeenCheckpoint(const CCheckpointData& data);
+
+//! Validate block hash against checkpoint, if any
+bool ValidateCheckpoint(const CCheckpointData& data, int height, const uint256 &hash);
 
 } //namespace Checkpoints
 

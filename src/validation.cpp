@@ -3413,9 +3413,12 @@ static bool CheckIndexAgainstCheckpoint(const CBlockIndex* pindexPrev, CValidati
 
     int nHeight = pindexPrev->nHeight+1;
     // Don't accept any forks from the main chain prior to last checkpoint
-    CBlockIndex* pcheckpoint = Checkpoints::GetLastCheckpoint(chainparams.Checkpoints());
+    CBlockIndex* pcheckpoint = Checkpoints::GetLastSeenCheckpoint(chainparams.Checkpoints());
     if (pcheckpoint && nHeight < pcheckpoint->nHeight)
         return state.DoS(100, error("%s: forked chain older than last checkpoint (height %d)", __func__, nHeight));
+
+    if (!Checkpoints::ValidateCheckpoint(chainparams.Checkpoints(), nHeight, hash))
+        return state.DoS(100, error("%s: forked chain mismatch checkpoint (height %d)", __func__, nHeight));
 
     return true;
 }
@@ -3922,7 +3925,7 @@ CBlockIndex * InsertBlockIndex(uint256 hash)
 
 bool static LoadBlockIndexDB(const CChainParams& chainparams)
 {
-    if (!pblocktree->LoadBlockIndexGuts(InsertBlockIndex))
+    if (!pblocktree->LoadBlockIndexGuts(InsertBlockIndex, chainparams.Checkpoints().mapCheckpoints, fCheckpointsEnabled))
         return false;
 
     boost::this_thread::interruption_point();

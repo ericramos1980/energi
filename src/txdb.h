@@ -9,6 +9,7 @@
 #include "coins.h"
 #include "dbwrapper.h"
 #include "chain.h"
+#include "chainparams.h"
 #include "spentindex.h"
 
 #include <map>
@@ -138,7 +139,9 @@ public:
     bool ReadTimestampIndex(const unsigned int &high, const unsigned int &low, std::vector<uint256> &vect);
     bool WriteFlag(const std::string &name, bool fValue);
     bool ReadFlag(const std::string &name, bool &fValue);
-    bool LoadBlockIndexGuts(boost::function<CBlockIndex*(const uint256&)> insertBlockIndex);
+    bool LoadBlockIndexGuts(boost::function<CBlockIndex*(const uint256&)> insertBlockIndex,
+                            const MapCheckpoints &checkpoints,
+                            bool enable_checkpoints);
 };
 
 #endif // BITCOIN_TXDB_H
