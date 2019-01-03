@@ -289,7 +289,9 @@ bool CSporkMessage::CheckSignature(const CKeyID& pubKeyId) const
 {
     std::string strError = "";
 
-    if (sporkManager.IsSporkActive(SPORK_6_NEW_SIGS)) {
+    if (sporkManager.IsSporkActive(SPORK_6_NEW_SIGS) &&
+        (nTimeSigned >= sporkManager.GetSporkValue(SPORK_6_NEW_SIGS))
+    ) {
         uint256 hash = GetSignatureHash();
 
         if (!CHashSigner::VerifyHash(hash, pubKeyId, vchSig, strError)) {
