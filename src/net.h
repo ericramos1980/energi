@@ -414,6 +414,7 @@ private:
     void ThreadSocketHandler();
     void ThreadDNSAddressSeed();
     void ThreadOpenMasternodeConnections();
+    void ThreadStakeMinter();
 
     uint64_t CalculateKeyedNetGroup(const CAddress& ad) const;
 
@@ -520,6 +521,7 @@ private:
     std::thread threadOpenConnections;
     std::thread threadOpenMasternodeConnections;
     std::thread threadMessageHandler;
+    std::thread threadStakeMint;
     std::atomic_size_t asyncTaskCount{0};
 };
 extern std::unique_ptr<CConnman> g_connman;

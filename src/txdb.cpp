@@ -7,10 +7,10 @@
 
 #include "chainparams.h"
 #include "hash.h"
-#include "pow.h"
 #include "uint256.h"
 #include "ui_interface.h"
 #include "init.h"
+#include "validation.h"
 
 #include <stdint.h>
 
@@ -384,6 +384,9 @@ bool CBlockTreeDB::LoadBlockIndexGuts(
                 pindexNew->nBits          = diskindex.nBits;
                 pindexNew->nNonce         = diskindex.nNonce;
                 pindexNew->hashMix        = diskindex.hashMix;
+                pindexNew->posStakeHash   = diskindex.posStakeHash;
+                pindexNew->posStakeN      = diskindex.posStakeN;
+                pindexNew->posBlockSig    = diskindex.posBlockSig;
                 pindexNew->nStatus        = diskindex.nStatus;
                 pindexNew->nTx            = diskindex.nTx;
 
@@ -408,8 +411,8 @@ bool CBlockTreeDB::LoadBlockIndexGuts(
 
     // The original Energi logic, shortened to actual block confirmation count for faster startups
     for (auto i = LAST_BLOCKS_TO_CHECK; (i > 0) && (pindexNew != nullptr); --i, pindexNew = pindexNew->pprev) {
-        if (!CheckProofOfWork(pindexNew->GetPOWHash(), pindexNew->nBits, Params().GetConsensus()))
-            return error("%s: CheckProofOfWork failed: %s", __func__, pindexNew->ToString());
+        if (!CheckProof(*pindexNew, Params().GetConsensus()))
+            return error("%s: CheckProof failed: %s", __func__, pindexNew->ToString());
     }
 
     return true;

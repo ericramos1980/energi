@@ -42,7 +42,7 @@ from test_framework.siphash import siphash256
 from nrghash import nrghash
 
 BIP0031_VERSION = 60000
-MY_VERSION = 70209  # SHORT_IDS_BLOCKS_VERSION to support cmpct blocks
+MY_VERSION = 70210  # SHORT_IDS_BLOCKS_VERSION to support cmpct blocks
 MY_SUBVERSION = b"/energi-mininode-tester:0.0.2/"
 MY_RELAY = 1 # from version 70001 onwards, fRelay should be appended to version messages (BIP37)
 
@@ -454,6 +454,7 @@ class CBlockHeader(object):
         self.powValue = None
         self.sha256 = None
         self.hash = None
+        self.calc_sha256()
 
     def serialize(self):
         r = b""
@@ -1582,8 +1583,8 @@ class NodeConn(asyncore.dispatcher):
                                         repr(msg))
         except Exception as e:
             print('got_data:', repr(e))
-            # import  traceback
-            # traceback.print_tb(sys.exc_info()[2])
+            import  traceback
+            traceback.print_tb(sys.exc_info()[2])
 
     def send_message(self, message, pushbuf=False):
         if self.state != "connected" and not pushbuf:

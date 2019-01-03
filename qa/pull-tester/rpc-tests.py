@@ -70,6 +70,7 @@ opts = set()
 passon_args = []
 PASSON_REGEX = re.compile("^--")
 PARALLEL_REGEX = re.compile('^-parallel=')
+PYTHON_CMD = ['/usr/bin/env', 'python3']
 
 print_help = False
 run_parallel = 4
@@ -218,7 +219,7 @@ def runtests():
 
     if print_help:
         # Only print help of the first script and exit
-        subprocess.check_call((RPC_TESTS_DIR + test_list[0]).split() + ['-h'])
+        subprocess.check_call(PYTHON_CMD + (RPC_TESTS_DIR + test_list[0]).split() + ['-h'])
         sys.exit(0)
 
     coverage = None
@@ -233,7 +234,7 @@ def runtests():
 
     if len(test_list) > 1 and run_parallel > 1:
         # Populate cache
-        subprocess.check_output([RPC_TESTS_DIR + 'create_cache.py'] + flags)
+        subprocess.check_output(PYTHON_CMD + [RPC_TESTS_DIR + 'create_cache.py'] + flags)
 
     #Run Tests
     max_len_name = len(max(test_list, key=len))
@@ -292,7 +293,7 @@ class RPCTestHandler:
             log_stderr = tempfile.SpooledTemporaryFile(max_size=2**16)
             self.jobs.append((t,
                               time.time(),
-                              subprocess.Popen((RPC_TESTS_DIR + t).split() + self.flags + port_seed,
+                              subprocess.Popen(PYTHON_CMD + (RPC_TESTS_DIR + t).split() + self.flags + port_seed,
                                                universal_newlines=True,
                                                stdout=log_stdout,
                                                stderr=log_stderr),

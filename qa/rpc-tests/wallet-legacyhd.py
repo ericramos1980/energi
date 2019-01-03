@@ -12,18 +12,16 @@ from test_framework.util import *
 class WalletHDTest(BitcoinTestFramework):
 
     def setup_chain(self):
-        tmpdir = self.options.tmpdir
-        print(("Initializing test directory "+tmpdir))
-        initialize_chain_clean(tmpdir, 2)
+        super().setup_chain()
 
         test_wallet = os.path.realpath(__file__+"/../data/wallet_legacyhd.dat")
-        hd_node_dir=tmpdir+"/node1/regtest/"
-        os.makedirs(hd_node_dir)
+        hd_node_dir=self.options.tmpdir+"/node1/regtest/"
+        os.makedirs(hd_node_dir, exist_ok=True)
         shutil.copyfile(test_wallet, hd_node_dir+"/wallet.dat")
 
 
     def setup_network(self):
-        self.nodes = start_nodes(2, self.options.tmpdir, [['-usehd=0'], ['-usehd=1', '-keypool=0']])
+        self.nodes = start_nodes(2, self.options.tmpdir, [['-usehd=0'], ['-usehd=1', '-keypool=0']], redirect_stderr=True)
         self.is_network_split = False
         connect_nodes_bi(self.nodes, 0, 1)
         self.is_network_split=False

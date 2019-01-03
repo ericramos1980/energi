@@ -15,8 +15,14 @@
 
 unsigned int static DarkGravityWave(const CBlockIndex* pindexLast, const CBlockHeader *pblock, const Consensus::Params& params) {
     /* current difficulty formula, dash - DarkGravity v3, written by Evan Duffield - evan@dash.org */
-    const arith_uint256 bnPowLimit = UintToArith256(params.powLimit);
+    const arith_uint256 bnPowLimit = pblock->IsProofOfStake()
+            ? UintToArith256(params.posLimit)
+            : UintToArith256(params.powLimit);
+
     int64_t nPastBlocks = 24;
+    int64_t nTargetSpacing = params.nPowTargetSpacing;
+    // NOTE: is this accurate? nActualTimespan counts it for (nPastBlocks - 1) blocks only...
+    int64_t nTargetTimespan = nPastBlocks * nTargetSpacing;
 
     // make sure we have at least (nPastBlocks + 1) blocks, otherwise just return powLimit
     if (!pindexLast || pindexLast->nHeight < nPastBlocks) {
@@ -29,13 +35,18 @@ unsigned int static DarkGravityWave(const CBlockIndex* pindexLast, const CBlockH
             return bnPowLimit.GetCompact();
         }
         // recent block is more than 10 minutes old
-        if (pblock->GetBlockTime() > pindexLast->GetBlockTime() + params.nPowTargetSpacing * 4) {
+        if (pblock->GetBlockTime() > pindexLast->GetBlockTime() + nTargetSpacing * 4) {
             arith_uint256 bnNew = arith_uint256().SetCompact(pindexLast->nBits) * 10;
             if (bnNew > bnPowLimit) {
                 bnNew = bnPowLimit;
             }
             return bnNew.GetCompact();
         }
+    }
+
+    // Reset on transition
+    if (pblock->IsProofOfStake() && !pindexLast->IsProofOfStake()) {
+        return bnPowLimit.GetCompact();
     }
 
     const CBlockIndex *pindex = pindexLast;
@@ -59,9 +70,7 @@ unsigned int static DarkGravityWave(const CBlockIndex* pindexLast, const CBlockH
     arith_uint256 bnNew(bnPastTargetAvg);
 
     int64_t nActualTimespan = pindexLast->GetBlockTime() - pindex->GetBlockTime();
-    // NOTE: is this accurate? nActualTimespan counts it for (nPastBlocks - 1) blocks only...
-    int64_t nTargetTimespan = nPastBlocks * params.nPowTargetSpacing;
-
+    
     if (nActualTimespan < nTargetTimespan/3)
         nActualTimespan = nTargetTimespan/3;
     if (nActualTimespan > nTargetTimespan*3)

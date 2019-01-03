@@ -33,6 +33,7 @@
 #include "keepass.h"
 #include "privatesend-client.h"
 #include "spork.h"
+#include "pos_kernel.h"
 
 #include <assert.h>
 
@@ -3152,6 +3153,90 @@ bool CWallet::SelectCoinsGrouppedByAddresses(std::vector<CompactTallyItem>& vecT
     return vecTallyRet.size() > 0;
 }
 
+bool CWallet::SelectStakeCoins(std::set<std::pair<const CWalletTx*, unsigned int> >& setCoins, CAmount nTargetAmount) const
+{
+    std::vector<COutput> vCoins;
+    AvailableCoins(vCoins, true);
+    auto curr_time = GetTime();
+    auto min_age = Params().MinStakeAge();
+
+    for (const COutput& out : vCoins) {
+        CAmount out_value = out.tx->tx->vout[out.i].nValue;
+
+        //make sure not to outrun target amount
+        if (out_value > nTargetAmount) {
+            continue;
+        }
+
+        if (out_value < MIN_STAKE_AMOUNT) {
+            continue;
+        }
+
+        // Do not touch collaterals
+        if (out_value == MASTERNODE_COLLATERAL_AMOUNT) {
+            continue;
+        }
+
+        //check for min age
+        if (curr_time - out.tx->GetTxTime() < min_age) {
+            continue;
+        }
+
+        //check that it is matured
+        if (out.nDepth < (out.tx->IsCoinBase() ? COINBASE_MATURITY : 10)) {
+            continue;
+        }
+
+        // Ignore already staked, locked or spent
+        auto tx_hash = out.tx->tx->GetHash();
+        if (IsSpent(tx_hash, out.i) || IsLockedCoin(tx_hash, out.i)) {
+            continue;
+        }
+
+        // Check another way if spent
+        if (!pcoinsTip->HaveCoinInCache(COutPoint(tx_hash, out.i))) {
+            continue;
+        }
+
+        //add to our stake set
+        setCoins.insert(std::make_pair(out.tx, out.i));
+    }
+
+    return !setCoins.empty();
+}
+
+bool CWallet::MintableCoins()
+{
+    CAmount nBalance = GetBalance();
+    if (IsArgSet("-reservebalance") && !ParseMoney(GetArg("-reservebalance", ""), nReserveBalance))
+        return error("MintableCoins() : invalid reserve balance amount");
+    if (nBalance <= nReserveBalance)
+        return false;
+
+    std::vector<COutput> vCoins;
+    AvailableCoins(vCoins, true);
+    auto min_age = Params().MinStakeAge();
+
+    BOOST_FOREACH (const COutput& out, vCoins) {
+        if (out.nDepth < (out.tx->IsCoinBase() ? COINBASE_MATURITY : 10))
+            continue;
+
+        CAmount out_value = out.tx->tx->vout[out.i].nValue;
+
+        if (out_value == MASTERNODE_COLLATERAL_AMOUNT) continue;
+        
+        if (out_value < MIN_STAKE_AMOUNT)
+            continue;
+
+        // Some more filters are possible, but excessive
+
+        if (GetTime() - out.tx->GetTxTime() >= min_age)
+            return true;
+    }
+
+    return false;
+}
+
 bool CWallet::SelectCoinsDark(CAmount nValueMin, CAmount nValueMax, std::vector<CTxIn>& vecTxInRet, CAmount& nValueRet, int nPrivateSendRoundsMin, int nPrivateSendRoundsMax) const
 {
     CCoinControl *coinControl=NULL;
@@ -3171,7 +3256,7 @@ bool CWallet::SelectCoinsDark(CAmount nValueMin, CAmount nValueMax, std::vector<
         if(out.tx->tx->vout[out.i].nValue < nValueMin/10) continue;
         //do not allow collaterals to be selected
         if(CPrivateSend::IsCollateralAmount(out.tx->tx->vout[out.i].nValue)) continue;
-        if(fMasternodeMode && out.tx->tx->vout[out.i].nValue == MASTERNODE_COLLATERAL_AMOUNT) continue; //masternode input
+        if(out.tx->tx->vout[out.i].nValue == MASTERNODE_COLLATERAL_AMOUNT) continue;
 
         if(nValueRet + out.tx->tx->vout[out.i].nValue <= nValueMax){
             CTxIn txin = CTxIn(out.tx->GetHash(),out.i);
@@ -3829,6 +3914,153 @@ bool CWallet::CreateTransaction(const std::vector<CRecipient>& vecSend, CWalletT
         }
     }
     return true;
+}
+
+// ppcoin: create coin stake transaction
+bool CWallet::CreateCoinStake(const CKeyStore& keystore, CBlock &curr_block, int64_t nSearchInterval, CMutableTransaction& coinbaseTx)
+{
+    // Choose coins to use
+    CAmount nBalance = GetBalance();
+
+    if (IsArgSet("-reservebalance") && !ParseMoney(GetArg("-reservebalance", ""), nReserveBalance))
+        return error("CreateCoinStake : invalid reserve balance amount");
+
+    if (nBalance <= nReserveBalance)
+        return error("CreateCoinStake : balance is less than required to reserve");
+
+    // presstab HyperStake - Initialize as static and don't update the set on every run of CreateCoinStake() in order to lighten resource use
+    CAmount nTargetAmount = nBalance - nReserveBalance;
+
+    if (GetTime() - nLastStakeSetUpdate > nStakeSetUpdateTime) {
+        setStakeCoins.clear();
+
+        if (!SelectStakeCoins(setStakeCoins, nTargetAmount)) {
+            return error("CreateCoinStake : no inputs eligable for staking");
+        }
+
+        nLastStakeSetUpdate = GetTime();
+    }
+
+    if (setStakeCoins.empty())
+        return false;
+
+    for (const auto &pcoin : setStakeCoins) {
+        CBlockIndex* pcoin_index = NULL;
+        auto pWalletTxIn = pcoin.first;
+
+        BlockMap::iterator it = mapBlockIndex.find(pWalletTxIn->hashBlock);
+        if (it != mapBlockIndex.end())
+            pcoin_index = it->second;
+        else {
+            LogPrintf("CreateCoinStake() failed to find block index for %s \n",
+                        pWalletTxIn->hashBlock.ToString().c_str());
+            continue;
+        }
+
+        // Read block header
+        COutPoint prevoutStake = COutPoint(pWalletTxIn->GetHash(), pcoin.second);
+
+        //iterates each utxo inside of CheckStakeKernelHash()
+        bool fKernelFound = CheckStakeKernelHash(
+                curr_block.nBits, pcoin_index->GetBlockHeader(), *pWalletTxIn,
+                prevoutStake,
+                curr_block.nTime,
+                nHashDrift,
+                false,
+                curr_block.hashProofOfStake(),
+                curr_block.nStakeModifier(),
+                true);
+
+        if (fKernelFound) {
+            //Double check that this will pass time requirements
+            if (curr_block.nTime <= chainActive.Tip()->GetMedianTimePast()) {
+                LogPrintf("CreateCoinStake() : kernel found, but it is too far in the past \n");
+                continue;
+            }
+
+            // Found a kernel
+            if (fDebug && GetBoolArg("-printcoinstake", false)) {
+                LogPrintf("CreateCoinStake : kernel found\n");
+            }
+
+            std::vector<std::vector<unsigned char>> vSolutions;
+            txnouttype whichType;
+            CScript scriptPubKeyOut;
+            const auto &tx_in = pWalletTxIn->tx->vout[pcoin.second];
+            const auto &scriptPubKeyKernel = tx_in.scriptPubKey;
+
+            if (!Solver(scriptPubKeyKernel, whichType, vSolutions)) {
+                LogPrintf("CreateCoinStake : failed to parse kernel\n");
+                break;
+            }
+
+            if (fDebug && GetBoolArg("-printcoinstake", false)) {
+                LogPrintf("CreateCoinStake : parsed kernel type=%d\n", whichType);
+            }
+
+            if (whichType == TX_PUBKEYHASH) // pay to address type
+            {
+                // convert to pay to address type
+                if (!keystore.GetPubKey(CKeyID(uint160(vSolutions[0])), curr_block.posPubKey)) {
+                    if (fDebug && GetBoolArg("-printcoinstake", false))
+                        LogPrintf("CreateCoinStake : failed to get key for kernel type=%d\n", whichType);
+                    break; // unable to find corresponding public key
+                }
+            }
+            else if (whichType == TX_PUBKEY) // pay to public key
+            {
+                curr_block.posPubKey = CPubKey(vSolutions[0]);
+            }
+            else
+            {
+                if (fDebug && GetBoolArg("-printcoinstake", false))
+                    LogPrintf("CreateCoinStake : no support for kernel type=%d\n", whichType);
+                break; // only support pay to public key and pay to address
+            }
+
+            assert(curr_block.posPubKey.IsValid());
+            scriptPubKeyOut = GetScriptForDestination(curr_block.posPubKey.GetID());
+
+            // Require the same miner's output in CoinBase
+            coinbaseTx.vout[0].scriptPubKey = scriptPubKeyOut;
+            
+            CMutableTransaction stakeTx;
+            stakeTx.vin.emplace_back(prevoutStake);
+            stakeTx.vout.emplace_back(tx_in.nValue, scriptPubKeyOut);
+
+            // TODO: potentially support multi-input stake where extra inputs
+            //       combine Dust.
+
+            CAmount reward = stakeTx.vout[0].nValue;
+            CAmount split_threshold = nStakeSplitThreshold * COIN;
+            CAmount half_reward = (reward / 2);
+
+            if (half_reward > split_threshold) {
+                stakeTx.vout[0].nValue = half_reward;
+                stakeTx.vout.emplace_back((reward - half_reward), scriptPubKeyOut);
+            }
+            
+            if (!SignSignature(*this, scriptPubKeyKernel, stakeTx, 0)) {
+                return error("CreateCoinStake : failed to sign coinstake");
+            }
+
+            curr_block.posStakeHash = prevoutStake.hash;
+            curr_block.posStakeN = prevoutStake.n;
+            curr_block.Stake() = MakeTransactionRef(std::move(stakeTx));
+
+            if (fDebug && GetBoolArg("-printcoinstake", false))
+                LogPrintf("CreateCoinStake : added kernel type=%d\n", whichType);
+
+            // Force update
+            nLastStakeSetUpdate = 0;
+            return true;
+        }
+    }
+
+    if (fDebug && GetBoolArg("-printcoinstake", false))
+        LogPrintf("CreateCoinStake : no stakes found\n");
+
+    return false;
 }
 
 /**

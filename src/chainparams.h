@@ -87,6 +87,7 @@ public:
     int PoolMaxTransactions() const { return nPoolMaxTransactions; }
     int FulfilledRequestExpireTime() const { return nFulfilledRequestExpireTime; }
     const std::string& SporkAddress() const { return strSporkAddress; }
+    int64_t MinStakeAge() const { return nStakeMinAge; }
 protected:
     CChainParams() {}
 
@@ -115,6 +116,7 @@ protected:
     int nPoolMaxTransactions;
     int nFulfilledRequestExpireTime;
     std::string strSporkAddress;
+    int64_t nStakeMinAge;
 };
 
 /**

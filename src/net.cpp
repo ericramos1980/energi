@@ -27,7 +27,9 @@
 #include "instantx.h"
 #include "masternode-sync.h"
 #include "masternodeman.h"
+#include "miner.h"
 #include "privatesend.h"
+#include "wallet/wallet.h"
 
 #ifdef WIN32
 #include <string.h>
@@ -2189,8 +2191,11 @@ void CConnman::ThreadMessageHandler()
 }
 
 
-
-
+// ppcoin: stake minter thread
+void CConnman::ThreadStakeMinter()
+{
+    PoSMiner(pwalletMain, interruptNet);
+}
 
 
 bool CConnman::BindListenPort(const CService &addrBind, std::string& strError, bool fWhitelisted)
@@ -2499,6 +2504,11 @@ bool CConnman::Start(CScheduler& scheduler, std::string& strNodeError, Options c
     // Dump network addresses
     scheduler.scheduleEvery(boost::bind(&CConnman::DumpData, this), DUMP_ADDRESSES_INTERVAL);
 
+    // ppcoin:mint proof-of-stake blocks in the background
+    if (GetBoolArg("-staking", true)) {
+        threadStakeMint = std::thread(&TraceThread<std::function<void()>>, "stakemint", std::function<void()>(std::bind(&CConnman::ThreadStakeMinter, this)));
+    }
+
     return true;
 }
 
@@ -2569,6 +2579,8 @@ void CConnman::Stop()
         threadDNSAddressSeed.join();
     if (threadSocketHandler.joinable())
         threadSocketHandler.join();
+    if (threadStakeMint.joinable())
+        threadStakeMint.join();
 
     // As this is exceptional functionality such dummy approach
     // is acceptable.

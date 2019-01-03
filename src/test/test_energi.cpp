@@ -21,6 +21,7 @@
 #include "rpc/server.h"
 #include "rpc/register.h"
 #include "script/sigcache.h"
+#include "wallet/wallet.h"
 
 #include "test/testutil.h"
 
@@ -105,7 +106,7 @@ TestChain100Setup::TestChain100Setup() : TestingSetup(CBaseChainParams::REGTEST)
     {
         std::vector<CMutableTransaction> noTxns;
         CBlock b = CreateAndProcessBlock(noTxns, scriptPubKey);
-        coinbaseTxns.push_back(*b.vtx[0]);
+        coinbaseTxns.push_back(*(b.CoinBase()));
     }
 }
 
@@ -117,24 +118,35 @@ CBlock
 TestChain100Setup::CreateAndProcessBlock(const std::vector<CMutableTransaction>& txns, const CScript& scriptPubKey)
 {
     const CChainParams& chainparams = Params();
-    std::unique_ptr<CBlockTemplate> pblocktemplate = BlockAssembler(chainparams).CreateNewBlock(scriptPubKey);
-    CBlock& block = pblocktemplate->block;
+    
+    auto pblocktemplate = BlockAssembler(chainparams).CreateNewBlock(scriptPubKey, pwalletMain);
+    auto pblock = pblocktemplate->block;
 
-    // Replace mempool-selected txns with just coinbase plus passed-in txns:
-    block.vtx.resize(1);
-    BOOST_FOREACH(const CMutableTransaction& tx, txns)
-        block.vtx.push_back(MakeTransactionRef(tx));
-    // IncrementExtraNonce creates a valid coinbase and merkleRoot
-    unsigned int extraNonce = 0;
-    IncrementExtraNonce(&block, chainActive.Tip(), extraNonce);
+    if (pblock->IsProofOfStake()) {
+        CValidationState state;
 
-    while (!CheckProofOfWork(block.GetPOWHash(), block.nBits, chainparams.GetConsensus())) ++block.nNonce;
+        while (!TestBlockValidity(state, chainparams, *pblock, chainActive.Tip(), true, true)) {
+            MilliSleep(1000);
+            pblocktemplate = BlockAssembler(chainparams).CreateNewBlock(scriptPubKey, pwalletMain);
+            pblock = pblocktemplate->block;
+            state = CValidationState();
+        }
+    } else {
 
-    std::shared_ptr<const CBlock> shared_pblock = std::make_shared<const CBlock>(block);
-    ProcessNewBlock(chainparams, shared_pblock, true, NULL);
+        // Replace mempool-selected txns with just coinbase plus passed-in txns:
+        pblock->vtx.resize(1);
+        BOOST_FOREACH(const CMutableTransaction& tx, txns)
+            pblock->vtx.push_back(MakeTransactionRef(tx));
+        // IncrementExtraNonce creates a valid coinbase and merkleRoot
+        unsigned int extraNonce = 0;
+        IncrementExtraNonce(pblock.get(), chainActive.Tip(), extraNonce);
 
-    CBlock result = block;
-    return result;
+        while (!CheckProof(*pblock, chainparams.GetConsensus())) ++pblock->nNonce;
+    }
+
+    ProcessNewBlock(chainparams, pblock, true, NULL);
+
+    return *pblock;
 }
 
 TestChain100Setup::~TestChain100Setup()

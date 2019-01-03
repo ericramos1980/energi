@@ -87,7 +87,7 @@ class WalletDumpTest(BitcoinTestFramework):
         self.nodes[0].keypoolrefill()
 
         # dump unencrypted wallet
-        self.nodes[0].dumpwallet(tmpdir + "/node0/wallet.unencrypted.dump")
+        self.nodes[0].dumpwallet(tmpdir + "/node0/wallet.unencrypted.dump", self.nodes[0].genauthcode())
 
         found_addr, found_addr_chg, found_addr_rsv, hd_master_addr_unenc = \
             read_dump(tmpdir + "/node0/wallet.unencrypted.dump", addrs, None)
@@ -102,7 +102,7 @@ class WalletDumpTest(BitcoinTestFramework):
         self.nodes[0].walletpassphrase('test', 10)
         # Should be a no-op:
         self.nodes[0].keypoolrefill()
-        self.nodes[0].dumpwallet(tmpdir + "/node0/wallet.encrypted.dump")
+        self.nodes[0].dumpwallet(tmpdir + "/node0/wallet.encrypted.dump", self.nodes[0].genauthcode())
 
         found_addr, found_addr_chg, found_addr_rsv, hd_master_addr_enc = \
             read_dump(tmpdir + "/node0/wallet.encrypted.dump", addrs, hd_master_addr_unenc)
