@@ -305,9 +305,11 @@ void CMasternodePayments::FillBlockPayee(CMutableTransaction& txNew, int nBlockH
 }
 
 int CMasternodePayments::GetMinMasternodePaymentsProto() const {
-    return sporkManager.IsSporkActive(SPORK_10_MASTERNODE_PAY_UPDATED_NODES)
+    int spork10 = sporkManager.IsSporkActive(SPORK_10_MASTERNODE_PAY_UPDATED_NODES)
             ? MIN_MASTERNODE_PAYMENT_PROTO_VERSION_2
             : MIN_MASTERNODE_PAYMENT_PROTO_VERSION_1;
+    int spork16 = sporkManager.GetSporkValue(SPORK_16_MASTERNODE_MIN_PROTOCOL);
+    return std::max(spork10, spork16);
 }
 
 void CMasternodePayments::ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStream& vRecv, CConnman& connman)

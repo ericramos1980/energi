@@ -27,6 +27,7 @@ std::map<int, int64_t> mapSporkDefaults = {
     {SPORK_12_RECONSIDER_BLOCKS,             0},             // 0 BLOCKS
     {SPORK_14_REQUIRE_SENTINEL_FLAG,         1545415606ULL}, // ON
     {SPORK_15_FIRST_POS_BLOCK,               999999ULL},     // OFF
+    {SPORK_16_MASTERNODE_MIN_PROTOCOL,       MIN_PEER_PROTO_VERSION }, // Actual
 };
 
 void CSporkManager::ProcessSpork(CNode* pfrom, const std::string& strCommand, CDataStream& vRecv, CConnman& connman)
@@ -172,6 +173,7 @@ int CSporkManager::GetSporkIDByName(const std::string& strName)
     if (strName == "SPORK_12_RECONSIDER_BLOCKS")                return SPORK_12_RECONSIDER_BLOCKS;
     if (strName == "SPORK_14_REQUIRE_SENTINEL_FLAG")            return SPORK_14_REQUIRE_SENTINEL_FLAG;
     if (strName == "SPORK_15_FIRST_POS_BLOCK")                  return SPORK_15_FIRST_POS_BLOCK;
+    if (strName == "SPORK_16_MASTERNODE_MIN_PROTOCOL")          return SPORK_16_MASTERNODE_MIN_PROTOCOL;
 
     LogPrint("spork", "CSporkManager::GetSporkIDByName -- Unknown Spork name '%s'\n", strName);
     return -1;
@@ -190,6 +192,7 @@ std::string CSporkManager::GetSporkNameByID(int nSporkID)
         case SPORK_12_RECONSIDER_BLOCKS:                return "SPORK_12_RECONSIDER_BLOCKS";
         case SPORK_14_REQUIRE_SENTINEL_FLAG:            return "SPORK_14_REQUIRE_SENTINEL_FLAG";
         case SPORK_15_FIRST_POS_BLOCK:                  return "SPORK_15_FIRST_POS_BLOCK";
+        case SPORK_16_MASTERNODE_MIN_PROTOCOL:          return "SPORK_16_MASTERNODE_MIN_PROTOCOL";
         default:
             LogPrint("spork", "CSporkManager::GetSporkNameByID -- Unknown Spork ID %d\n", nSporkID);
             return "Unknown";
