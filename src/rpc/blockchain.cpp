@@ -91,11 +91,20 @@ UniValue blockheaderToJSON(const CBlockIndex* blockindex)
     result.push_back(Pair("merkleroot", blockindex->hashMerkleRoot.GetHex()));
     result.push_back(Pair("time", (int64_t)blockindex->nTime));
     result.push_back(Pair("mediantime", (int64_t)blockindex->GetMedianTimePast()));
-    result.push_back(Pair("nonce", (uint64_t)blockindex->nNonce));
     result.push_back(Pair("bits", strprintf("%08x", blockindex->nBits)));
     result.push_back(Pair("difficulty", GetDifficulty(blockindex)));
     result.push_back(Pair("chainwork", blockindex->nChainWork.GetHex()));
-    result.push_back(Pair("hashmix", blockindex->hashMix.GetHex()));
+    result.push_back(Pair("chaintx", (uint64_t)blockindex->nChainTx));
+
+    if (blockindex->IsProofOfWork()) {
+        result.push_back(Pair("hashmix", blockindex->hashMix.GetHex()));
+        result.push_back(Pair("nonce", (uint64_t)blockindex->nNonce));
+    } else {
+        result.push_back(Pair("posproof", blockindex->hashMix.GetHex()));
+        result.push_back(Pair("stakemod", (uint64_t)blockindex->nNonce));
+        result.push_back(Pair("staketx", blockindex->posStakeHash.GetHex()));
+        result.push_back(Pair("staken", (uint64_t)blockindex->posStakeN));
+    }
 
     if (blockindex->pprev)
         result.push_back(Pair("previousblockhash", blockindex->pprev->GetBlockHash().GetHex()));
@@ -135,11 +144,20 @@ UniValue blockToJSON(const CBlock& block, const CBlockIndex* blockindex, bool tx
     result.push_back(Pair("tx", txs));
     result.push_back(Pair("time", block.GetBlockTime()));
     result.push_back(Pair("mediantime", (int64_t)blockindex->GetMedianTimePast()));
-    result.push_back(Pair("nonce", (uint64_t)block.nNonce));
     result.push_back(Pair("bits", strprintf("%08x", block.nBits)));
     result.push_back(Pair("difficulty", GetDifficulty(blockindex)));
     result.push_back(Pair("chainwork", blockindex->nChainWork.GetHex()));
-    result.push_back(Pair("hashmix", block.hashMix.GetHex()));
+    result.push_back(Pair("chaintx", (uint64_t)blockindex->nChainTx));
+
+    if (blockindex->IsProofOfWork()) {
+        result.push_back(Pair("hashmix", blockindex->hashMix.GetHex()));
+        result.push_back(Pair("nonce", (uint64_t)blockindex->nNonce));
+    } else {
+        result.push_back(Pair("posproof", blockindex->hashMix.GetHex()));
+        result.push_back(Pair("stakemod", (uint64_t)blockindex->nNonce));
+        result.push_back(Pair("staketx", blockindex->posStakeHash.GetHex()));
+        result.push_back(Pair("staken", (uint64_t)blockindex->posStakeN));
+    }
 
     if (blockindex->pprev)
         result.push_back(Pair("previousblockhash", blockindex->pprev->GetBlockHash().GetHex()));
@@ -690,14 +708,18 @@ UniValue getblockheader(const JSONRPCRequest& request)
             "  \"merkleroot\" : \"xxxx\", (string) The merkle root\n"
             "  \"time\" : ttt,          (numeric) The block time in seconds since epoch (Jan 1 1970 GMT)\n"
             "  \"mediantime\" : ttt,    (numeric) The median block time in seconds since epoch (Jan 1 1970 GMT)\n"
-            "  \"nonce\" : n,           (numeric) The nonce\n"
             "  \"bits\" : \"1d00ffff\", (string) The bits\n"
             "  \"difficulty\" : x.xxx,  (numeric) The difficulty\n"
-            "  \"hashmix      \" : \"hash\",      (string) The hashmix of the block\n"
+            "  \"hashmix\" : \"hash\",  (string) PoW: The hashmix of the block\n"
+            "  \"nonce\" : n,           (numeric) PoW: The nonce\n"
+            "  \"posproof\" : \"hash\", (string) PoS: proof value\n"
+            "  \"stakemod\" : n,        (numeric) PoS: stake modifier\n"
+            "  \"staketx\" : \"hash\",  (string) PoS: stake TX hash\n"
+            "  \"staken\" : n,          (numeric) PoS: stake TX output\n"
             "  \"previousblockhash\" : \"hash\",  (string) The hash of the previous block\n"
             "  \"nextblockhash\" : \"hash\",      (string) The hash of the next block\n"
             "  \"chainwork\" : \"0000...1f3\"     (string) Expected number of hashes required to produce the current chain (in hex)\n"
-            "}\n"
+            "  \"chaintx\" : n          (numeric) Transaction count in current chain\n"
             "\nResult (for verbose=false):\n"
             "\"data\"             (string) A string that is serialized, hex-encoded data for block 'hash'.\n"
             "\nExamples:\n"
@@ -751,13 +773,18 @@ UniValue getblockheaders(const JSONRPCRequest& request)
             "  \"merkleroot\" : \"xxxx\",         (string)  The merkle root\n"
             "  \"time\" : ttt,                  (numeric) The block time in seconds since epoch (Jan 1 1970 GMT)\n"
             "  \"mediantime\" : ttt,            (numeric) The median block time in seconds since epoch (Jan 1 1970 GMT)\n"
-            "  \"nonce\" : n,                   (numeric) The nonce\n"
             "  \"bits\" : \"1d00ffff\",           (string)  The bits\n"
             "  \"difficulty\" : x.xxx,          (numeric) The difficulty\n"
-            "  \"hashmix      \" : \"hash\",      (string) The hashmix of the block\n"
+            "  \"hashmix\" : \"hash\",  (string) PoW: The hashmix of the block\n"
+            "  \"nonce\" : n,           (numeric) PoW: The nonce\n"
+            "  \"posproof\" : \"hash\", (string) PoS: proof value\n"
+            "  \"stakemod\" : n,        (numeric) PoS: stake modifier\n"
+            "  \"staketx\" : \"hash\",  (string) PoS: stake TX hash\n"
+            "  \"staken\" : n,          (numeric) PoS: stake TX output\n"
             "  \"previousblockhash\" : \"hash\",  (string)  The hash of the previous block\n"
             "  \"nextblockhash\" : \"hash\",      (string)  The hash of the next block\n"
             "  \"chainwork\" : \"0000...1f3\"     (string)  Expected number of hashes required to produce the current chain (in hex)\n"
+            "  \"chaintx\" : n          (numeric) Transaction count in current chain\n"
             "}, {\n"
             "       ...\n"
             "   },\n"
@@ -845,11 +872,16 @@ UniValue getblock(const JSONRPCRequest& request)
             "  ],\n"
             "  \"time\" : ttt,          (numeric) The block time in seconds since epoch (Jan 1 1970 GMT)\n"
             "  \"mediantime\" : ttt,    (numeric) The median block time in seconds since epoch (Jan 1 1970 GMT)\n"
-            "  \"nonce\" : n,           (numeric) The nonce\n"
             "  \"bits\" : \"1d00ffff\", (string) The bits\n"
             "  \"difficulty\" : x.xxx,  (numeric) The difficulty\n"
-            "  \"chainwork\" : \"xxxx\",  (string) Expected number of hashes required to produce the chain up to this block (in hex)\n"
-            "  \"hashmix      \" : \"hash\",      (string) The hashmix of the block\n"
+            "  \"chainwork\" : \"0000...1f3\",  (string) Expected number of hashes required to produce the chain up to this block (in hex)\n"
+            "  \"chaintx\" : n          (numeric) Transaction count in current chain\n"
+            "  \"hashmix\" : \"hash\",  (string) PoW: The hashmix of the block\n"
+            "  \"nonce\" : n,           (numeric) PoW: The nonce\n"
+            "  \"posproof\" : \"hash\", (string) PoS: proof value\n"
+            "  \"stakemod\" : n,        (numeric) PoS: stake modifier\n"
+            "  \"staketx\" : \"hash\",  (string) PoS: stake TX hash\n"
+            "  \"staken\" : n,          (numeric) PoS: stake TX output\n"
             "  \"previousblockhash\" : \"hash\",  (string) The hash of the previous block\n"
             "  \"nextblockhash\" : \"hash\"       (string) The hash of the next block\n"
             "}\n"
