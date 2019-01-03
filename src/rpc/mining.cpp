@@ -1,3 +1,4 @@
+// Copyright (c) 2017-2019 The Energi Core developers
 // Copyright (c) 2010 Satoshi Nakamoto
 // Copyright (c) 2009-2015 The Bitcoin Core developers
 // Copyright (c) 2014-2017 The Dash Core developers

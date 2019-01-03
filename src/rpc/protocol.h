@@ -1,3 +1,4 @@
+// Copyright (c) 2017-2019 The Energi Core developers
 // Copyright (c) 2010 Satoshi Nakamoto
 // Copyright (c) 2009-2015 The Bitcoin Core developers
 // Distributed under the MIT software license, see the accompanying

@@ -1,3 +1,5 @@
+// Copyright (c) 2017-2019 The Energi Core developers
+// file COPYING or http://www.opensource.org/licenses/mit-license.php.
 // Copyright (c) 2014-2017 The Dash Core developers
 // Distributed under the MIT software license, see the accompanying
 #ifndef DASH_HDCHAIN_H

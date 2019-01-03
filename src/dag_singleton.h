@@ -1,3 +1,4 @@
+// Copyright (c) 2017-2019 The Energi Core developers
 // Copyright (c) 2017 Energi Development Team
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.

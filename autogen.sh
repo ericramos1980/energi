@@ -1,4 +1,7 @@
 #!/bin/sh
+#
+# Copyright (c) 2017-2019 The Energi Core developers
+#
 
 srcdir="$(dirname $0)"
 

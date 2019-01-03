@@ -1,3 +1,5 @@
+// Copyright (c) 2019-2019 The Energi Core developers
+// Distributed under the MIT software license, see the accompanying
 /* @flow */
 // Copyright (c) 2012-2013 The PPCoin developers
 // Distributed under the MIT/X11 software license, see the accompanying
