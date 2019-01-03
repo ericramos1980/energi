@@ -729,6 +729,14 @@ public:
     MasterKeyMap mapMasterKeys;
     unsigned int nMasterKeyMaxID;
 
+    // Stake Settings
+    unsigned int nHashDrift;
+    unsigned int nHashInterval;
+    uint64_t nStakeSplitThreshold;
+    int nStakeSetUpdateTime;
+    std::set<std::pair<const CWalletTx*, unsigned int> > setStakeCoins;
+    int nLastStakeSetUpdate;
+
     CWallet()
     {
         SetNull();
@@ -754,6 +762,15 @@ public:
         nWalletMaxVersion = FEATURE_BASE;
         fFileBacked = false;
         nMasterKeyMaxID = 0;
+
+        // Stake Settings
+        nHashDrift = 30;
+        nStakeSplitThreshold = MAX_MONEY / COIN;
+        nHashInterval = 10;
+        nStakeSetUpdateTime = 300; // 5 minutes
+        setStakeCoins.clear();
+        nLastStakeSetUpdate = 0;
+
         pwalletdbEncryption = NULL;
         nOrderPosNext = 0;
         nNextResend = 0;
@@ -810,6 +827,9 @@ public:
     bool SelectCoinsDark(CAmount nValueMin, CAmount nValueMax, std::vector<CTxIn>& vecTxInRet, CAmount& nValueRet, int nPrivateSendRoundsMin, int nPrivateSendRoundsMax) const;
 
     bool SelectCoinsGrouppedByAddresses(std::vector<CompactTallyItem>& vecTallyRet, bool fSkipDenominated = true, bool fAnonymizable = true, bool fSkipUnconfirmed = true) const;
+
+    bool MintableCoins();
+    bool SelectStakeCoins(std::set<std::pair<const CWalletTx*, unsigned int> >& setCoins, CAmount nTargetAmount) const;
 
     /// Get 10000NRG output and keys which can be used for the Masternode
     bool GetMasternodeOutpointAndKeys(COutPoint& outpointRet, CPubKey& pubKeyRet, CKey& keyRet, const std::string& strTxHash = "", const std::string& strOutputIndex = "");
@@ -940,6 +960,7 @@ public:
 
     bool CreateCollateralTransaction(CMutableTransaction& txCollateral, std::string& strReason);
     bool ConvertList(std::vector<CTxIn> vecTxIn, std::vector<CAmount>& vecAmounts);
+    bool CreateCoinStake(const CKeyStore& keystore, CBlock& curr_block, int64_t nSearchInterval, CMutableTransaction& coinbaseTx);
 
     void ListAccountCreditDebit(const std::string& strAccount, std::list<CAccountingEntry>& entries);
     bool AddAccountingEntry(const CAccountingEntry&);

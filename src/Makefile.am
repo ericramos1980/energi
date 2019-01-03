@@ -193,6 +193,7 @@ BITCOIN_CORE_H = \
   policy/fees.h \
   policy/policy.h \
   policy/rbf.h \
+  pos_kernel.h \
   pow.h \
   protocol.h \
   random.h \
@@ -333,6 +334,7 @@ libenergi_wallet_a_CPPFLAGS = $(AM_CPPFLAGS) $(BITCOIN_INCLUDES) $(PIC_FLAGS) $(
 libenergi_wallet_a_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
 libenergi_wallet_a_SOURCES = \
   keepass.cpp \
+  pos_kernel.cpp \
   privatesend-client.cpp \
   privatesend-util.cpp \
   wallet/crypter.cpp \

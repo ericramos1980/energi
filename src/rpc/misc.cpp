@@ -67,6 +67,7 @@ UniValue getinfo(const JSONRPCRequest& request)
             "  \"unlocked_until\": ttt,      (numeric) the timestamp in seconds since epoch (midnight Jan 1 1970 GMT) that the wallet is unlocked for transfers, or 0 if the wallet is locked\n"
             "  \"paytxfee\": x.xxxx,         (numeric) the transaction fee set in " + CURRENCY_UNIT + "/kB\n"
             "  \"relayfee\": x.xxxx,         (numeric) minimum relay fee for non-free transactions in " + CURRENCY_UNIT + "/kB\n"
+            "  \"staking status\": true|false,  (boolean) if the wallet is staking or not\n"
             "  \"errors\": \"...\"           (string) any error messages\n"
             "}\n"
             "\nExamples:\n"
@@ -111,6 +112,8 @@ UniValue getinfo(const JSONRPCRequest& request)
     obj.push_back(Pair("paytxfee",      ValueFromAmount(payTxFee.GetFeePerK())));
 #endif
     obj.push_back(Pair("relayfee",      ValueFromAmount(::minRelayTxFee.GetFeePerK())));
+    bool nStaking = nLastCoinStakeSearchInterval != 0; // TODO: revise
+    obj.push_back(Pair("staking status", (nStaking ? "Staking Active" : "Staking Not Active")));
     obj.push_back(Pair("errors",        GetWarnings("statusbar")));
     return obj;
 }

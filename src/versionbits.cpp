@@ -26,7 +26,7 @@ const struct BIP9DeploymentInfo VersionBitsDeploymentInfo[Consensus::MAX_VERSION
         /*.name =*/ "bip147",
         /*.gbt_force =*/ true,
         /*.check_mn_protocol =*/ false,
-    }
+    },
 };
 
 ThresholdState AbstractThresholdConditionChecker::GetStateFor(const CBlockIndex* pindexPrev, const Consensus::Params& params, ThresholdConditionCache& cache) const

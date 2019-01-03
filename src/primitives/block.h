@@ -9,6 +9,9 @@
 #include "primitives/transaction.h"
 #include "serialize.h"
 #include "uint256.h"
+#include "pubkey.h"
+
+class CKeyStore;
 
 /** Nodes collect new transactions into a block, hash them into a hash tree,
  * and scan through nonce values to make the block's hash satisfy proof-of-work
@@ -20,15 +23,27 @@
 class CBlockHeader
 {
 public:
-    // header
+    static constexpr uint32_t POS_BIT = 0x10000000UL;
+
+    // header for  hashing
     int32_t nVersion;
     uint256 hashPrevBlock;
     uint256 hashMerkleRoot;
     uint32_t nTime;
     uint32_t nBits;
     uint32_t nHeight;
-    uint256 hashMix;
-    uint64_t nNonce;
+    // Mix of PoW & PoS
+    // NOTE: Proof & Modifier are not strictly required in PoS block,
+    //       but it should aid debugging issues in field.
+    uint256 hashMix; // aka hashProofOfStake
+    uint64_t nNonce; // aka nStakeModifier
+    // PoS only
+    uint256 posStakeHash; // stake primary input tx
+    uint32_t posStakeN; // stake primary input tx output
+    std::vector<unsigned char> posBlockSig; // to be signed by coinbase/coinstake primary out
+
+    // Memory-only
+    mutable CPubKey posPubKey;
 
     CBlockHeader()
     {
@@ -47,6 +62,19 @@ public:
         READWRITE(nHeight);
         READWRITE(hashMix);
         READWRITE(nNonce);
+
+        if (IsProofOfStake()) {
+            READWRITE(posStakeHash);
+            READWRITE(posStakeN);
+
+            if (!(s.GetType() & SER_GETHASH)) {
+                READWRITE(posBlockSig);
+            }
+
+            if (ser_action.ForRead()) {
+                posPubKey = CPubKey();
+            }
+        }
     }
 
     void SetNull()
@@ -59,6 +87,10 @@ public:
         nHeight = 0;
         hashMix.SetNull();
         nNonce = 0;
+        posStakeHash.SetNull();
+        posStakeN = 0;
+        posBlockSig.clear();
+        posPubKey = CPubKey();
     }
 
     bool IsNull() const
@@ -86,12 +118,44 @@ public:
     {
         return (int64_t)nTime;
     }
-};
 
+    uint256& hashProofOfStake() {
+        return hashMix;
+    }
+    const uint256& hashProofOfStake() const {
+        return hashMix;
+    }
+    uint64_t& nStakeModifier() {
+        return nNonce;
+    }
+    const uint64_t& nStakeModifier() const {
+        return nNonce;
+    }
+
+    bool IsProofOfStake() const
+    {
+        return (nVersion & CBlockHeader::POS_BIT) != 0;
+    }
+
+    bool IsProofOfWork() const
+    {
+        return !IsProofOfStake();
+    }
+
+    bool SignBlock(const CKeyStore& keystore);
+    bool CheckBlockSignature(const CKeyID&) const;
+    const CPubKey& BlockPubKey() const;
+    COutPoint StakeInput() const {
+        return COutPoint(posStakeHash, posStakeN);
+    }
+};
 
 class CBlock : public CBlockHeader
 {
 public:
+    static constexpr size_t COINBASE_INDEX = 0;
+    static constexpr size_t STAKE_INDEX = 1;
+
     // network and disk
     std::vector<CTransactionRef> vtx;
 
@@ -116,7 +180,7 @@ public:
 
     template <typename Stream, typename Operation>
     inline void SerializationOp(Stream& s, Operation ser_action) {
-        READWRITE(*(CBlockHeader*)this);
+        CBlockHeader::SerializationOp(s, ser_action);
         READWRITE(vtx);
     }
 
@@ -132,16 +196,25 @@ public:
 
     CBlockHeader GetBlockHeader() const
     {
-        CBlockHeader block;
-        block.nVersion       = nVersion;
-        block.hashPrevBlock  = hashPrevBlock;
-        block.hashMerkleRoot = hashMerkleRoot;
-        block.nTime          = nTime;
-        block.nBits          = nBits;
-        block.nHeight        = nHeight;
-        block.hashMix        = hashMix;
-        block.nNonce         = nNonce;
-        return block;
+        return *this;
+    }
+
+    bool HasCoinBase() const;
+    bool HasStake() const;
+
+    const CTransactionRef& CoinBase() const {
+        return vtx[COINBASE_INDEX];
+    }
+    CTransactionRef& CoinBase() {
+        return vtx[COINBASE_INDEX];
+    }
+
+    const CTransactionRef& Stake() const {
+        return vtx[STAKE_INDEX];
+    }
+
+    CTransactionRef& Stake() {
+        return vtx[STAKE_INDEX];
     }
 
     std::string ToString() const;

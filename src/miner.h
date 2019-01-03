@@ -7,6 +7,7 @@
 #define BITCOIN_MINER_H
 
 #include "primitives/block.h"
+#include "threadinterrupt.h"
 #include "txmempool.h"
 
 #include <stdint.h>
@@ -27,7 +28,7 @@ static const bool DEFAULT_PRINTPRIORITY = false;
 
 struct CBlockTemplate
 {
-    CBlock block;
+    std::shared_ptr<CBlock> block{new CBlock()};
     std::vector<CAmount> vTxFees;
     std::vector<int64_t> vTxSigOps;
 };
@@ -137,7 +138,7 @@ private:
     // The constructed block template
     std::unique_ptr<CBlockTemplate> pblocktemplate;
     // A convenience pointer that always refers to the CBlock in pblocktemplate
-    CBlock* pblock;
+    std::shared_ptr<CBlock> pblock;
 
     // Configuration parameters for the block size
     unsigned int nBlockMaxSize;
@@ -162,7 +163,7 @@ private:
 public:
     BlockAssembler(const CChainParams& chainparams);
     /** Construct a new block template with coinbase to scriptPubKeyIn */
-    std::unique_ptr<CBlockTemplate> CreateNewBlock(const CScript& scriptPubKeyIn);
+    std::unique_ptr<CBlockTemplate> CreateNewBlock(const CScript& scriptPubKeyIn, CWallet* pwallet);
 
 private:
     // utility functions
@@ -209,5 +210,6 @@ private:
 /** Modify the extranonce in a block */
 void IncrementExtraNonce(CBlock* pblock, const CBlockIndex* pindexPrev, unsigned int& nExtraNonce);
 int64_t UpdateTime(CBlockHeader* pblock, const Consensus::Params& consensusParams, const CBlockIndex* pindexPrev);
+void PoSMiner(CWallet* pwallet, CThreadInterrupt &interrupt);
 
 #endif // BITCOIN_MINER_H

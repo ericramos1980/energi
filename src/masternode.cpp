@@ -332,9 +332,9 @@ void CMasternode::UpdateLastPaid(const CBlockIndex *pindex, int nMaxBlocksToScan
             if(!ReadBlockFromDisk(block, BlockReading, Params().GetConsensus()))
                 continue; // shouldn't really happen
 
-            CAmount nMasternodePayment = GetMasternodePayment(BlockReading->nHeight, block.vtx[0]->GetValueOut());
+            CAmount nMasternodePayment = GetMasternodePayment(BlockReading->nHeight, block.CoinBase()->GetValueOut());
 
-            for (const auto& txout : block.vtx[0]->vout)
+            for (const auto& txout : block.CoinBase()->vout)
                 if(mnpayee == txout.scriptPubKey && nMasternodePayment == txout.nValue) {
                     nBlockLastPaid = BlockReading->nHeight;
                     nTimeLastPaid = BlockReading->nTime;

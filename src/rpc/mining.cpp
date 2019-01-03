@@ -23,6 +23,7 @@
 #include "util.h"
 #include "utilstrencodings.h"
 #include "validationinterface.h"
+#include "wallet/wallet.h"
 
 #include "governance-classes.h"
 #include "masternode-payments.h"
@@ -117,26 +118,37 @@ UniValue generateBlocks(boost::shared_ptr<CReserveScript> coinbaseScript, int nG
     UniValue blockHashes(UniValue::VARR);
     while (nHeight < nHeightEnd)
     {
-        std::unique_ptr<CBlockTemplate> pblocktemplate(BlockAssembler(Params()).CreateNewBlock(coinbaseScript->reserveScript));
+        auto pblocktemplate = BlockAssembler(Params()).CreateNewBlock(coinbaseScript->reserveScript, pwalletMain);
         if (!pblocktemplate.get())
             throw JSONRPCError(RPC_INTERNAL_ERROR, "Couldn't create new block");
-        CBlock *pblock = &pblocktemplate->block;
-        {
-            LOCK(cs_main);
-            IncrementExtraNonce(pblock, chainActive.Tip(), nExtraNonce);
-        }
-        while (nMaxTries > 0 && pblock->nNonce < nInnerLoopCount && !CheckProofOfWork(pblock->GetPOWHash(), pblock->nBits, Params().GetConsensus())) {
-            ++pblock->nNonce;
+        auto pblock = pblocktemplate->block;
+        
+        if (pblock->IsProofOfWork()) {
+            {
+                LOCK(cs_main);
+                IncrementExtraNonce(pblock.get(), chainActive.Tip(), nExtraNonce);
+            }
+            while (nMaxTries > 0 && pblock->nNonce < nInnerLoopCount && !CheckProof(*pblock, Params().GetConsensus())) {
+                ++pblock->nNonce;
+                --nMaxTries;
+            }
+            if (nMaxTries == 0) {
+                break;
+            }
+            if (pblock->nNonce == nInnerLoopCount) {
+                continue;
+            }
+        } else if (!CheckProof(*pblock, Params().GetConsensus())) {
             --nMaxTries;
-        }
-        if (nMaxTries == 0) {
-            break;
-        }
-        if (pblock->nNonce == nInnerLoopCount) {
+
+            if (nMaxTries == 0) {
+                break;
+            }
+
             continue;
         }
-        std::shared_ptr<const CBlock> shared_pblock = std::make_shared<const CBlock>(*pblock);
-        if (!ProcessNewBlock(Params(), shared_pblock, true, NULL))
+
+        if (!ProcessNewBlock(Params(), pblock, true, NULL))
             throw JSONRPCError(RPC_INTERNAL_ERROR, "ProcessNewBlock, block not accepted");
         ++nHeight;
         blockHashes.push_back(pblock->GetHash().GetHex());
@@ -572,18 +584,22 @@ UniValue getblocktemplate(const JSONRPCRequest& request)
 
         // Create new block
         CScript scriptDummy = CScript() << OP_TRUE;
-        pblocktemplate = BlockAssembler(Params()).CreateNewBlock(scriptDummy);
+        pblocktemplate = BlockAssembler(Params()).CreateNewBlock(scriptDummy, pwalletMain);
         if (!pblocktemplate)
             throw JSONRPCError(RPC_OUT_OF_MEMORY, "Out of memory");
 
         // Need to update only after we know CreateNewBlock succeeded
         pindexPrev = pindexPrevNew;
     }
-    CBlock* pblock = &pblocktemplate->block; // pointer for convenience
+    auto pblock = pblocktemplate->block; // pointer for convenience
     const Consensus::Params& consensusParams = Params().GetConsensus();
 
+    if (pblock->IsProofOfStake()) {
+        throw JSONRPCError(RPC_CLIENT_NOT_CONNECTED, "Proof-of-Stake is activated!");
+    }
+
     // Update nTime
-    UpdateTime(pblock, consensusParams, pindexPrev);
+    UpdateTime(pblock.get(), consensusParams, pindexPrev);
     pblock->nNonce = 0;
 
     UniValue aCaps(UniValue::VARR); aCaps.push_back("proposal");
@@ -593,6 +609,7 @@ UniValue getblocktemplate(const JSONRPCRequest& request)
     int i = 0;
     for (const auto& it : pblock->vtx) {
         const CTransaction& tx = *it;
+        int index_in_template = i;
         uint256 txHash = tx.GetHash();
         setTxIndex[txHash] = i++;
 
@@ -612,8 +629,6 @@ UniValue getblocktemplate(const JSONRPCRequest& request)
                 deps.push_back(setTxIndex[in.prevout.hash]);
         }
         entry.push_back(Pair("depends", deps));
-
-        int index_in_template = i - 1;
         entry.push_back(Pair("fee", pblocktemplate->vTxFees[index_in_template]));
         entry.push_back(Pair("sigops", pblocktemplate->vTxSigOps[index_in_template]));
 
@@ -694,7 +709,7 @@ UniValue getblocktemplate(const JSONRPCRequest& request)
     result.push_back(Pair("previousblockhash", pblock->hashPrevBlock.GetHex()));
     result.push_back(Pair("transactions", transactions));
     result.push_back(Pair("coinbaseaux", aux));
-    result.push_back(Pair("coinbasevalue", (int64_t)pblock->vtx[0]->GetValueOut()));
+    result.push_back(Pair("coinbasevalue", (int64_t)pblock->CoinBase()->GetValueOut()));
     result.push_back(Pair("longpollid", chainActive.Tip()->GetBlockHash().GetHex() + i64tostr(nTransactionsUpdatedLast)));
     result.push_back(Pair("target", hashTarget.GetHex()));
     result.push_back(Pair("mintime", (int64_t)pindexPrev->GetMedianTimePast()+1));
@@ -794,7 +809,7 @@ UniValue submitblock(const JSONRPCRequest& request)
         throw JSONRPCError(RPC_DESERIALIZATION_ERROR, "Block decode failed");
     }
 
-    if (block.vtx.empty() || !block.vtx[0]->IsCoinBase()) {
+    if (!block.HasCoinBase()) {
         throw JSONRPCError(RPC_DESERIALIZATION_ERROR, "Block does not start with a coinbase");
     }
 
@@ -964,6 +979,52 @@ UniValue estimatesmartpriority(const JSONRPCRequest& request)
     return result;
 }
 
+// ppcoin: reserve balance from being staked for network protection
+UniValue reservebalance(const JSONRPCRequest& request)
+{
+    auto &params = request.params;
+
+    if (request.fHelp || params.size() > 2)
+        throw std::runtime_error(
+            "reservebalance ( reserve amount )\n"
+            "\nShow or set the reserve amount not participating in network protection\n"
+            "If no parameters provided current setting is printed.\n"
+
+            "\nArguments:\n"
+            "1. reserve     (boolean, optional) is true or false to turn balance reserve on or off.\n"
+            "2. amount      (numeric, optional) is a real and rounded to cent.\n"
+
+            "\nResult:\n"
+            "{\n"
+            "  \"reserve\": true|false,     (boolean) Status of the reserve balance\n"
+            "  \"amount\": x.xxxx       (numeric) Amount reserved\n"
+            "\nExamples:\n" +
+            HelpExampleCli("reservebalance", "true 5000") +
+            HelpExampleRpc("reservebalance", "true 5000"));
+
+    if (params.size() > 0) {
+        bool fReserve = params[0].get_bool();
+        if (fReserve) {
+            if (params.size() == 1)
+                throw std::runtime_error("must provide amount to reserve balance.\n");
+            CAmount nAmount = AmountFromValue(params[1]);
+            nAmount = (nAmount / CENT) * CENT; // round to cent
+            if (nAmount < 0)
+                throw std::runtime_error("amount cannot be negative.\n");
+            nReserveBalance = nAmount;
+        } else {
+            if (params.size() > 1)
+                throw std::runtime_error("cannot specify amount to turn off reserve.\n");
+            nReserveBalance = 0;
+        }
+    }
+
+    UniValue result(UniValue::VOBJ);
+    result.push_back(Pair("reserve", (nReserveBalance > 0)));
+    result.push_back(Pair("amount", ValueFromAmount(nReserveBalance)));
+    return result;
+}
+
 static const CRPCCommand commands[] =
 { //  category              name                      actor (function)         okSafeMode
   //  --------------------- ------------------------  -----------------------  ----------
@@ -972,6 +1033,7 @@ static const CRPCCommand commands[] =
     { "mining",             "prioritisetransaction",  &prioritisetransaction,  true,  {"txid","priority_delta","fee_delta"} },
     { "mining",             "getblocktemplate",       &getblocktemplate,       true,  {"template_request"} },
     { "mining",             "submitblock",            &submitblock,            true,  {"hexdata","parameters"} },
+    { "mining",             "reservebalance",         &reservebalance,         true,  {"reserve", "amount"} },
 
     { "generating",         "generate",               &generate,               true,  {"nblocks","maxtries"} },
     { "generating",         "generatetoaddress",      &generatetoaddress,      true,  {"nblocks","address","maxtries"} },

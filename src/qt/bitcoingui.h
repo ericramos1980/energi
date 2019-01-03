@@ -85,6 +85,7 @@ private:
     WalletFrame *walletFrame;
 
     UnitDisplayStatusBarControl *unitDisplayControl;
+    QLabel* labelStakingIcon;
     QLabel *labelWalletEncryptionIcon;
     QLabel *labelWalletHDStatusIcon;
     QLabel *labelConnectionsIcon;
@@ -191,6 +192,8 @@ public Q_SLOTS:
        @param[in] ret       pointer to a bool that will be modified to whether Ok was clicked (modal only)
     */
     void message(const QString &title, const QString &message, unsigned int style, bool *ret = NULL);
+
+    void setStakingStatus();
 
 #ifdef ENABLE_WALLET
     /** Set the hd-enabled status as shown in the UI.

@@ -190,6 +190,20 @@ public:
     //! Verification status of this block. See enum BlockStatus
     unsigned int nStatus;
 
+    // proof-of-stake virtual fields
+    uint256& hashProofOfStake() {
+        return hashMix;
+    }
+    const uint256& hashProofOfStake() const {
+        return hashMix;
+    }
+    uint64_t& nStakeModifier() {
+        return nNonce;
+    }
+    const uint64_t& nStakeModifier() const {
+        return nNonce;
+    }
+
     //! block header
     int nVersion;
     uint256 hashMerkleRoot;
@@ -197,6 +211,9 @@ public:
     unsigned int nBits;
     uint256 hashMix;
     uint64_t nNonce;
+    uint256 posStakeHash;
+    uint32_t posStakeN;
+    std::vector<unsigned char> posBlockSig;
 
     //! (memory only) Sequential id assigned to distinguish order in which blocks are received.
     int32_t nSequenceId;
@@ -218,6 +235,7 @@ public:
         nChainTx = 0;
         nStatus = 0;
         nSequenceId = 0;
+
         nTimeMax = 0;
 
         nVersion       = 0;
@@ -226,6 +244,9 @@ public:
         nBits          = 0;
         hashMix        = uint256();
         nNonce         = 0;
+        posStakeHash   = uint256();
+        posStakeN      = 0;
+        posBlockSig.clear();
     }
 
     CBlockIndex()
@@ -244,6 +265,9 @@ public:
         nHeight        = block.nHeight;
         hashMix        = block.hashMix;
         nNonce         = block.nNonce;
+        posStakeHash   = block.posStakeHash;
+        posStakeN      = block.posStakeN;
+        posBlockSig    = block.posBlockSig;
     }
 
     CDiskBlockPos GetBlockPos() const {
@@ -276,6 +300,9 @@ public:
         block.nHeight        = nHeight;
         block.hashMix        = hashMix;
         block.nNonce         = nNonce;
+        block.posStakeHash   = posStakeHash;
+        block.posStakeN      = posStakeN;
+        block.posBlockSig    = posBlockSig;
         return block;
     }
 
@@ -286,7 +313,11 @@ public:
 
     uint256 GetPOWHash() const
     {
-        return GetBlockHeader().GetPOWHash();
+        if (IsProofOfStake()) {
+            return hashProofOfStake();
+        } else {
+            return GetBlockHeader().GetPOWHash();
+        }
     }
 
     int64_t GetBlockTime() const
@@ -313,6 +344,31 @@ public:
 
         std::sort(pbegin, pend);
         return pbegin[(pend - pbegin)/2];
+    }
+
+    bool IsProofOfWork() const
+    {
+        return !IsProofOfStake();
+    }
+
+    bool IsProofOfStake() const
+    {
+        return (nVersion & CBlockHeader::POS_BIT) != 0;
+    }
+
+    COutPoint StakeInput() const {
+        return COutPoint(posStakeHash, posStakeN);
+    }
+
+    unsigned int GetStakeEntropyBit() const
+    {
+        unsigned int nEntropyBit = ((GetBlockHash().GetCheapHash()) & 1);
+        return nEntropyBit;
+    }
+
+    bool IsGeneratedStakeModifier() const
+    {
+        return (!pprev || pprev->nStakeModifier() != nStakeModifier());
     }
 
     std::string ToString() const
@@ -365,15 +421,13 @@ public:
     uint256 hash;
     uint256 hashPrev;
 
-    CDiskBlockIndex() {
-        hash = uint256();
-        hashPrev = uint256();
-    }
+    CDiskBlockIndex() = default;
 
-    explicit CDiskBlockIndex(const CBlockIndex* pindex) : CBlockIndex(*pindex) {
-        hash = (hash == uint256() ? pindex->GetBlockHash() : hash);
-        hashPrev = (pprev ? pprev->GetBlockHash() : uint256());
-    }
+    explicit CDiskBlockIndex(const CBlockIndex* pindex) :
+        CBlockIndex(*pindex),
+        hash(pindex->GetBlockHash()),
+        hashPrev(pprev ? pprev->GetBlockHash() : uint256())
+    {}
 
     ADD_SERIALIZE_METHODS;
 
@@ -403,22 +457,17 @@ public:
         READWRITE(nBits);
         READWRITE(hashMix);
         READWRITE(nNonce);
+
+        if (IsProofOfStake()) {
+            READWRITE(posStakeHash);
+            READWRITE(posStakeN);
+            READWRITE(posBlockSig);
+        }
     }
 
     uint256 GetBlockHash() const
     {
-        if(hash != uint256()) return hash;
-        // should never really get here, keeping this as a fallback
-        CBlockHeader block;
-        block.nVersion        = nVersion;
-        block.hashPrevBlock   = hashPrev;
-        block.hashMerkleRoot  = hashMerkleRoot;
-        block.nTime           = nTime;
-        block.nBits           = nBits;
-        block.nHeight         = nHeight;
-        block.hashMix         = hashMix;
-        block.nNonce          = nNonce;
-        return block.GetHash();
+        return hash;
     }
 
 

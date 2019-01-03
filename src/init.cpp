@@ -553,6 +553,16 @@ std::string HelpMessage(HelpMessageMode mode)
     strUsage += HelpMessageOpt("-litemode=<n>", strprintf(_("Disable all Energi specific functionality (Masternodes, PrivateSend, InstantSend, Governance) (0-1, default: %u)"), 0));
     strUsage += HelpMessageOpt("-sporkaddr=<hex>", strprintf(_("Override spork address. Only useful for regtest and devnet. Using this on mainnet or testnet will ban you.")));
 
+#ifdef ENABLE_WALLET
+    strUsage += HelpMessageGroup(_("Staking options:"));
+    strUsage += HelpMessageOpt("-staking=<n>", strprintf(_("Enable staking functionality (0-1, default: %u)"), 1));
+    strUsage += HelpMessageOpt("-reservebalance=<amt>", _("Keep the specified amount available for spending at all times (default: 0)"));
+    if (GetBoolArg("-help-debug", false)) {
+        strUsage += HelpMessageOpt("-printstakemodifier", _("Display the stake modifier calculations in the debug.log file."));
+        strUsage += HelpMessageOpt("-printcoinstake", _("Display verbose coin stake messages in the debug.log file."));
+    }
+#endif
+
     strUsage += HelpMessageGroup(_("Masternode options:"));
     strUsage += HelpMessageOpt("-masternode=<n>", strprintf(_("Enable the client to act as a masternode (0-1, default: %u)"), 0));
     strUsage += HelpMessageOpt("-mnconf=<file>", strprintf(_("Specify masternode configuration file (default: %s)"), "masternode.conf"));
@@ -1205,6 +1215,12 @@ bool AppInitParameterInteraction()
         dustRelayFee = CFeeRate(n);
     }
 
+    if (IsArgSet("-reservebalance")) {
+        if (!ParseMoney(GetArg("-reservebalance", ""), nReserveBalance)) {
+            return InitError(_("Invalid amount for -reservebalance=<amount>"));
+        }
+    }
+
     fRequireStandard = !GetBoolArg("-acceptnonstdtxn", !chainparams.RequireStandard());
     if (chainparams.RequireStandard() && !fRequireStandard)
         return InitError(strprintf("acceptnonstdtxn is not currently supported for %s chain", chainparams.NetworkIDString()));
@@ -1431,6 +1447,17 @@ bool AppInitMain(boost::thread_group& threadGroup, CScheduler& scheduler)
         if (!AppInitServers(threadGroup))
             return InitError(_("Unable to start HTTP server. See debug log for details."));
     }
+
+    // Staking needs a CWallet instance, so make sure wallet is enabled
+#ifdef ENABLE_WALLET
+    bool fDisableWallet = GetBoolArg("-disablewallet", false);
+    if (fDisableWallet) {
+#endif
+        if (SoftSetBoolArg("-staking", false))
+            LogPrintf("AppInit2 : parameter interaction: wallet functionality not enabled -> setting -staking=0\n");
+#ifdef ENABLE_WALLET
+    }
+#endif
 
     // ********************************************************* Step 5: Backup wallet and verify wallet database integrity
 #ifdef ENABLE_WALLET

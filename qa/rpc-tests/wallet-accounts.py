@@ -10,7 +10,7 @@ from test_framework.util import (
     assert_equal,
     connect_nodes_bi,
 )
-
+from decimal import Decimal
 
 class WalletAccountsTest(BitcoinTestFramework):
 
@@ -31,10 +31,10 @@ class WalletAccountsTest(BitcoinTestFramework):
         
         node.generate(101)
         
-        assert_equal(node.getbalance(), 500)
+        assert_equal(node.getbalance(), Decimal('2.28'))
         
         accounts = ["a","b","c","d","e"]
-        amount_to_send = 1.0
+        amount_to_send = Decimal('0.1')
         account_addresses = dict()
         for account in accounts:
             address = node.getaccountaddress(account)
@@ -59,18 +59,18 @@ class WalletAccountsTest(BitcoinTestFramework):
         for account in accounts:
             address = node.getaccountaddress(account)
             assert(address != account_addresses[account])
-            assert_equal(node.getreceivedbyaccount(account), 2)
+            assert_equal(node.getreceivedbyaccount(account), Decimal('0.2'))
             node.move(account, "", node.getbalance(account))
         
         node.generate(101)
         
-        expected_account_balances = {"": 52000}
+        expected_account_balances = {"": Decimal('237.12')}
         for account in accounts:
             expected_account_balances[account] = 0
         
         assert_equal(node.listaccounts(), expected_account_balances)
         
-        assert_equal(node.getbalance(""), 52000)
+        assert_equal(node.getbalance(""), Decimal('237.12'))
         
         for account in accounts:
             address = node.getaccountaddress("")
@@ -83,12 +83,12 @@ class WalletAccountsTest(BitcoinTestFramework):
             for x in range(10):
                 addresses.append(node.getnewaddress())
             multisig_address = node.addmultisigaddress(5, addresses, account)
-            node.sendfrom("", multisig_address, 50)
+            node.sendfrom("", multisig_address, 5)
         
         node.generate(101)
         
         for account in accounts:
-            assert_equal(node.getbalance(account), 50)
+            assert_equal(node.getbalance(account), 5)
 
 if __name__ == '__main__':
     WalletAccountsTest().main ()

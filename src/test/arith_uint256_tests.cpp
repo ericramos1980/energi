@@ -366,6 +366,7 @@ BOOST_AUTO_TEST_CASE( divide )
     BOOST_CHECK(R2L / MaxL == ZeroL);
     BOOST_CHECK(MaxL / R2L == 1);
     BOOST_CHECK_THROW(R2L / ZeroL, uint_error);
+    BOOST_CHECK((ZeroL / R1L) == ZeroL);
 }
 
 
