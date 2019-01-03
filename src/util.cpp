@@ -290,6 +290,7 @@ bool LogAcceptCategory(const char* category)
                     ptrCategory->insert(std::string("mnsync"));
                     ptrCategory->insert(std::string("nrghash"));
                     ptrCategory->insert(std::string("gobject"));
+                    ptrCategory->insert(std::string("stake"));
                 }
             } else {
                 ptrCategory.reset(new std::set<std::string>());

@@ -125,7 +125,7 @@ UniValue debug(const JSONRPCRequest& request)
         throw std::runtime_error(
             "debug ( 0|1|addrman|alert|bench|coindb|db|reindex|estimatefee|lock|rand|rpc|selectcoins|mempool"
             "|mempoolrej|net|proxy|prune|http|libevent|tor|zmq|"
-            "energi|nrghash|privatesend|instantsend|masternode|spork|keepass|mnpayments|mnsync|gobject )\n"
+            "energi|nrghash|privatesend|instantsend|masternode|spork|keepass|mnpayments|mnsync|gobject|stake )\n"
             "Change debug category on the fly. Specify single category or use '+' to specify many.\n"
             "\nExamples:\n"
             + HelpExampleCli("debug", "energi")

@@ -686,18 +686,31 @@ void PoSMiner(CWallet* pwallet, CThreadInterrupt &interrupt)
             
             if (!pindexPrev) {
                 interrupt.sleep_for(std::chrono::seconds(1));
+                LogPrint("stake", "%s : not active blocks \n", __func__);
                 continue;
             }
 
             if (!IsPoSEnforcedHeight(pindexPrev->nHeight + 1) && !pindexPrev->IsProofOfStake()) {
                 interrupt.sleep_for(std::chrono::seconds(10));
+                LogPrint("stake", "%s : PoS is not enabled at height %d \n",
+                         __func__, (pindexPrev->nHeight + 1) );
                 continue;
             }
         }
 
         while (pwallet->IsLocked(true) || !fMintableCoins || nReserveBalance >= pwallet->GetBalance() || !masternodeSync.IsSynced()) {
+            if (interrupt) {
+                return;
+            }
+
             nLastCoinStakeSearchInterval = 0;
             interrupt.sleep_for(std::chrono::seconds(10));
+            LogPrint("stake", "%s : not ready to mine locked=%d coins=%d reserve=%d mnsync=%d\n",
+                     __func__,
+                     int(pwallet->IsLocked(true)),
+                     int(!fMintableCoins),
+                     int(nReserveBalance >= pwallet->GetBalance()),
+                     int(!masternodeSync.IsSynced()));
         }
 
         if (last_height == chainActive.Tip()->nHeight)
@@ -707,6 +720,8 @@ void PoSMiner(CWallet* pwallet, CThreadInterrupt &interrupt)
                 interrupt.sleep_for(std::chrono::seconds(5));
                 continue;
             }
+        } else {
+            last_height = chainActive.Tip()->nHeight;
         }
 
         //

@@ -3195,7 +3195,7 @@ bool CWallet::SelectStakeCoins(std::set<std::pair<const CWalletTx*, unsigned int
         }
 
         // Check another way if spent
-        if (!pcoinsTip->HaveCoinInCache(COutPoint(tx_hash, out.i))) {
+        if (!pcoinsTip->HaveCoin(COutPoint(tx_hash, out.i))) {
             continue;
         }
 
@@ -3932,34 +3932,36 @@ bool CWallet::CreateCoinStake(const CKeyStore& keystore, CBlock &curr_block, int
     // presstab HyperStake - Initialize as static and don't update the set on every run of CreateCoinStake() in order to lighten resource use
     CAmount nTargetAmount = nBalance - nReserveBalance;
 
-    if (GetTime() - nLastStakeSetUpdate > nStakeSetUpdateTime) {
+    if (setStakeCoins.empty() || (GetTime() - nLastStakeSetUpdate > nStakeSetUpdateTime)) {
         setStakeCoins.clear();
 
         if (!SelectStakeCoins(setStakeCoins, nTargetAmount)) {
-            return error("CreateCoinStake : no inputs eligable for staking");
+            LogPrint("stake", "%s : no inputs eligable for staking\n", __func__);
+            return false;
         }
 
         nLastStakeSetUpdate = GetTime();
     }
 
-    if (setStakeCoins.empty())
-        return false;
+    LogPrint("stake", "%s : found %u possible stake inputs\n", __func__, setStakeCoins.size());
 
     for (const auto &pcoin : setStakeCoins) {
         CBlockIndex* pcoin_index = NULL;
         auto pWalletTxIn = pcoin.first;
 
+        COutPoint prevoutStake = COutPoint(pWalletTxIn->GetHash(), pcoin.second);
+        LogPrint("stake", "%s : trying tx=%s n=%u\n", __func__,
+                 prevoutStake.hash.ToString().c_str(), prevoutStake.n);
+
+        // Read block header
         BlockMap::iterator it = mapBlockIndex.find(pWalletTxIn->hashBlock);
         if (it != mapBlockIndex.end())
             pcoin_index = it->second;
         else {
-            LogPrintf("CreateCoinStake() failed to find block index for %s \n",
-                        pWalletTxIn->hashBlock.ToString().c_str());
+            LogPrintf("%s : failed to find block index for %s \n",
+                      __func__, pWalletTxIn->hashBlock.ToString().c_str());
             continue;
         }
-
-        // Read block header
-        COutPoint prevoutStake = COutPoint(pWalletTxIn->GetHash(), pcoin.second);
 
         //iterates each utxo inside of CheckStakeKernelHash()
         bool fKernelFound = CheckStakeKernelHash(
@@ -3975,14 +3977,12 @@ bool CWallet::CreateCoinStake(const CKeyStore& keystore, CBlock &curr_block, int
         if (fKernelFound) {
             //Double check that this will pass time requirements
             if (curr_block.nTime <= chainActive.Tip()->GetMedianTimePast()) {
-                LogPrintf("CreateCoinStake() : kernel found, but it is too far in the past \n");
+                LogPrint("stake", "%s kernel found, but it is too far in the past \n", __func__);
                 continue;
             }
 
             // Found a kernel
-            if (fDebug && GetBoolArg("-printcoinstake", false)) {
-                LogPrintf("CreateCoinStake : kernel found\n");
-            }
+            LogPrint("stake", "%s  : kernel found\n", __func__ );
 
             std::vector<std::vector<unsigned char>> vSolutions;
             txnouttype whichType;
@@ -3991,21 +3991,18 @@ bool CWallet::CreateCoinStake(const CKeyStore& keystore, CBlock &curr_block, int
             const auto &scriptPubKeyKernel = tx_in.scriptPubKey;
 
             if (!Solver(scriptPubKeyKernel, whichType, vSolutions)) {
-                LogPrintf("CreateCoinStake : failed to parse kernel\n");
-                break;
+                LogPrint("stake", "%s : failed to parse kernel\n", __func__);
+                continue;
             }
 
-            if (fDebug && GetBoolArg("-printcoinstake", false)) {
-                LogPrintf("CreateCoinStake : parsed kernel type=%d\n", whichType);
-            }
+            LogPrint("stake", "%s  : parsed kernel type=%d\n", __func__, whichType);
 
             if (whichType == TX_PUBKEYHASH) // pay to address type
             {
                 // convert to pay to address type
                 if (!keystore.GetPubKey(CKeyID(uint160(vSolutions[0])), curr_block.posPubKey)) {
-                    if (fDebug && GetBoolArg("-printcoinstake", false))
-                        LogPrintf("CreateCoinStake : failed to get key for kernel type=%d\n", whichType);
-                    break; // unable to find corresponding public key
+                    LogPrint("stake", "%s : failed to get key for kernel type=%d\n", __func__, whichType);
+                    continue;
                 }
             }
             else if (whichType == TX_PUBKEY) // pay to public key
@@ -4014,9 +4011,8 @@ bool CWallet::CreateCoinStake(const CKeyStore& keystore, CBlock &curr_block, int
             }
             else
             {
-                if (fDebug && GetBoolArg("-printcoinstake", false))
-                    LogPrintf("CreateCoinStake : no support for kernel type=%d\n", whichType);
-                break; // only support pay to public key and pay to address
+                LogPrint("stake", "%s : no support for kernel type=%d\n", __func__, whichType);
+                continue;
             }
 
             assert(curr_block.posPubKey.IsValid());
@@ -4049,8 +4045,7 @@ bool CWallet::CreateCoinStake(const CKeyStore& keystore, CBlock &curr_block, int
             curr_block.posStakeN = prevoutStake.n;
             curr_block.Stake() = MakeTransactionRef(std::move(stakeTx));
 
-            if (fDebug && GetBoolArg("-printcoinstake", false))
-                LogPrintf("CreateCoinStake : added kernel type=%d\n", whichType);
+            LogPrint("stake", "%s : added kernel type=%d\n", __func__, whichType);
 
             // Force update
             nLastStakeSetUpdate = 0;
@@ -4058,8 +4053,7 @@ bool CWallet::CreateCoinStake(const CKeyStore& keystore, CBlock &curr_block, int
         }
     }
 
-    if (fDebug && GetBoolArg("-printcoinstake", false))
-        LogPrintf("CreateCoinStake : no stakes found\n");
+    LogPrint("stake", "%s : no stakes found\n", __func__);
 
     return false;
 }
