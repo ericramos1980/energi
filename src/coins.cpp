@@ -247,6 +247,7 @@ bool CCoinsViewCache::HaveInputs(const CTransaction& tx) const
 double CCoinsViewCache::GetPriority(const CTransaction &tx, int nHeight, CAmount &inChainInputValue) const
 {
     inChainInputValue = 0;
+    // TODO: coin stake ?
     if (tx.IsCoinBase())
         return 0.0;
     double dResult = 0.0;

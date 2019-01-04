@@ -2541,13 +2541,20 @@ bool static DisconnectTip(CValidationState& state, const CChainParams& chainpara
     // Write the chain state to disk, if necessary.
     if (!FlushStateToDisk(state, FLUSH_STATE_IF_NEEDED))
         return false;
+
+    bool is_pos = block.IsProofOfStake();
+
     // Resurrect mempool transactions from the disconnected block.
     std::vector<uint256> vHashUpdate;
     for (const auto& it : block.vtx) {
         const CTransaction& tx = *it;
+
+        // NOTE: this can be optimized to vtx index check
+        bool is_stake = is_pos && block.Stake()->GetHash() == tx.GetHash();
+
         // ignore validation errors in resurrected transactions
         CValidationState stateDummy;
-        if (tx.IsCoinBase() || !AcceptToMemoryPool(mempool, stateDummy, it, false, NULL, NULL, true)) {
+        if (is_stake || tx.IsCoinBase() || !AcceptToMemoryPool(mempool, stateDummy, it, false, NULL, NULL, true)) {
             mempool.removeRecursive(tx, MemPoolRemovalReason::REORG);
         } else if (mempool.exists(tx.GetHash())) {
             vHashUpdate.push_back(tx.GetHash());
