@@ -583,6 +583,25 @@ UniValue signmessagewithprivkey(const JSONRPCRequest& request)
     return EncodeBase64(&vchSig[0], vchSig.size());
 }
 
+UniValue genkeypair(const JSONRPCRequest& request)
+{
+    if (request.fHelp) {
+        throw std::runtime_error(
+            "genkeypair\n"
+            "\nGenerate random private and public key pair.\n"
+        );
+    }
+
+    CKey secret;
+    secret.MakeNewKey(true);
+
+    UniValue obj(UniValue::VOBJ);
+    obj.push_back(Pair("privkey", CBitcoinSecret(secret).ToString()));
+    obj.push_back(Pair("pubkey", CBitcoinAddress(secret.GetPubKey().GetID()).ToString()));
+
+    return obj;
+}
+
 UniValue setmocktime(const JSONRPCRequest& request)
 {
     if (request.fHelp || request.params.size() != 1)
@@ -1166,6 +1185,7 @@ static const CRPCCommand commands[] =
     { "util",               "createmultisig",         &createmultisig,         true,  {"nrequired","keys"} },
     { "util",               "verifymessage",          &verifymessage,          true,  {"address","signature","message"} },
     { "util",               "signmessagewithprivkey", &signmessagewithprivkey, true,  {"privkey","message"} },
+    { "util",               "genkeypair",             &genkeypair,             true,  {} },
     { "blockchain",         "getspentinfo",           &getspentinfo,           false, {"json"} },
 
     /* Address index */
