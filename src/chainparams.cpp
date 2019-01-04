@@ -1014,7 +1014,8 @@ public:
 
         // See https://github.com/dashpay/dash/pull/1969
         // Energi prefix: Base58 't' = 127 = 0x7F
-        strSporkAddress = "tCLzFoAUkWyrDJmU3qvcKpSA41aD6AckwL";
+        // privKey: cP6fF1kWCPWWWDjKpFzkCPJL6rUWVhErc2uBxBMivLv7fRRDcDBK
+        strSporkAddress = "tCri6YknwQ4wnUQGxqDxSb6hdMaU7rPR3z";
 
         checkpointData = (CCheckpointData){
             boost::assign::map_list_of

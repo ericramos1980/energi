@@ -215,6 +215,8 @@ def initialize_datadir(dirname, n):
         f.write("rpcport="+str(rpc_port(n))+"\n")
         f.write("listenonion=0\n")
         f.write("staking=0\n")
+        f.write("sporkaddr=tCri6YknwQ4wnUQGxqDxSb6hdMaU7rPR3z\n")
+        f.write("sporkkey=cP6fF1kWCPWWWDjKpFzkCPJL6rUWVhErc2uBxBMivLv7fRRDcDBK\n")
     return datadir
 
 def rpc_auth_pair(n):
