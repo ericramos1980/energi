@@ -736,7 +736,9 @@ public:
     unsigned int nHashInterval;
     uint64_t nStakeSplitThreshold;
     int nStakeSetUpdateTime;
-    std::set<std::pair<const CWalletTx*, unsigned int> > setStakeCoins;
+    using StakeCandidate = std::tuple<CAmount, const CWalletTx*, unsigned int>;
+    using StakeCandidates = std::set<StakeCandidate>;
+    StakeCandidates setStakeCoins;
     int nLastStakeSetUpdate;
 
     CWallet()
@@ -831,7 +833,7 @@ public:
     bool SelectCoinsGrouppedByAddresses(std::vector<CompactTallyItem>& vecTallyRet, bool fSkipDenominated = true, bool fAnonymizable = true, bool fSkipUnconfirmed = true) const;
 
     bool MintableCoins();
-    bool SelectStakeCoins(std::set<std::pair<const CWalletTx*, unsigned int> >& setCoins, CAmount nTargetAmount) const;
+    bool SelectStakeCoins(StakeCandidates& setCoins, CAmount nTargetAmount) const;
 
     /// Get 10000NRG output and keys which can be used for the Masternode
     bool GetMasternodeOutpointAndKeys(COutPoint& outpointRet, CPubKey& pubKeyRet, CKey& keyRet, const std::string& strTxHash = "", const std::string& strOutputIndex = "");
@@ -962,7 +964,7 @@ public:
 
     bool CreateCollateralTransaction(CMutableTransaction& txCollateral, std::string& strReason);
     bool ConvertList(std::vector<CTxIn> vecTxIn, std::vector<CAmount>& vecAmounts);
-    bool CreateCoinStake(const CKeyStore& keystore, CBlock& curr_block, int64_t nSearchInterval, CMutableTransaction& coinbaseTx);
+    bool CreateCoinStake(const CKeyStore& keystore, CBlock& curr_block, CMutableTransaction& coinbaseTx);
 
     void ListAccountCreditDebit(const std::string& strAccount, std::list<CAccountingEntry>& entries);
     bool AddAccountingEntry(const CAccountingEntry&);

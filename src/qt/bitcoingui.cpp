@@ -40,6 +40,7 @@
 #include "masternode-sync.h"
 #include "masternodelist.h"
 #include "validation.h"
+#include "miner.h"
 
 #include <iostream>
 
@@ -1298,7 +1299,7 @@ bool BitcoinGUI::eventFilter(QObject *object, QEvent *event)
 
 void BitcoinGUI::setStakingStatus()
 {
-    if (nLastCoinStakeSearchInterval) {
+    if (IsStakingActive()) {
         labelStakingIcon->show();
         labelStakingIcon->setPixmap(QIcon(":/icons/staking_active").pixmap(STATUSBAR_ICONSIZE, STATUSBAR_ICONSIZE));
         labelStakingIcon->setToolTip(tr("Staking is <b>enabled</b>"));

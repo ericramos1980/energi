@@ -50,7 +50,6 @@
 
 uint64_t nLastBlockTx = 0;
 uint64_t nLastBlockSize = 0;
-int64_t nLastCoinStakeSearchInterval = 0;
 int64_t nLastCoinStakeSearchTime = 0;
 
 class ScoreCompare
@@ -151,7 +150,7 @@ std::unique_ptr<CBlockTemplate> BlockAssembler::CreateNewBlock(
     pblock->nHeight        = nHeight;
     pblock->hashMix        = uint256();
     pblock->nNonce         = 0;
-    pblock->nTime          = GetAdjustedTime();
+    pblock->nTime          = 0;
     
     // Add dummy coinbase tx as first transaction
     pblock->vtx.emplace_back();
@@ -212,20 +211,8 @@ std::unique_ptr<CBlockTemplate> BlockAssembler::CreateNewBlock(
         assert(pwallet != nullptr);
         assert(!pwallet->IsLocked());
 
-        if (!nLastCoinStakeSearchTime) {
-            nLastCoinStakeSearchTime = pblock->nTime;
-        }
-
         boost::this_thread::interruption_point();
-        int64_t nSearchTime = pblock->nTime; // search to current time
-        bool fStakeFound = false;
-
-        if (nSearchTime > std::max<int64_t>(nLastCoinStakeSearchTime, pindexPrev->nTime)) {
-            nLastCoinStakeSearchInterval = nSearchTime - nLastCoinStakeSearchTime;
-            nLastCoinStakeSearchTime = nSearchTime;
-
-            fStakeFound = pwallet->CreateCoinStake(*pwallet, *pblock, nLastCoinStakeSearchInterval, coinbaseTx);
-        }
+        bool fStakeFound = pwallet->CreateCoinStake(*pwallet, *pblock, coinbaseTx);
 
         if (fStakeFound) {
             sign_block = true;
@@ -703,7 +690,7 @@ void PoSMiner(CWallet* pwallet, CThreadInterrupt &interrupt)
                 return;
             }
 
-            nLastCoinStakeSearchInterval = 0;
+            nLastCoinStakeSearchTime = 0;
             interrupt.sleep_for(std::chrono::seconds(10));
             LogPrint("stake", "%s : not ready to mine locked=%d coins=%d reserve=%d mnsync=%d\n",
                      __func__,
@@ -728,6 +715,7 @@ void PoSMiner(CWallet* pwallet, CThreadInterrupt &interrupt)
         // Create new block
         //
         auto pblocktemplate = ba.CreateNewBlock(coinbaseScript, pwallet);
+        nLastCoinStakeSearchTime = GetAdjustedTime();
 
         if (!pblocktemplate.get())
             continue;
@@ -755,4 +743,8 @@ void PoSMiner(CWallet* pwallet, CThreadInterrupt &interrupt)
             LogPrintf("PoSMiner : block is rejected %s\n", hash.ToString().c_str());
         }
     }
+}
+
+bool IsStakingActive() {
+    return (GetAdjustedTime() - nLastCoinStakeSearchTime) < 60;
 }

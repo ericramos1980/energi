@@ -351,7 +351,7 @@ bool CBlockTreeDB::LoadBlockIndexGuts(
         const MapCheckpoints &checkpoints,
         bool enable_checkpoints
 ) {
-    const auto LAST_BLOCKS_TO_CHECK = 100;
+    const auto LAST_BLOCKS_TO_CHECK = 1000;
     CBlockIndex* pindexNew = nullptr;
 
     const int last_checkpoint_height = (enable_checkpoints && checkpoints.empty())

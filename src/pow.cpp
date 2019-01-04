@@ -30,6 +30,10 @@ unsigned int static DarkGravityWave(const CBlockIndex* pindexLast, const CBlockH
         return bnPowLimit.GetCompact();
     }
 
+    if (params.fPowNoRetargeting) {
+        return bnPowLimit.GetCompact();
+    }
+
     if (params.fPowAllowMinDifficultyBlocks) {
         // recent block is more than 2 hours old
         if (pblock->GetBlockTime() > pindexLast->GetBlockTime() + 2 * 60 * 60) {
@@ -90,10 +94,6 @@ unsigned int static DarkGravityWave(const CBlockIndex* pindexLast, const CBlockH
 
 unsigned int GetNextWorkRequired(const CBlockIndex* pindexLast, const CBlockHeader *pblock, const Consensus::Params& params)
 {
-    // Retarget using Dark Gravity Wave 3 by default
-    if (params.fPowNoRetargeting) {
-        return pindexLast->nBits;
-    }
     return DarkGravityWave(pindexLast, pblock, params);
 }
 

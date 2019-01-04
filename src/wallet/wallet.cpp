@@ -3154,7 +3154,7 @@ bool CWallet::SelectCoinsGrouppedByAddresses(std::vector<CompactTallyItem>& vecT
     return vecTallyRet.size() > 0;
 }
 
-bool CWallet::SelectStakeCoins(std::set<std::pair<const CWalletTx*, unsigned int> >& setCoins, CAmount nTargetAmount) const
+bool CWallet::SelectStakeCoins(StakeCandidates& setCoins, CAmount nTargetAmount) const
 {
     std::vector<COutput> vCoins;
     AvailableCoins(vCoins, true);
@@ -3200,7 +3200,7 @@ bool CWallet::SelectStakeCoins(std::set<std::pair<const CWalletTx*, unsigned int
         }
 
         //add to our stake set
-        setCoins.insert(std::make_pair(out.tx, out.i));
+        setCoins.emplace(out.tx->tx->vout[out.i].nValue, out.tx, out.i);
     }
 
     return !setCoins.empty();
@@ -3918,7 +3918,7 @@ bool CWallet::CreateTransaction(const std::vector<CRecipient>& vecSend, CWalletT
 }
 
 // ppcoin: create coin stake transaction
-bool CWallet::CreateCoinStake(const CKeyStore& keystore, CBlock &curr_block, int64_t nSearchInterval, CMutableTransaction& coinbaseTx)
+bool CWallet::CreateCoinStake(const CKeyStore& keystore, CBlock &curr_block, CMutableTransaction& coinbaseTx)
 {
     // Choose coins to use
     CAmount nBalance = GetBalance();
@@ -3945,11 +3945,11 @@ bool CWallet::CreateCoinStake(const CKeyStore& keystore, CBlock &curr_block, int
 
     LogPrint("stake", "%s : found %u possible stake inputs\n", __func__, setStakeCoins.size());
 
-    for (const auto &pcoin : setStakeCoins) {
+    for (auto iter = setStakeCoins.rbegin(); iter != setStakeCoins.rend(); ++iter) {
         CBlockIndex* pcoin_index = NULL;
-        auto pWalletTxIn = pcoin.first;
+        auto pWalletTxIn = std::get<1>(*iter);
 
-        COutPoint prevoutStake = COutPoint(pWalletTxIn->GetHash(), pcoin.second);
+        COutPoint prevoutStake = COutPoint(pWalletTxIn->GetHash(), std::get<2>(*iter));
         LogPrint("stake", "%s : trying tx=%s n=%u\n", __func__,
                  prevoutStake.hash.ToString().c_str(), prevoutStake.n);
 
@@ -3987,7 +3987,7 @@ bool CWallet::CreateCoinStake(const CKeyStore& keystore, CBlock &curr_block, int
             std::vector<std::vector<unsigned char>> vSolutions;
             txnouttype whichType;
             CScript scriptPubKeyOut;
-            const auto &tx_in = pWalletTxIn->tx->vout[pcoin.second];
+            const auto &tx_in = pWalletTxIn->tx->vout[prevoutStake.n];
             const auto &scriptPubKeyKernel = tx_in.scriptPubKey;
 
             if (!Solver(scriptPubKeyKernel, whichType, vSolutions)) {
