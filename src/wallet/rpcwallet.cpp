@@ -63,8 +63,16 @@ void WalletTxToJSON(const CWalletTx& wtx, UniValue& entry)
     bool fLocked = instantsend.IsLockedInstantSendTransaction(wtx.GetHash());
     entry.push_back(Pair("confirmations", confirms));
     entry.push_back(Pair("instantlock", fLocked));
+
     if (wtx.IsCoinBase())
+    {
         entry.push_back(Pair("generated", true));
+    }
+    else if (wtx.IsStake())
+    {
+        entry.push_back(Pair("staked", true));
+    }
+
     if (confirms > 0)
     {
         entry.push_back(Pair("blockhash", wtx.hashBlock.GetHex()));

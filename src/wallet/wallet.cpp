@@ -5633,6 +5633,6 @@ bool CMerkleTx::IsStake() const
     return (
         pindex->IsProofOfStake() &&
         !tx->vin.empty() &&
-        (pindex->posStakeHash == tx->vin[0].prevout.hash)
+        (pindex->StakeInput() == tx->vin[0].prevout)
     );
 }
