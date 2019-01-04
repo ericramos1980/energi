@@ -7,12 +7,18 @@
 #define BITCOIN_QT_TRANSACTIONFILTERPROXY_H
 
 #include "amount.h"
+#include "transactionrecord.h"
 
 #include <QDateTime>
 #include <QSortFilterProxyModel>
 
+// Workaround "called in a constant expression before its definition is complete"
+struct TransactionFilterProxyUtil {
+    static constexpr inline quint32 TYPE(int type) { return 1<<type; }
+};
+
 /** Filter the transaction list according to pre-specified rules. */
-class TransactionFilterProxy : public QSortFilterProxyModel
+class TransactionFilterProxy : public QSortFilterProxyModel, public TransactionFilterProxyUtil
 {
     Q_OBJECT
 
@@ -24,11 +30,15 @@ public:
     /** Last date that can be represented (far in the future) */
     static const QDateTime MAX_DATE;
     /** Type filter bit field (all types) */
-    static const quint32 ALL_TYPES = 0xFFFFFFFF;
+    static constexpr quint32 ALL_TYPES = 0xFFFFFFFF;
     /** Type filter bit field (all types but Darksend-SPAM) */
-    static const quint32 COMMON_TYPES = 4223;
-
-    static quint32 TYPE(int type) { return 1<<type; }
+    static constexpr quint32 COMMON_TYPES = (
+        ALL_TYPES
+        ^ TYPE(TransactionRecord::PrivateSendDenominate)
+        ^ TYPE(TransactionRecord::PrivateSendCollateralPayment)
+        ^ TYPE(TransactionRecord::PrivateSendMakeCollaterals)
+        ^ TYPE(TransactionRecord::PrivateSendCreateDenominations)
+    );
 
     enum WatchOnlyFilter
     {

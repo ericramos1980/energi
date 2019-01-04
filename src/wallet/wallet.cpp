@@ -5619,3 +5619,20 @@ bool CMerkleTx::AcceptToMemoryPool(const CAmount& nAbsurdFee, CValidationState& 
 {
     return ::AcceptToMemoryPool(mempool, state, tx, true, NULL, NULL, false, nAbsurdFee);
 }
+
+bool CMerkleTx::IsStake() const
+{
+    BlockMap::iterator mi = mapBlockIndex.find(hashBlock);
+
+    if (mi == mapBlockIndex.end()) {
+        return false;
+    }
+
+    CBlockIndex* pindex = (*mi).second;
+
+    return (
+        pindex->IsProofOfStake() &&
+        !tx->vin.empty() &&
+        (pindex->posStakeHash == tx->vin[0].prevout.hash)
+    );
+}
