@@ -18,19 +18,15 @@
 
 using namespace std;
 
-bool fTestNet = false; //Params().NetworkID() == CBaseChainParams::TESTNET;
 
-// Modifier interval: time to elapse before new modifier is computed
-// Set to 3-hour for production network and 20-minute for test network
-unsigned int nModifierInterval;
-int nStakeTargetSpacing = 60;
-unsigned int getIntervalVersion(bool fTestNet)
-{
-    if (fTestNet)
-        return MODIFIER_INTERVAL_TESTNET;
-    else
-        return MODIFIER_INTERVAL;
-}
+// MODIFIER_INTERVAL: time to elapse before new modifier is computed
+static constexpr unsigned int MODIFIER_INTERVAL = 60;
+
+// MODIFIER_INTERVAL_RATIO:
+// ratio of group interval length between the last group and the first group
+static constexpr int MODIFIER_INTERVAL_RATIO = 3;
+
+static constexpr int MODIFIER_INTERVAL_SECTIONS_MAX = 64;
 
 // Get the last stake modifier and its generation time from a given block
 static bool GetLastStakeModifier(const CBlockIndex* pindex, uint64_t& nStakeModifier, int64_t& nModifierTime)
@@ -46,22 +42,54 @@ static bool GetLastStakeModifier(const CBlockIndex* pindex, uint64_t& nStakeModi
     return true;
 }
 
-// Get selection interval section (in seconds)
-static int64_t GetStakeModifierSelectionIntervalSection(int nSection)
-{
-    assert(nSection >= 0 && nSection < 64);
-    int64_t a = getIntervalVersion(fTestNet) * 63 / (63 + ((63 - nSection) * (MODIFIER_INTERVAL_RATIO - 1)));
-    return a;
-}
+template <int Section>
+struct StakeModifierSelectionIntervalSection {
+    static_assert(Section >= 0 && Section < MODIFIER_INTERVAL_SECTIONS_MAX, "Invalid nSection");
+    static constexpr auto MI_1 = MODIFIER_INTERVAL_SECTIONS_MAX - 1;
+    static constexpr int value = (MODIFIER_INTERVAL * MI_1) / (MI_1 + ((MI_1 - Section) * (MODIFIER_INTERVAL_RATIO - 1)));
+};
+
+using IntervalSectionArray = int64_t[64];
+
+template<int Section>
+struct StakeModifierSelectionIntervalHelper {
+    static constexpr int64_t value = (
+        StakeModifierSelectionIntervalHelper<Section-1>::value
+        + StakeModifierSelectionIntervalSection<Section>::value
+    );
+    static void fill(IntervalSectionArray &arr) {
+        arr[Section] = StakeModifierSelectionIntervalSection<Section>::value;
+        StakeModifierSelectionIntervalHelper<Section-1>::fill(arr);
+    }
+};
+template<>
+struct StakeModifierSelectionIntervalHelper<0> {
+    static constexpr int64_t value = StakeModifierSelectionIntervalSection<0>::value;
+    static void fill(IntervalSectionArray &arr) {
+        arr[0] = StakeModifierSelectionIntervalSection<0>::value;
+    }
+};
+
+class StakeModifierIntervalSelector {
+private:
+    IntervalSectionArray array;
+
+public:
+    StakeModifierIntervalSelector() {
+        StakeModifierSelectionIntervalHelper<MODIFIER_INTERVAL_SECTIONS_MAX - 1>::fill(array);
+    }
+    
+    int64_t Get(int section) {
+        assert(section >= 0 && section < 64);
+        return array[section];
+    }
+};
+StakeModifierIntervalSelector g_StakeModifierIntervalSelector;
 
 // Get stake modifier selection interval (in seconds)
-static int64_t GetStakeModifierSelectionInterval()
+static constexpr int64_t GetStakeModifierSelectionInterval()
 {
-    int64_t nSelectionInterval = 0;
-    for (int nSection = 0; nSection < 64; nSection++) {
-        nSelectionInterval += GetStakeModifierSelectionIntervalSection(nSection);
-    }
-    return nSelectionInterval;
+    return StakeModifierSelectionIntervalHelper<MODIFIER_INTERVAL_SECTIONS_MAX - 1>::value;
 }
 
 // select a block from the candidate blocks in vSortedByTimestamp, excluding
@@ -78,13 +106,20 @@ static bool SelectBlockFromCandidates(
     arith_uint256 hashBest{0};
     *pindexSelected = nullptr;
 
-    for (const auto & item : vSortedByTimestamp) {
-        if (!mapBlockIndex.count(item.second))
-            return error("SelectBlockFromCandidates: failed to find block index for candidate block %s", item.second.ToString().c_str());
+    for (auto iter = vSortedByTimestamp.begin(); ; ++iter) {
+        if (iter == vSortedByTimestamp.end()) {
+            vSortedByTimestamp.clear();
+        }
 
-        const CBlockIndex* pindex = mapBlockIndex[item.second];
-        if (fSelected && pindex->GetBlockTime() > nSelectionIntervalStop)
+        if (!mapBlockIndex.count(iter->second))
+            return error("SelectBlockFromCandidates: failed to find block index for candidate block %s", iter->second.ToString().c_str());
+
+        const CBlockIndex* pindex = mapBlockIndex[iter->second];
+        if (fSelected && pindex->GetBlockTime() > nSelectionIntervalStop) {
+            // No point to re-consider the blocks
+            vSortedByTimestamp.erase(vSortedByTimestamp.begin(), iter+1);
             break;
+        }
 
         if (mapSelectedBlocks.count(pindex->GetBlockHash()) > 0)
             continue;
@@ -106,6 +141,7 @@ static bool SelectBlockFromCandidates(
             hashBest = hashSelection;
             *pindexSelected = (const CBlockIndex*)pindex;
         } else if (!fSelected) {
+            iter = vSortedByTimestamp.begin();
             fSelected = true;
             hashBest = hashSelection;
             *pindexSelected = (const CBlockIndex*)pindex;
@@ -151,14 +187,14 @@ bool ComputeNextStakeModifier(const CBlockIndex* pindexPrev, uint64_t& nStakeMod
     LogPrint("stake", "%s: prev modifier=%08x time=%d\n",
              __func__, nStakeModifier, nModifierTime);
 
-    if (nModifierTime / getIntervalVersion(fTestNet) >= pindexPrev->GetBlockTime() / getIntervalVersion(fTestNet))
+    if (nModifierTime / MODIFIER_INTERVAL >= pindexPrev->GetBlockTime() / MODIFIER_INTERVAL)
         return true;
 
     // Sort candidate blocks by timestamp
     vector<pair<int64_t, uint256> > vSortedByTimestamp;
-    vSortedByTimestamp.reserve(64 * getIntervalVersion(fTestNet) / nStakeTargetSpacing);
+    vSortedByTimestamp.reserve(MODIFIER_INTERVAL_SECTIONS_MAX);
     int64_t nSelectionInterval = GetStakeModifierSelectionInterval();
-    int64_t nSelectionIntervalStart = (pindexPrev->GetBlockTime() / getIntervalVersion(fTestNet)) * getIntervalVersion(fTestNet) - nSelectionInterval;
+    int64_t nSelectionIntervalStart = (pindexPrev->GetBlockTime() / MODIFIER_INTERVAL) * MODIFIER_INTERVAL - nSelectionInterval;
     const CBlockIndex* pindex = pindexPrev;
 
     while (pindex && pindex->GetBlockTime() >= nSelectionIntervalStart) {
@@ -167,23 +203,25 @@ bool ComputeNextStakeModifier(const CBlockIndex* pindexPrev, uint64_t& nStakeMod
     }
 
     int nHeightFirstCandidate = pindex ? (pindex->nHeight + 1) : 0;
+    reverse(vSortedByTimestamp.begin(), vSortedByTimestamp.end()); // it should improve sorting time
     sort(vSortedByTimestamp.begin(), vSortedByTimestamp.end());
-    reverse(vSortedByTimestamp.begin(), vSortedByTimestamp.end());
 
     // Select 64 blocks from candidate blocks to generate stake modifier
     uint64_t nStakeModifierNew = 0;
     int64_t nSelectionIntervalStop = nSelectionIntervalStart;
     map<uint256, const CBlockIndex*> mapSelectedBlocks;
-    for (int nRound = 0; nRound < min(64, (int)vSortedByTimestamp.size()); nRound++) {
+    for (int nRound = 0; nRound < MODIFIER_INTERVAL_SECTIONS_MAX; nRound++) {
         // add an interval section to the current selection round
-        nSelectionIntervalStop += GetStakeModifierSelectionIntervalSection(nRound);
+        nSelectionIntervalStop += g_StakeModifierIntervalSelector.Get(nRound);
 
         // select a block from the candidates of current round
-        if (!SelectBlockFromCandidates(vSortedByTimestamp, mapSelectedBlocks, nSelectionIntervalStop, nStakeModifier, &pindex))
-            return error("%s: unable to select block at round %d", __func__, nRound);
-
-        // write the entropy bit of the selected block
-        nStakeModifierNew |= (((uint64_t)pindex->GetStakeEntropyBit()) << nRound);
+        if (SelectBlockFromCandidates(vSortedByTimestamp, mapSelectedBlocks, nSelectionIntervalStop, nStakeModifier, &pindex)) {
+            // write the entropy bit of the selected block
+            nStakeModifierNew |= (((uint64_t)pindex->GetStakeEntropyBit()) << nRound);
+        } else {
+            LogPrintf("WARN: unable to select candidate block for stake modifier at round %d - left zero", nRound);
+            break;
+        }
 
         // add the selected block from candidates to selected list
         mapSelectedBlocks.insert(make_pair(pindex->GetBlockHash(), pindex));
@@ -248,6 +286,7 @@ bool CheckStakeKernelHash(unsigned int nBits, const CBlockIndex &blockFrom, cons
     arith_uint256 bnTargetPerCoinDay;
     bnTargetPerCoinDay.SetCompact(nBits);
     arith_uint256 bnTarget = (arith_uint256(nValueIn) / 100) * bnTargetPerCoinDay;
+    assert(bnTarget >= bnTargetPerCoinDay);
 
     //grab stake modifier
     //-------------------
@@ -352,6 +391,8 @@ bool CheckProofOfStake(const CBlockHeader &block)
 
     if (!GetTransaction(prevout.hash, txinPrevRef, consensus, txinHashBlock, true))
         return error("CheckProofOfStake() : INFO: read txPrev failed");
+
+    // NOTE: coin maturity checks are part of block validation as with PoW. So, headers may get accepted.
 
     // Check tx input block is known
     {

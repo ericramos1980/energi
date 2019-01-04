@@ -9,6 +9,7 @@
 #include "utilstrencodings.h"
 #include "validation.h"
 #include "wallet/wallet.h"
+#include "pos_kernel.h"
 
 #include "test/test_energi.h"
 
@@ -21,9 +22,7 @@ BOOST_AUTO_TEST_CASE(PoS_transition_test)
 #if 0
     const char* args[] = {
         "",
-        "-debug",
-        "-printcoinstake",
-        "-printstakemodifier",
+        "-debug=stake",
     };
     ParseParameters(ARRAYLEN(args), args);
     fDebug = true;
@@ -75,6 +74,18 @@ BOOST_AUTO_TEST_CASE(PoS_transition_test)
         BOOST_CHECK(blk.HasStake());
     }
 
+    // Check proof of stake
+    //---
+    {
+        auto blk = CreateAndProcessBlock(CMutableTransactionList(), CScript());
+        BOOST_CHECK(blk.IsProofOfStake());
+
+        CKey key;
+        key.MakeNewKey(true);
+        BOOST_CHECK(key.SignCompact(blk.GetHash(), blk.posBlockSig));
+        BOOST_CHECK(!CheckProofOfStake(blk));
+    }
+    
     // end
     pwalletMain = nullptr;
 }
