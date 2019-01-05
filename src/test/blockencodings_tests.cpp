@@ -7,6 +7,7 @@
 #include "consensus/merkle.h"
 #include "chainparams.h"
 #include "random.h"
+#include "consensus/validation.h"
 #include "validation.h"
 
 #include "test/test_energi.h"
@@ -49,7 +50,13 @@ static CBlock BuildBlockTestCase() {
     bool mutated;
     block.hashMerkleRoot = BlockMerkleRoot(block, &mutated);
     assert(!mutated);
-    while (!CheckProof(block, Params().GetConsensus())) ++block.nNonce;
+    CValidationState state;
+    while (!CheckProof(state, block, Params().GetConsensus())) {
+        ++block.nNonce;
+        assert(state.IsInvalid());
+        state = CValidationState();
+    }
+    assert(state.IsValid());
     return block;
 }
 
@@ -291,7 +298,11 @@ BOOST_AUTO_TEST_CASE(EmptyBlockRoundTripTest)
     bool mutated;
     block.hashMerkleRoot = BlockMerkleRoot(block, &mutated);
     assert(!mutated);
-    while (!CheckProof(block, Params().GetConsensus())) ++block.nNonce;
+    CValidationState state;
+    while (!CheckProof(state, block, Params().GetConsensus())) {
+        ++block.nNonce;
+        state = CValidationState();
+    }
 
     // Test simple header round-trip with only coinbase
     {

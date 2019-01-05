@@ -3965,7 +3965,7 @@ bool CWallet::CreateCoinStake(const CKeyStore& keystore, CBlock &curr_block, CMu
 
         //iterates each utxo inside of CheckStakeKernelHash()
         bool fKernelFound = CheckStakeKernelHash(
-                curr_block.nBits, pcoin_index->GetBlockHeader(), *pWalletTxIn,
+                curr_block.nBits, *pcoin_index, *pWalletTxIn,
                 prevoutStake,
                 curr_block.nTime,
                 nHashDrift,
@@ -4045,7 +4045,8 @@ bool CWallet::CreateCoinStake(const CKeyStore& keystore, CBlock &curr_block, CMu
             curr_block.posStakeN = prevoutStake.n;
             curr_block.Stake() = MakeTransactionRef(std::move(stakeTx));
 
-            LogPrint("stake", "%s : added kernel type=%d\n", __func__, whichType);
+            LogPrint("stake", "%s : added kernel type=%d stakemod=%llx\n", 
+                     __func__, whichType, curr_block.nStakeModifier());
 
             // Force update
             nLastStakeSetUpdate = 0;

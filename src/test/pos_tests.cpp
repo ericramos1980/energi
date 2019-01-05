@@ -59,7 +59,7 @@ BOOST_AUTO_TEST_CASE(PoS_transition_test)
 
     // PoS mode by spork
     //---
-    for (auto i = 10; i > 0; --i) {
+    for (auto i = 30; i > 0; --i) {
         auto blk = CreateAndProcessBlock(CMutableTransactionList(), CScript());
         BOOST_CHECK(blk.IsProofOfStake());
         BOOST_CHECK(blk.HasStake());
@@ -88,7 +88,8 @@ BOOST_AUTO_TEST_CASE(PoS_transition_test)
         CKey key;
         key.MakeNewKey(true);
         BOOST_CHECK(key.SignCompact(blk.GetHash(), blk.posBlockSig));
-        BOOST_CHECK(!CheckProofOfStake(blk));
+        BOOST_CHECK(!CheckProofOfStake(state, blk));
+        state = CValidationState();
         BOOST_CHECK(!TestBlockValidity(state, Params(), blk, chainActive.Tip(), true, false));
     }
     
@@ -99,12 +100,12 @@ BOOST_AUTO_TEST_CASE(PoS_transition_test)
         auto &blk = *pblk;
 
         CValidationState state;
-        BOOST_CHECK(CheckProofOfStake(blk));
+        BOOST_CHECK(CheckProofOfStake(state, blk));
         BOOST_CHECK(TestBlockValidity(state, Params(), blk, chainActive.Tip(), true, false));
 
         blk.vtx.erase(blk.vtx.begin() + 1);
 
-        BOOST_CHECK(CheckProofOfStake(blk)); // Yes, it's TRUE
+        BOOST_CHECK(CheckProofOfStake(state, blk)); // Yes, it's TRUE
         BOOST_CHECK(!TestBlockValidity(state, Params(), blk, chainActive.Tip(), true, false));
     }
     
@@ -115,14 +116,14 @@ BOOST_AUTO_TEST_CASE(PoS_transition_test)
         auto &blk = *pblk;
 
         CValidationState state;
-        BOOST_CHECK(CheckProofOfStake(blk));
+        BOOST_CHECK(CheckProofOfStake(state, blk));
         BOOST_CHECK(TestBlockValidity(state, Params(), blk, chainActive.Tip(), true, false));
 
         CMutableTransaction cb{*(blk.CoinBase())};
         cb.vout[0].scriptPubKey = cb.vout[1].scriptPubKey;
         blk.CoinBase() = MakeTransactionRef(std::move(cb));
 
-        BOOST_CHECK(CheckProofOfStake(blk)); // Yes, it's TRUE
+        BOOST_CHECK(CheckProofOfStake(state, blk)); // Yes, it's TRUE
         BOOST_CHECK(!TestBlockValidity(state, Params(), blk, chainActive.Tip(), true, false));
     }
     

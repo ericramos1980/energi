@@ -142,7 +142,8 @@ TestChain100Setup::CreateAndProcessBlock(const std::vector<CMutableTransaction>&
         unsigned int extraNonce = 0;
         IncrementExtraNonce(pblock.get(), chainActive.Tip(), extraNonce);
 
-        while (!CheckProof(*pblock, chainparams.GetConsensus())) ++pblock->nNonce;
+        CValidationState state;
+        while (!CheckProof(state, *pblock, chainparams.GetConsensus())) ++pblock->nNonce;
     }
 
     ProcessNewBlock(chainparams, pblock, true, NULL);

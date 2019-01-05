@@ -123,15 +123,17 @@ UniValue generateBlocks(boost::shared_ptr<CReserveScript> coinbaseScript, int nG
         if (!pblocktemplate.get())
             throw JSONRPCError(RPC_INTERNAL_ERROR, "Couldn't create new block");
         auto pblock = pblocktemplate->block;
+        CValidationState state;
         
         if (pblock->IsProofOfWork()) {
             {
                 LOCK(cs_main);
                 IncrementExtraNonce(pblock.get(), chainActive.Tip(), nExtraNonce);
             }
-            while (nMaxTries > 0 && pblock->nNonce < nInnerLoopCount && !CheckProof(*pblock, Params().GetConsensus())) {
+            while (nMaxTries > 0 && pblock->nNonce < nInnerLoopCount && !CheckProof(state, *pblock, Params().GetConsensus())) {
                 ++pblock->nNonce;
                 --nMaxTries;
+                state = CValidationState();
             }
             if (nMaxTries == 0) {
                 break;
@@ -139,13 +141,14 @@ UniValue generateBlocks(boost::shared_ptr<CReserveScript> coinbaseScript, int nG
             if (pblock->nNonce == nInnerLoopCount) {
                 continue;
             }
-        } else if (!CheckProof(*pblock, Params().GetConsensus())) {
+        } else if (!CheckProof(state, *pblock, Params().GetConsensus())) {
             --nMaxTries;
 
             if (nMaxTries == 0) {
                 break;
             }
 
+            state = CValidationState();
             continue;
         }
 

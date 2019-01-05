@@ -11,6 +11,7 @@
 #include "uint256.h"
 #include "ui_interface.h"
 #include "init.h"
+#include "consensus/validation.h"
 #include "validation.h"
 
 #include <stdint.h>
@@ -410,9 +411,11 @@ bool CBlockTreeDB::LoadBlockIndexGuts(
         }
     }
 
+    CValidationState state;
+
     // The original Energi logic, shortened to actual block confirmation count for faster startups
     for (auto i = LAST_BLOCKS_TO_CHECK; (i > 0) && (pindexNew != nullptr); --i, pindexNew = pindexNew->pprev) {
-        if (!CheckProof(*pindexNew, Params().GetConsensus()))
+        if (!CheckProof(state, *pindexNew, Params().GetConsensus()))
             return error("%s: CheckProof failed: %s", __func__, pindexNew->ToString());
     }
 
