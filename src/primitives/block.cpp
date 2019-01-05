@@ -237,7 +237,7 @@ bool CBlock::HasCoinBase() const {
 }
 
 bool CBlock::HasStake() const {
-    if (!IsProofOfStake() || (vtx.size() < 2)) {
+    if (!IsProofOfStake() || (vtx.size() < 2) || posBlockSig.empty()) {
         return false;
     }
 

@@ -10,6 +10,8 @@
 #include "validation.h"
 #include "wallet/wallet.h"
 #include "pos_kernel.h"
+#include "consensus/validation.h"
+#include "miner.h"
 
 #include "test/test_energi.h"
 
@@ -74,16 +76,54 @@ BOOST_AUTO_TEST_CASE(PoS_transition_test)
         BOOST_CHECK(blk.HasStake());
     }
 
-    // Check proof of stake
+    // Check signature
     //---
     {
-        auto blk = CreateAndProcessBlock(CMutableTransactionList(), CScript());
-        BOOST_CHECK(blk.IsProofOfStake());
+        auto pblk = BlockAssembler(Params()).CreateNewBlock(CScript(), pwalletMain)->block;
+        auto &blk = *pblk;
+        
+        CValidationState state;
+        BOOST_CHECK(TestBlockValidity(state, Params(), blk, chainActive.Tip(), true, false));
 
         CKey key;
         key.MakeNewKey(true);
         BOOST_CHECK(key.SignCompact(blk.GetHash(), blk.posBlockSig));
         BOOST_CHECK(!CheckProofOfStake(blk));
+        BOOST_CHECK(!TestBlockValidity(state, Params(), blk, chainActive.Tip(), true, false));
+    }
+    
+    // Check Stake
+    //---
+    {
+        auto pblk = BlockAssembler(Params()).CreateNewBlock(CScript(), pwalletMain)->block;
+        auto &blk = *pblk;
+
+        CValidationState state;
+        BOOST_CHECK(CheckProofOfStake(blk));
+        BOOST_CHECK(TestBlockValidity(state, Params(), blk, chainActive.Tip(), true, false));
+
+        blk.vtx.erase(blk.vtx.begin() + 1);
+
+        BOOST_CHECK(CheckProofOfStake(blk)); // Yes, it's TRUE
+        BOOST_CHECK(!TestBlockValidity(state, Params(), blk, chainActive.Tip(), true, false));
+    }
+    
+    // Check CoinBase
+    //---
+    {
+        auto pblk = BlockAssembler(Params()).CreateNewBlock(CScript(), pwalletMain)->block;
+        auto &blk = *pblk;
+
+        CValidationState state;
+        BOOST_CHECK(CheckProofOfStake(blk));
+        BOOST_CHECK(TestBlockValidity(state, Params(), blk, chainActive.Tip(), true, false));
+
+        CMutableTransaction cb{*(blk.CoinBase())};
+        cb.vout[0].scriptPubKey = cb.vout[1].scriptPubKey;
+        blk.CoinBase() = MakeTransactionRef(std::move(cb));
+
+        BOOST_CHECK(CheckProofOfStake(blk)); // Yes, it's TRUE
+        BOOST_CHECK(!TestBlockValidity(state, Params(), blk, chainActive.Tip(), true, false));
     }
     
     // end

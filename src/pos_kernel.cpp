@@ -374,7 +374,8 @@ bool CheckProofOfStake(const CBlockHeader &block)
 
     if (block.posBlockSig.empty()) {
         if (fDebug) {
-            error("%s : the block is not signed: %s", __func__, block_hash.ToString().c_str());
+            // Common error in mining tests
+            error("%s : the block has no signature: %s", __func__, block_hash.ToString().c_str());
         }
 
         return false;
