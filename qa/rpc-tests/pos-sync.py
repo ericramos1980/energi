@@ -12,7 +12,7 @@ class PoSSyncTest(BitcoinTestFramework):
         super().__init__()
         self.setup_clean_chain = True
         self.num_nodes = 4
-        node_args = ["-keypool=10", "-debug=stake"]
+        node_args = ["-keypool=10", "-debug=stake", "-debug=net"]
         self.extra_args = [node_args, node_args, node_args, node_args]
 
     def setup_network(self, split=False):

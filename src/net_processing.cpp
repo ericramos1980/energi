@@ -205,6 +205,9 @@ struct CNodeState {
      */
     bool fSupportsDesiredCmpctVersion;
 
+    //! Headers from the last message
+    std::vector<CBlockHeader> vPendingHeaders;
+
     CNodeState(CAddress addrIn, std::string addrNameIn) : address(addrIn), name(addrNameIn) {
         fCurrentlyConnected = false;
         nMisbehavior = 0;
@@ -2175,7 +2178,7 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
 
         if (mapBlockIndex.find(cmpctblock.header.hashPrevBlock) == mapBlockIndex.end()) {
             // Doesn't connect (or is genesis), instead of DoSing in AcceptBlockHeader, request deeper headers
-            if (!IsInitialBlockDownload())
+            if (!IsInitialBlockDownload() && State(pfrom->GetId())->vPendingHeaders.empty())
                 connman.PushMessage(pfrom, msgMaker.Make(NetMsgType::GETHEADERS, chainActive.GetLocator(pindexBestHeader), uint256()));
             return true;
         }
@@ -2191,6 +2194,10 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
                     Misbehaving(pfrom->GetId(), nDoS);
                 }
                 LogPrintf("Peer %d sent us invalid header via cmpctblock\n", pfrom->id);
+                return true;
+            }
+            if (state.IsError()) {
+                LogPrintf("Peer %d sent us header via cmpctblock which we are unable to process yet \n", pfrom->id);
                 return true;
             }
         }
@@ -2314,7 +2321,7 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
                 vInv[0] = CInv(MSG_BLOCK, cmpctblock.header.GetHash());
                 connman.PushMessage(pfrom, msgMaker.Make(NetMsgType::GETDATA, vInv));
                 return true;
-            } else {
+            } else if (nodestate->vPendingHeaders.empty()) {
                 // If this was an announce-cmpctblock, we want the same treatment as a header message
                 // Dirty hack to process as if it were just a headers message (TODO: move message handling into their own functions)
                 std::vector<CBlock> headers;
@@ -2419,6 +2426,13 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
             ProcessNewBlock(chainparams, pblock, true, &fNewBlock);
             if (fNewBlock)
                 pfrom->nLastBlockTime = GetTime();
+
+            // NOTE: read-only check without Mutex
+            if (!State(pfrom->GetId())->vPendingHeaders.empty()) {
+                CDataStream vHeadersMsg(SER_NETWORK, PROTOCOL_VERSION);
+                vHeadersMsg << std::vector<CBlockHeader>();
+                return ProcessMessage(pfrom, NetMsgType::HEADERS, vHeadersMsg, nTimeReceived, chainparams, connman, interruptMsgProc);
+            }
         }
     }
 
@@ -2440,15 +2454,23 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
             ReadCompactSize(vRecv); // ignore tx count; assume it is 0.
         }
 
-        if (nCount == 0) {
-            // Nothing interesting. Stop asking this peers for more headers.
-            return true;
-        }
-
         const CBlockIndex *pindexLast = NULL;
         {
         LOCK(cs_main);
         CNodeState *nodestate = State(pfrom->GetId());
+
+        if (nCount == 0) {
+            if (!nodestate->vPendingHeaders.empty()) {
+                nodestate->vPendingHeaders.swap(headers);
+            } else {
+                // Nothing interesting. Stop asking this peers for more headers.
+                return true;
+            }
+        } else if (!nodestate->vPendingHeaders.empty()) {
+            LOCK(cs_main);
+            Misbehaving(pfrom->GetId(), 20);
+            return error("headers message while pending blocks from %d", pfrom->GetId());
+        }
 
         // If this looks like it could be a block announcement (nCount <
         // MAX_BLOCKS_TO_ANNOUNCE), use special logic for handling headers that
@@ -2458,7 +2480,10 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
         //   don't connect before giving DoS points
         // - Once a headers message is received that is valid and does connect,
         //   nUnconnectingHeaders gets reset back to 0.
-        if (mapBlockIndex.find(headers[0].hashPrevBlock) == mapBlockIndex.end() && nCount < MAX_BLOCKS_TO_ANNOUNCE) {
+        if ((mapBlockIndex.find(headers[0].hashPrevBlock) == mapBlockIndex.end()) &&
+            (nCount > 0) && // received in the message, but not a retry
+            (nCount < MAX_BLOCKS_TO_ANNOUNCE)
+        ) {
             nodestate->nUnconnectingHeaders++;
             connman.PushMessage(pfrom, msgMaker.Make(NetMsgType::GETHEADERS, chainActive.GetLocator(pindexBestHeader), uint256()));
             LogPrint("net", "received header %s: missing prev block %s, sending getheaders (%d) to end (peer=%d, nUnconnectingHeaders=%d)\n",
@@ -2497,6 +2522,10 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
                 }
                 return error("invalid header received");
             }
+            if (state.IsError()) {
+                LogPrintf("Peer %d sent us header which we are unable to process yet \n", pfrom->id);
+                return true;
+            }
         }
 
         {
@@ -2510,7 +2539,9 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
         assert(pindexLast);
         UpdateBlockAvailability(pfrom->GetId(), pindexLast->GetBlockHash());
 
-        if (nCount == MAX_HEADERS_RESULTS) {
+        if (state.IsError()) {
+            nodestate->vPendingHeaders.swap(headers);
+        } else if (headers.size() == MAX_HEADERS_RESULTS) {
             // Headers message had its maximum size; the peer may have more headers.
             // TODO: optimize: if pindexLast is an ancestor of chainActive.Tip or pindexBestHeader, continue
             // from there instead.
@@ -2596,6 +2627,13 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
         ProcessNewBlock(chainparams, pblock, forceProcessing, &fNewBlock);
         if (fNewBlock)
             pfrom->nLastBlockTime = GetTime();
+
+        // NOTE: read-only check without Mutex
+        if (!State(pfrom->GetId())->vPendingHeaders.empty()) {
+            CDataStream vHeadersMsg(SER_NETWORK, PROTOCOL_VERSION);
+            vHeadersMsg << std::vector<CBlockHeader>();
+            return ProcessMessage(pfrom, NetMsgType::HEADERS, vHeadersMsg, nTimeReceived, chainparams, connman, interruptMsgProc);
+        }
     }
 
 
