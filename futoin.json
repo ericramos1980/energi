@@ -1,6 +1,6 @@
 {
   "name": "energi",
-  "version": "1.3.2",
+  "version": "1.99.3",
   "vcs": "git",
   "tools": {
     "make": "*",
