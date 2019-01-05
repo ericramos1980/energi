@@ -1307,6 +1307,25 @@ inline void static SendBlockTransactions(const CBlock& block, const BlockTransac
     connman.PushMessage(pfrom, msgMaker.Make(NetMsgType::BLOCKTXN, resp));
 }
 
+static bool ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStream& vRecv, int64_t nTimeReceived, const CChainParams& chainparams, CConnman& connman, const std::atomic<bool>& interruptMsgProc);
+
+static inline bool TryPendingHeaders(CNode* pfrom, int64_t nTimeReceived, const CChainParams& chainparams, CConnman& connman, const std::atomic<bool>& interruptMsgProc) {
+    bool have_headers = false;
+
+    {
+        LOCK(cs_main);
+        have_headers = State(pfrom->GetId())->vPendingHeaders.empty();
+    }
+
+    if (have_headers) {
+        CDataStream vHeadersMsg(SER_NETWORK, PROTOCOL_VERSION);
+        vHeadersMsg << std::vector<CBlock>();
+        return ProcessMessage(pfrom, NetMsgType::HEADERS, vHeadersMsg, nTimeReceived, chainparams, connman, interruptMsgProc);
+    }
+
+    return true;
+}
+
 bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStream& vRecv, int64_t nTimeReceived, const CChainParams& chainparams, CConnman& connman, const std::atomic<bool>& interruptMsgProc)
 {
     LogPrint("net", "received: %s (%u bytes) peer=%d\n", SanitizeString(strCommand), vRecv.size(), pfrom->id);
@@ -2350,6 +2369,7 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
             if (fNewBlock)
                 pfrom->nLastBlockTime = GetTime();
 
+            {
             LOCK(cs_main); // hold cs_main for CBlockIndex::IsValid()
             if (pindex->IsValid(BLOCK_VALID_TRANSACTIONS)) {
                 // Clear download state for this block, which is in
@@ -2358,6 +2378,9 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
                 // can't be used to interfere with block relay.
                 MarkBlockAsReceived(pblock->GetHash());
             }
+            } // cs_main
+
+            return TryPendingHeaders(pfrom, nTimeReceived, chainparams, connman, interruptMsgProc);
         }
 
     }
@@ -2427,12 +2450,7 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
             if (fNewBlock)
                 pfrom->nLastBlockTime = GetTime();
 
-            // NOTE: read-only check without Mutex
-            if (!State(pfrom->GetId())->vPendingHeaders.empty()) {
-                CDataStream vHeadersMsg(SER_NETWORK, PROTOCOL_VERSION);
-                vHeadersMsg << std::vector<CBlockHeader>();
-                return ProcessMessage(pfrom, NetMsgType::HEADERS, vHeadersMsg, nTimeReceived, chainparams, connman, interruptMsgProc);
-            }
+            TryPendingHeaders(pfrom, nTimeReceived, chainparams, connman, interruptMsgProc);
         }
     }
 
@@ -2628,12 +2646,7 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
         if (fNewBlock)
             pfrom->nLastBlockTime = GetTime();
 
-        // NOTE: read-only check without Mutex
-        if (!State(pfrom->GetId())->vPendingHeaders.empty()) {
-            CDataStream vHeadersMsg(SER_NETWORK, PROTOCOL_VERSION);
-            vHeadersMsg << std::vector<CBlockHeader>();
-            return ProcessMessage(pfrom, NetMsgType::HEADERS, vHeadersMsg, nTimeReceived, chainparams, connman, interruptMsgProc);
-        }
+        return TryPendingHeaders(pfrom, nTimeReceived, chainparams, connman, interruptMsgProc);
     }
 
 
