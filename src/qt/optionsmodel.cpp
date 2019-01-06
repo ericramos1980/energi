@@ -308,7 +308,7 @@ QVariant OptionsModel::data(const QModelIndex & index, int role) const
         case Listen:
             return settings.value("fListen");
         case ShowNotifications:
-            return settings.value("bShowNotifications");
+            return bShowNotifications;
         default:
             return QVariant();
         }
@@ -511,10 +511,8 @@ bool OptionsModel::setData(const QModelIndex & index, const QVariant & value, in
             }
             break;
         case ShowNotifications:
-            if (settings.value("bShowNotifications") != value) {
-                settings.setValue("bShowNotifications", value);
-                bShowNotifications = value.toBool();
-            }
+            bShowNotifications = value.toBool();
+            settings.setValue("bShowNotifications", bShowNotifications);
             break;
         default:
             break;

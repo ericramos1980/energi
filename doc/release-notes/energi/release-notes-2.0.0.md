@@ -41,4 +41,5 @@ Minor changes:
 
 * CHANGED: extended getblock- RPC command output
 * FIXED: to enforce checkpoint hash validation
+* FIXED: UI options dialog partially broken (options got ignored)
 * NEW: added minimal chainwork checks

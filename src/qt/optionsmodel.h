@@ -55,8 +55,10 @@ public:
         PrivateSendAmount,      // int
         PrivateSendMultiSession,// bool
         Listen,                 // bool
-        OptionIDRowCount,
         ShowNotifications,      // bool
+
+        // TO BE THE LAST
+        OptionIDRowCount,
     };
 
     void Init(bool resetSettings = false);
