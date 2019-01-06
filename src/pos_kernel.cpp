@@ -224,7 +224,7 @@ bool ComputeNextStakeModifier(const CBlockIndex* pindexPrev, uint64_t& nStakeMod
             // write the entropy bit of the selected block
             nStakeModifierNew |= (((uint64_t)pindex->GetStakeEntropyBit()) << nRound);
         } else {
-            LogPrintf("WARN: unable to select candidate block for stake modifier at round %d - left zero", nRound);
+            LogPrintf("WARN: unable to select candidate block for stake modifier at round %d - left zero\n", nRound);
             break;
         }
 
