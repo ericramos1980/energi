@@ -1314,10 +1314,11 @@ static inline bool TryPendingHeaders(CNode* pfrom, int64_t nTimeReceived, const 
 
     {
         LOCK(cs_main);
-        have_headers = State(pfrom->GetId())->vPendingHeaders.empty();
+        have_headers = !State(pfrom->GetId())->vPendingHeaders.empty();
     }
 
     if (have_headers) {
+        LogPrint("net", "Retrying pending headers for peer %d", pfrom->GetId());
         CDataStream vHeadersMsg(SER_NETWORK, PROTOCOL_VERSION);
         vHeadersMsg << std::vector<CBlock>();
         return ProcessMessage(pfrom, NetMsgType::HEADERS, vHeadersMsg, nTimeReceived, chainparams, connman, interruptMsgProc);
@@ -2215,7 +2216,7 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
                 LogPrintf("Peer %d sent us invalid header via cmpctblock\n", pfrom->id);
                 return true;
             }
-            if (state.IsError()) {
+            if (state.IsTransientError()) {
                 LogPrintf("Peer %d sent us header via cmpctblock which we are unable to process yet \n", pfrom->id);
                 return true;
             }
@@ -2477,17 +2478,16 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
         LOCK(cs_main);
         CNodeState *nodestate = State(pfrom->GetId());
 
-        if (nCount == 0) {
-            if (!nodestate->vPendingHeaders.empty()) {
-                nodestate->vPendingHeaders.swap(headers);
-            } else {
-                // Nothing interesting. Stop asking this peers for more headers.
-                return true;
+        if (!nodestate->vPendingHeaders.empty()) {
+            if (nCount != 0) {
+                LogPrint("net", "New headers while having pending headers from %d", pfrom->GetId());
+                nCount = 0;
             }
-        } else if (!nodestate->vPendingHeaders.empty()) {
-            LOCK(cs_main);
-            Misbehaving(pfrom->GetId(), 20);
-            return error("headers message while pending blocks from %d", pfrom->GetId());
+
+            nodestate->vPendingHeaders.swap(headers);
+        } else if (nCount == 0) {
+            // Nothing interesting. Stop asking this peers for more headers.
+            return true;
         }
 
         // If this looks like it could be a block announcement (nCount <
@@ -2504,8 +2504,8 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
         ) {
             nodestate->nUnconnectingHeaders++;
             connman.PushMessage(pfrom, msgMaker.Make(NetMsgType::GETHEADERS, chainActive.GetLocator(pindexBestHeader), uint256()));
-            LogPrint("net", "received header %s: missing prev block %s, sending getheaders (%d) to end (peer=%d, nUnconnectingHeaders=%d)\n",
-                    headers[0].GetHash().ToString(),
+            LogPrint("net", "received header %s/%d: missing prev block %s, sending getheaders (%d) to end (peer=%d, nUnconnectingHeaders=%d)\n",
+                    headers[0].GetHash().ToString(), headers[0].nHeight,
                     headers[0].hashPrevBlock.ToString(),
                     pindexBestHeader->nHeight,
                     pfrom->id, nodestate->nUnconnectingHeaders);
@@ -2540,9 +2540,8 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
                 }
                 return error("invalid header received");
             }
-            if (state.IsError()) {
-                LogPrintf("Peer %d sent us header which we are unable to process yet \n", pfrom->id);
-                return true;
+            if (state.IsTransientError()) {
+                LogPrint("net", "peer %d sent us header which we are unable to process yet \n", pfrom->id);
             }
         }
 
@@ -2557,8 +2556,12 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
         assert(pindexLast);
         UpdateBlockAvailability(pfrom->GetId(), pindexLast->GetBlockHash());
 
-        if (state.IsError()) {
+        if (!nodestate->vPendingHeaders.empty()) {
+            // Just in case. It should not really happen
+            LogPrint("net", "peer %d sent us more headers while we were processing current pending \n", pfrom->id);
+        } else if (state.IsTransientError()) {
             nodestate->vPendingHeaders.swap(headers);
+            LogPrint("net", "saving pending headers for peer %d \n", pfrom->id);
         } else if (headers.size() == MAX_HEADERS_RESULTS) {
             // Headers message had its maximum size; the peer may have more headers.
             // TODO: optimize: if pindexLast is an ancestor of chainActive.Tip or pindexBestHeader, continue

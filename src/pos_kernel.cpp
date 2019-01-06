@@ -395,7 +395,7 @@ bool CheckProofOfStake(CValidationState &state, const CBlockHeader &header)
             return state.DoS(100, false, REJECT_INVALID, "bad-unkown-stake");
         } else {
             // We do not have the previous block, so the block may be valid
-            return state.Error("bad-unkown-stake-tmp");
+            return state.TransientError("tmp-bad-unkown-stake");
         }
     }
 
@@ -415,7 +415,7 @@ bool CheckProofOfStake(CValidationState &state, const CBlockHeader &header)
                                  false, "stake from mempool");
             } else {
                 // We do not have the previous block, so the block may be valid
-                return state.Error("bad-stake-mempool-tmp");
+                return state.TransientError("tmp-bad-stake-mempool");
             }
         }
     }
