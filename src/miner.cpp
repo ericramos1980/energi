@@ -236,14 +236,14 @@ std::unique_ptr<CBlockTemplate> BlockAssembler::CreateNewBlock(
     // Sign, if needed
     //---
     if (sign_block && !pblock->SignBlock(*pwallet)) {
-        throw std::runtime_error(strprintf("%s: failed to sign block", __func__));
+        error("%s: failed to sign block", __func__);
     }
 
     // Validate
     //---
     CValidationState state;
     if (!TestBlockValidity(state, chainparams, *pblock, pindexPrev, false, false)) {
-        throw std::runtime_error(strprintf("%s: TestBlockValidity failed: %s", __func__, FormatStateMessage(state)));
+        error("%s: TestBlockValidity failed: %s", __func__, FormatStateMessage(state));
     }
 
     int64_t nTime2 = GetTimeMicros();
