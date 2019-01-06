@@ -206,7 +206,7 @@ struct CNodeState {
     bool fSupportsDesiredCmpctVersion;
 
     //! Headers from the last message
-    std::vector<CBlockHeader> vPendingHeaders;
+    std::vector<CBlockHeader> vPostponedHeaders;
 
     CNodeState(CAddress addrIn, std::string addrNameIn) : address(addrIn), name(addrNameIn) {
         fCurrentlyConnected = false;
@@ -1309,16 +1309,16 @@ inline void static SendBlockTransactions(const CBlock& block, const BlockTransac
 
 static bool ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStream& vRecv, int64_t nTimeReceived, const CChainParams& chainparams, CConnman& connman, const std::atomic<bool>& interruptMsgProc);
 
-static inline bool TryPendingHeaders(CNode* pfrom, int64_t nTimeReceived, const CChainParams& chainparams, CConnman& connman, const std::atomic<bool>& interruptMsgProc) {
+static inline bool TryPostponedHeaders(CNode* pfrom, int64_t nTimeReceived, const CChainParams& chainparams, CConnman& connman, const std::atomic<bool>& interruptMsgProc) {
     bool have_headers = false;
 
     {
         LOCK(cs_main);
-        have_headers = !State(pfrom->GetId())->vPendingHeaders.empty();
+        have_headers = !State(pfrom->GetId())->vPostponedHeaders.empty();
     }
 
     if (have_headers) {
-        LogPrint("net", "Retrying pending headers for peer %d", pfrom->GetId());
+        LogPrint("net", "Retrying postponed headers for peer %d", pfrom->GetId());
         CDataStream vHeadersMsg(SER_NETWORK, PROTOCOL_VERSION);
         vHeadersMsg << std::vector<CBlock>();
         return ProcessMessage(pfrom, NetMsgType::HEADERS, vHeadersMsg, nTimeReceived, chainparams, connman, interruptMsgProc);
@@ -2198,7 +2198,7 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
 
         if (mapBlockIndex.find(cmpctblock.header.hashPrevBlock) == mapBlockIndex.end()) {
             // Doesn't connect (or is genesis), instead of DoSing in AcceptBlockHeader, request deeper headers
-            if (!IsInitialBlockDownload() && State(pfrom->GetId())->vPendingHeaders.empty())
+            if (!IsInitialBlockDownload() && State(pfrom->GetId())->vPostponedHeaders.empty())
                 connman.PushMessage(pfrom, msgMaker.Make(NetMsgType::GETHEADERS, chainActive.GetLocator(pindexBestHeader), uint256()));
             return true;
         }
@@ -2341,7 +2341,7 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
                 vInv[0] = CInv(MSG_BLOCK, cmpctblock.header.GetHash());
                 connman.PushMessage(pfrom, msgMaker.Make(NetMsgType::GETDATA, vInv));
                 return true;
-            } else if (nodestate->vPendingHeaders.empty()) {
+            } else if (nodestate->vPostponedHeaders.empty()) {
                 // If this was an announce-cmpctblock, we want the same treatment as a header message
                 // Dirty hack to process as if it were just a headers message (TODO: move message handling into their own functions)
                 std::vector<CBlock> headers;
@@ -2381,7 +2381,7 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
             }
             } // cs_main
 
-            return TryPendingHeaders(pfrom, nTimeReceived, chainparams, connman, interruptMsgProc);
+            return TryPostponedHeaders(pfrom, nTimeReceived, chainparams, connman, interruptMsgProc);
         }
 
     }
@@ -2451,7 +2451,7 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
             if (fNewBlock)
                 pfrom->nLastBlockTime = GetTime();
 
-            TryPendingHeaders(pfrom, nTimeReceived, chainparams, connman, interruptMsgProc);
+            TryPostponedHeaders(pfrom, nTimeReceived, chainparams, connman, interruptMsgProc);
         }
     }
 
@@ -2474,21 +2474,25 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
         }
 
         const CBlockIndex *pindexLast = NULL;
+        const CBlockIndex *pindexPrev = NULL;
+        bool get_more_headers = headers.size() == MAX_HEADERS_RESULTS;
         {
         LOCK(cs_main);
         CNodeState *nodestate = State(pfrom->GetId());
 
-        if (!nodestate->vPendingHeaders.empty()) {
+        if (!nodestate->vPostponedHeaders.empty()) {
             if (nCount != 0) {
-                LogPrint("net", "New headers while having pending headers from %d", pfrom->GetId());
-                nCount = 0;
+                LogPrint("net", "New headers while having postponed headers from %d", pfrom->GetId());
             }
 
-            nodestate->vPendingHeaders.swap(headers);
+            nodestate->vPostponedHeaders.swap(headers);
+            get_more_headers = true; // force any way
         } else if (nCount == 0) {
             // Nothing interesting. Stop asking this peers for more headers.
             return true;
         }
+
+        auto prev_iter = mapBlockIndex.find(headers[0].hashPrevBlock);
 
         // If this looks like it could be a block announcement (nCount <
         // MAX_BLOCKS_TO_ANNOUNCE), use special logic for handling headers that
@@ -2498,8 +2502,7 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
         //   don't connect before giving DoS points
         // - Once a headers message is received that is valid and does connect,
         //   nUnconnectingHeaders gets reset back to 0.
-        if ((mapBlockIndex.find(headers[0].hashPrevBlock) == mapBlockIndex.end()) &&
-            (nCount > 0) && // received in the message, but not a retry
+        if ((prev_iter == mapBlockIndex.end()) &&
             (nCount < MAX_BLOCKS_TO_ANNOUNCE)
         ) {
             nodestate->nUnconnectingHeaders++;
@@ -2519,6 +2522,8 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
             }
             return true;
         }
+
+        pindexPrev = prev_iter->second;
 
         uint256 hashLastBlock;
         for (const CBlockHeader& header : headers) {
@@ -2542,6 +2547,21 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
             }
             if (state.IsTransientError()) {
                 LogPrint("net", "peer %d sent us header which we are unable to process yet \n", pfrom->id);
+
+                if (pindexLast == nullptr) {
+                    // edge case of the first header error
+                    pindexLast = pindexPrev;
+                } else {
+                    // Avoid excessive hashing and lookup work on the following runs.
+                    auto curr_iter = headers.begin();
+
+                    while ((curr_iter != headers.end()) &&
+                           int(curr_iter->nHeight) < pindexLast->nHeight)
+                    {
+                        ++curr_iter;
+                    }
+                    headers.erase(headers.begin(), curr_iter);
+                }
             }
         }
 
@@ -2556,13 +2576,15 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
         assert(pindexLast);
         UpdateBlockAvailability(pfrom->GetId(), pindexLast->GetBlockHash());
 
-        if (!nodestate->vPendingHeaders.empty()) {
+        if (!nodestate->vPostponedHeaders.empty()) {
             // Just in case. It should not really happen
-            LogPrint("net", "peer %d sent us more headers while we were processing current pending \n", pfrom->id);
-        } else if (state.IsTransientError()) {
-            nodestate->vPendingHeaders.swap(headers);
-            LogPrint("net", "saving pending headers for peer %d \n", pfrom->id);
-        } else if (headers.size() == MAX_HEADERS_RESULTS) {
+            LogPrint("net", "peer %d sent us more headers while we were processing current postponed \n", pfrom->id);
+        } else if (state.IsTransientError() && !headers.empty()) {
+            nodestate->vPostponedHeaders.swap(headers);
+            LogPrint("net", "saving postponed headers for peer %d \n", pfrom->id);
+        } else if (get_more_headers) {
+            // If nCount=0 - then we are in postponed headers situation, try to get more.
+
             // Headers message had its maximum size; the peer may have more headers.
             // TODO: optimize: if pindexLast is an ancestor of chainActive.Tip or pindexBestHeader, continue
             // from there instead.
@@ -2593,6 +2615,7 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
                 LogPrint("net", "Large reorg, won't direct fetch to %s (%d)\n",
                         pindexLast->GetBlockHash().ToString(),
                         pindexLast->nHeight);
+                nodestate->vPostponedHeaders.clear();
             } else {
                 std::vector<CInv> vGetData;
                 // Download as much as possible, from earliest to latest.
@@ -2649,7 +2672,7 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
         if (fNewBlock)
             pfrom->nLastBlockTime = GetTime();
 
-        return TryPendingHeaders(pfrom, nTimeReceived, chainparams, connman, interruptMsgProc);
+        return TryPostponedHeaders(pfrom, nTimeReceived, chainparams, connman, interruptMsgProc);
     }
 
 
