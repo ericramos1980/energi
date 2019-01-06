@@ -336,13 +336,13 @@ bool CheckStakeKernelHash(unsigned int nBits, const CBlockIndex &blockFrom, cons
 
     // search
     //-------------------
-    bool fSuccess = false;
     unsigned int nTryTime = 0;
+    bool is_late = nTimeTx > (chainActive.Tip()->GetBlockTime() + Params().GetConsensus().nPowTargetSpacing);
 
     for (auto i = 0U; i < nHashDrift; ++i)
     {
         //hash this iteration
-        nTryTime = nTimeTx + i;
+        nTryTime = is_late ? (nTimeTx + i) : (nTimeTx + nHashDrift - i);
         hashProofOfStake = stakeHash(nTryTime, ss, prevout.n, prevout.hash, nTimeBlockFrom);
 
         // if stake hash does not meet the target then continue to next iteration
@@ -350,7 +350,6 @@ bool CheckStakeKernelHash(unsigned int nBits, const CBlockIndex &blockFrom, cons
             continue;
         }
 
-        fSuccess = true; // if we make it this far then we have successfully created a stake hash
         nTimeTx = nTryTime;
 
         if (fDebug || fPrintProofOfStake) {
@@ -366,10 +365,10 @@ bool CheckStakeKernelHash(unsigned int nBits, const CBlockIndex &blockFrom, cons
                 nTimeBlockFrom, prevout.hash.ToString().c_str(), nTimeBlockFrom, prevout.n, nTryTime,
                 hashProofOfStake.ToString().c_str());
         }
-        break;
+        return true;
     }
 
-    return fSuccess;
+    return false;
 }
 
 // Check kernel hash target and coinstake signature
