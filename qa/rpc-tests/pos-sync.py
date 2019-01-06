@@ -46,9 +46,9 @@ class PoSSyncTest(BitcoinTestFramework):
         assert_equal(self.nodes[3].getblockchaininfo()['pos'], False)
         
         logging.info("Adding more PoS blocks")
-        for i in range(30):
-            set_node_times(self.nodes, GENESISTIME + (i+1)*180)
-            assert_equal(len(self.nodes[0].generate(100, 300)), 100)
+        for i in range(500):
+            set_node_times(self.nodes, GENESISTIME + i*180)
+            assert_equal(len(self.nodes[0].generate(5, 50)), 5)
 
         return
         logging.info("Syncing from scratch")

@@ -49,12 +49,19 @@ BOOST_AUTO_TEST_CASE(PoS_transition_test)
     BOOST_CHECK(sporkManager.UpdateSpork(SPORK_15_FIRST_POS_BLOCK, 103, *connman));
     //int last_pow_height;
 
+    const int64_t BLOCK_TIME = chainActive.Tip()->GetBlockTimeMax() + 5;
+    const int64_t BLOCK_SHIFT = pwalletMain->nHashDrift;
+    int64_t time_shift = 0;
+    SetMockTime(BLOCK_TIME);
+
     // PoW mode
     //---
     for (auto i = 2; i > 0; --i) {
         auto blk = CreateAndProcessBlock(CMutableTransactionList(), scriptPubKey);
         BOOST_CHECK(blk.IsProofOfWork());
         //last_pow_height = blk.nHeight;
+        time_shift += BLOCK_SHIFT;
+        SetMockTime(BLOCK_TIME + time_shift);
     }
 
     // PoS mode by spork
@@ -63,6 +70,8 @@ BOOST_AUTO_TEST_CASE(PoS_transition_test)
         auto blk = CreateAndProcessBlock(CMutableTransactionList(), CScript());
         BOOST_CHECK(blk.IsProofOfStake());
         BOOST_CHECK(blk.HasStake());
+        time_shift += BLOCK_SHIFT;
+        SetMockTime(BLOCK_TIME + time_shift);
     }
 
     // Still, it must continue PoS even after Spork change
@@ -74,6 +83,8 @@ BOOST_AUTO_TEST_CASE(PoS_transition_test)
         auto blk = CreateAndProcessBlock(CMutableTransactionList(), CScript());
         BOOST_CHECK(blk.IsProofOfStake());
         BOOST_CHECK(blk.HasStake());
+        time_shift += BLOCK_SHIFT;
+        SetMockTime(BLOCK_TIME + time_shift);
     }
 
     // Check signature
@@ -91,6 +102,9 @@ BOOST_AUTO_TEST_CASE(PoS_transition_test)
         BOOST_CHECK(!CheckProofOfStake(state, blk));
         state = CValidationState();
         BOOST_CHECK(!TestBlockValidity(state, Params(), blk, chainActive.Tip(), true, false));
+
+        time_shift += BLOCK_SHIFT;
+        SetMockTime(BLOCK_TIME + time_shift);
     }
     
     // Check Stake
@@ -107,6 +121,9 @@ BOOST_AUTO_TEST_CASE(PoS_transition_test)
 
         BOOST_CHECK(CheckProofOfStake(state, blk)); // Yes, it's TRUE
         BOOST_CHECK(!TestBlockValidity(state, Params(), blk, chainActive.Tip(), true, false));
+
+        time_shift += BLOCK_SHIFT;
+        SetMockTime(BLOCK_TIME + time_shift);
     }
     
     // Check CoinBase
@@ -125,6 +142,9 @@ BOOST_AUTO_TEST_CASE(PoS_transition_test)
 
         BOOST_CHECK(CheckProofOfStake(state, blk)); // Yes, it's TRUE
         BOOST_CHECK(!TestBlockValidity(state, Params(), blk, chainActive.Tip(), true, false));
+
+        time_shift += BLOCK_SHIFT;
+        SetMockTime(BLOCK_TIME + time_shift);
     }
     
     // end
