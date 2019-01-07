@@ -3993,7 +3993,7 @@ CBlockIndex * InsertBlockIndex(uint256 hash)
 
 bool static LoadBlockIndexDB(const CChainParams& chainparams)
 {
-    if (!pblocktree->LoadBlockIndexGuts(InsertBlockIndex, chainparams.Checkpoints().mapCheckpoints, fCheckpointsEnabled))
+    if (!pblocktree->LoadBlockIndexGuts(InsertBlockIndex, chainparams.Checkpoints().mapCheckpoints))
         return false;
 
     boost::this_thread::interruption_point();
@@ -4621,6 +4621,54 @@ void static CheckBlockIndex(const Consensus::Params& consensusParams)
 
     // Check that we actually traversed the entire map.
     assert(nNodes == forward.size());
+}
+
+bool CheckpointValidateBlockIndex(const CChainParams& chainparams) {
+    if (fReindex || !fCheckpointsEnabled) return true;
+
+    LOCK(cs_main);
+
+    auto &checkpoints = chainparams.Checkpoints();
+
+    CValidationState state;
+    bool flush = false;
+
+    for (auto iter = checkpoints.mapCheckpoints.begin();
+         iter != checkpoints.mapCheckpoints.end(); ++iter
+    ) {
+        auto height = iter->first;
+
+        if (chainActive.Height() < height) continue;
+
+        auto pindex = chainActive[height];
+        auto hash = pindex->GetBlockHash();
+
+        if (Checkpoints::ValidateCheckpoint(checkpoints, height, hash)) {
+            continue;
+        }
+
+        error("Checkpoint: Invalid fork with hash %s found at %d, invalidating",
+              height, hash.ToString().c_str());
+        InvalidateBlock(state, chainparams, pindex);
+
+        if (state.IsInvalid()) {
+            return false;
+        }
+
+        ActivateBestChain(state, chainparams);
+
+        if (state.IsInvalid()) {
+            return false;
+        }
+
+        flush = true;
+    }
+
+    if (flush && !FlushStateToDisk(state, FLUSH_STATE_ALWAYS)) {
+        return true;
+    }
+
+    return state.IsValid();
 }
 
 std::string CBlockFileInfo::ToString() const {

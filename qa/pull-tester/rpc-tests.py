@@ -206,6 +206,7 @@ testScriptsExt = [
     'invalidateblock.py',
     'maxblocksinflight.py',
     'p2p-acceptblock.py', # NOTE: needs nrghash to pass
+    'checkpoint-load.py',
     # 'replace-by-fee.py', # RBF is disabled in energi Core
 ]
 

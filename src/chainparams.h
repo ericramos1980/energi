@@ -84,6 +84,9 @@ public:
     int ExtCoinType(int version) const;
     const std::vector<SeedSpec6>& FixedSeeds() const { return vFixedSeeds; }
     const CCheckpointData& Checkpoints() const { return checkpointData; }
+    void AddCheckpoint(int height, const uint256& hash) {
+        checkpointData.mapCheckpoints[height] = hash;
+    }
     const ChainTxData& TxData() const { return chainTxData; }
     int PoolMaxTransactions() const { return nPoolMaxTransactions; }
     int FulfilledRequestExpireTime() const { return nFulfilledRequestExpireTime; }

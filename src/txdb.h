@@ -141,8 +141,7 @@ public:
     bool WriteFlag(const std::string &name, bool fValue);
     bool ReadFlag(const std::string &name, bool &fValue);
     bool LoadBlockIndexGuts(boost::function<CBlockIndex*(const uint256&)> insertBlockIndex,
-                            const MapCheckpoints &checkpoints,
-                            bool enable_checkpoints);
+                            const MapCheckpoints &checkpoints);
 };
 
 #endif // BITCOIN_TXDB_H
