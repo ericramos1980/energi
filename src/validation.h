@@ -287,6 +287,8 @@ bool LoadExternalBlockFile(const CChainParams& chainparams, FILE* fileIn, CDiskB
 bool InitBlockIndex(const CChainParams& chainparams);
 /** Load the block tree and coins database from disk */
 bool LoadBlockIndex(const CChainParams& chainparams);
+/** Check the block tree against checkpoints and invalidate, if needed */
+bool CheckpointValidateBlockIndex(const CChainParams& chainparams);
 /** Unload database information */
 void UnloadBlockIndex();
 /** Run an instance of the script checking thread */

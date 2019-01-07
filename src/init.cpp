@@ -1755,6 +1755,12 @@ bool AppInitMain(boost::thread_group& threadGroup, CScheduler& scheduler)
                     break;
                 }
 
+                // Invalidate subchains known to fail checkpoint validation
+                if (!CheckpointValidateBlockIndex(chainparams)) {
+                    strLoadError = _("Checkpoint validation fatal error");
+                    break;
+                }
+
                 // Check for changed -txindex state
                 if (fTxIndex != GetBoolArg("-txindex", DEFAULT_TXINDEX)) {
                     strLoadError = _("You need to rebuild the database using -reindex-chainstate to change -txindex");

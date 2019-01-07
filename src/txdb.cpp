@@ -349,15 +349,10 @@ bool CBlockTreeDB::ReadFlag(const std::string &name, bool &fValue) {
 
 bool CBlockTreeDB::LoadBlockIndexGuts(
         boost::function<CBlockIndex*(const uint256&)> insertBlockIndex,
-        const MapCheckpoints &checkpoints,
-        bool enable_checkpoints
+        const MapCheckpoints &checkpoints
 ) {
     const auto LAST_BLOCKS_TO_CHECK = 1000;
     CBlockIndex* pindexNew = nullptr;
-
-    const int last_checkpoint_height = (!enable_checkpoints || checkpoints.empty())
-            ? -1
-            : checkpoints.rbegin()->first;
 
     std::unique_ptr<CDBIterator> pcursor(NewIterator());
 
@@ -392,16 +387,6 @@ bool CBlockTreeDB::LoadBlockIndexGuts(
                 pindexNew->nStatus        = diskindex.nStatus;
                 pindexNew->nTx            = diskindex.nTx;
 
-                if (block_height <= last_checkpoint_height) {
-                    auto checkp = checkpoints.find(block_height);
-
-                    if ((checkp != checkpoints.end()) &&
-                        (checkp->second != block_hash))
-                    {
-                        return error("%s: Checkpoint failed: %s", __func__, pindexNew->ToString());
-                    }
-                }
-
                 pcursor->Next();
             } else {
                 return error("%s: failed to read value", __func__);
@@ -415,8 +400,10 @@ bool CBlockTreeDB::LoadBlockIndexGuts(
 
     // The original Energi logic, shortened to actual block confirmation count for faster startups
     for (auto i = LAST_BLOCKS_TO_CHECK; (i > 0) && (pindexNew != nullptr); --i, pindexNew = pindexNew->pprev) {
-        if (!CheckProof(state, *pindexNew, Params().GetConsensus()))
-            return error("%s: CheckProof failed: %s", __func__, pindexNew->ToString());
+        if (!CheckProof(state, *pindexNew, Params().GetConsensus())) {
+            error("%s: CheckProof failed for %s",
+                  __func__, pindexNew->ToString().c_str());
+        }
     }
 
     return true;
