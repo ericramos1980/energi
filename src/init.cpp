@@ -507,6 +507,7 @@ std::string HelpMessage(HelpMessageMode mode)
         strUsage += HelpMessageOpt("-checkblockindex", strprintf("Do a full consistency check for mapBlockIndex, setBlockIndexCandidates, chainActive and mapBlocksUnlinked occasionally. Also sets -checkmempool (default: %u)", Params(CBaseChainParams::MAIN).DefaultConsistencyChecks()));
         strUsage += HelpMessageOpt("-checkmempool=<n>", strprintf("Run checks every <n> transactions (default: %u)", Params(CBaseChainParams::MAIN).DefaultConsistencyChecks()));
         strUsage += HelpMessageOpt("-checkpoints", strprintf("Disable expensive verification for known chain history (default: %u)", DEFAULT_CHECKPOINTS_ENABLED));
+        strUsage += HelpMessageOpt("-addcheckpoint height:hash", "Add or override default checkpoints");
         strUsage += HelpMessageOpt("-disablesafemode", strprintf("Disable safemode, override a real safe mode event (default: %u)", DEFAULT_DISABLE_SAFEMODE));
         strUsage += HelpMessageOpt("-testsafemode", strprintf("Force safe mode (default: %u)", DEFAULT_TESTSAFEMODE));
         strUsage += HelpMessageOpt("-dropmessagestest=<n>", "Randomly drop 1 of every <n> network messages");
@@ -1122,6 +1123,23 @@ bool AppInitParameterInteraction()
         LogPrintf("Assuming ancestors of block %s have valid signatures.\n", hashAssumeValid.GetHex());
     else
         LogPrintf("Validating signatures for all blocks.\n");
+
+    if (mapMultiArgs.find("-addcheckpoint") != mapMultiArgs.end()) {
+        for (auto &cp : mapMultiArgs.at("-addcheckpoint")) {
+            auto sep = cp.find(':');
+
+            if (sep == std::string::npos) {
+                error("Checkpoint format is height:hash, ignoring %s", cp);
+                return false;
+            }
+
+            auto height = std::stoi(cp.substr(0, sep));
+            auto hash = uint256S(cp.substr(sep+1));
+            Params(Params().NetworkIDString()).AddCheckpoint(height, hash);
+            LogPrintf("Adding custom checkpoint at height %d with hash %s",
+                      height, hash.ToString().c_str());
+        }
+    }
 
     // mempool limits
     int64_t nMempoolSizeMax = GetArg("-maxmempool", DEFAULT_MAX_MEMPOOL_SIZE) * 1000000;
