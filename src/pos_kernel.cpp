@@ -292,7 +292,14 @@ bool CheckStakeKernelHash(unsigned int nBits, const CBlockIndex &blockFrom, cons
     arith_uint256 bnTargetPerCoinDay;
     bnTargetPerCoinDay.SetCompact(nBits);
     arith_uint256 bnTarget = (arith_uint256(nValueIn) / 100) * bnTargetPerCoinDay;
-    assert(bnTarget >= bnTargetPerCoinDay);
+
+    if (bnTarget < bnTargetPerCoinDay) {
+        LogPrint("stake", "PoS target overflow %s amount %d < common %s, using ~0\n",
+                  bnTarget.GetHex().c_str(),
+                  nValueIn,
+                  bnTargetPerCoinDay.GetHex().c_str());
+        bnTarget = ~arith_uint256(0);
+    }
 
     //grab stake modifier
     //-------------------
