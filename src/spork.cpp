@@ -125,6 +125,7 @@ bool CSporkManager::UpdateSpork(int nSporkID, int64_t nValue, CConnman& connman)
         spork.Relay(connman);
         mapSporks[spork.GetHash()] = spork;
         mapSporksActive[nSporkID] = spork;
+        ExecuteSpork(nSporkID, nValue);
         return true;
     }
 
