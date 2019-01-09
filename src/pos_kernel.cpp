@@ -108,6 +108,7 @@ static bool SelectBlockFromCandidates(
     for (auto iter = vSortedByTimestamp.begin(); ; ++iter) {
         if (iter == vSortedByTimestamp.end()) {
             vSortedByTimestamp.clear();
+            break;
         }
 
         if (!mapBlockIndex.count(iter->second))
