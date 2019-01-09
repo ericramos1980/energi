@@ -114,6 +114,17 @@ void CSporkManager::ExecuteSpork(int nSporkID, int nValue)
         ReprocessBlocks(nValue);
         nTimeExecuted = GetTime();
     }
+
+    if (nSporkID == SPORK_15_FIRST_POS_BLOCK) {
+        LOCK(cs_main);
+
+        if ((nValue < int(nFirstPoSBlock)) &&
+            (nValue > chainActive.Tip()->nHeight)) {
+            nFirstPoSBlock = nValue;
+        } else if (nValue != int(nFirstPoSBlock)) {
+            error("SPORK15 conflicts with current chain %d vs. %d", nValue, nFirstPoSBlock);
+        }
+    }
 }
 
 bool CSporkManager::UpdateSpork(int nSporkID, int64_t nValue, CConnman& connman)

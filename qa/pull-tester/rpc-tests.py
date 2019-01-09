@@ -176,6 +176,7 @@ testScripts = [
     'p2p-leaktests.py',
     'p2p-compactblocks.py',
     'pos-sync.py',
+    'pos-load.py',
 ]
 if ENABLE_ZMQ:
     testScripts.append('zmq_test.py')

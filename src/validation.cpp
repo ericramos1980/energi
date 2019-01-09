@@ -95,6 +95,7 @@ uint64_t nPruneTarget = 0;
 bool fAlerts = DEFAULT_ALERTS;
 int64_t nMaxTipAge = DEFAULT_MAX_TIP_AGE;
 bool fEnableReplacement = DEFAULT_ENABLE_REPLACEMENT;
+uint32_t nFirstPoSBlock = 999999;
 
 int64_t nReserveBalance = 0;
 
@@ -4139,6 +4140,7 @@ bool static LoadBlockIndexDB(const CChainParams& chainparams)
 
     PruneBlockIndexCandidates();
     VerifyBestHeader();
+    CorrectPoSHeight();
 
     LogPrintf("%s: hashBestChain=%s height=%d date=%s progress=%f\n", __func__,
         chainActive.Tip()->GetBlockHash().ToString(), chainActive.Height(),
@@ -4844,7 +4846,17 @@ void DumpMempool(void)
 
 /** Check if Proof-of-Stake is required for particular height **/
 bool IsPoSEnforcedHeight(int nBlockHeight) {
-    return nBlockHeight >= sporkManager.GetSporkValue(SPORK_15_FIRST_POS_BLOCK);
+    return nBlockHeight >= int(nFirstPoSBlock);
+}
+
+void CorrectPoSHeight() {
+    LOCK(cs_main);
+
+    for (auto pindex = chainActive.Tip(); pindex && pindex->IsProofOfStake(); pindex = pindex->pprev) {
+        nFirstPoSBlock = std::min<int32_t>(pindex->nHeight, nFirstPoSBlock);
+    }
+
+    LogPrint("stake", "Detected nFirstPoSBlock = %d", nFirstPoSBlock);
 }
 
 /** Check PoW or PoS based in block index **/

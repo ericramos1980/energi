@@ -47,6 +47,7 @@ BOOST_AUTO_TEST_CASE(PoS_transition_test)
     BOOST_CHECK(sporkManager.SetSporkAddress(spork_address.ToString()));
     BOOST_CHECK(sporkManager.SetPrivKey(CBitcoinSecret(coinbaseKey).ToString()));
     BOOST_CHECK(sporkManager.UpdateSpork(SPORK_15_FIRST_POS_BLOCK, 103, *connman));
+    BOOST_CHECK_EQUAL(nFirstPoSBlock, 103U);
     //int last_pow_height;
 
     const int64_t BLOCK_TIME = chainActive.Tip()->GetBlockTimeMax() + 5;
@@ -77,7 +78,7 @@ BOOST_AUTO_TEST_CASE(PoS_transition_test)
     // Still, it must continue PoS even after Spork change
     //---
     BOOST_CHECK(sporkManager.UpdateSpork(SPORK_15_FIRST_POS_BLOCK, 999999ULL, *connman));
-    //PruneBlockFilesManual(last_pow_height);
+    BOOST_CHECK_EQUAL(nFirstPoSBlock, 103U);
     
     {
         auto blk = CreateAndProcessBlock(CMutableTransactionList(), CScript());
@@ -149,6 +150,7 @@ BOOST_AUTO_TEST_CASE(PoS_transition_test)
     
     // end
     pwalletMain = nullptr;
+    nFirstPoSBlock = 999999;
 }
 
 BOOST_AUTO_TEST_SUITE_END()
