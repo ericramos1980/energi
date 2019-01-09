@@ -42,6 +42,7 @@ struct CUpdatedBlock
 static std::mutex cs_blockchange;
 static std::condition_variable cond_blockchange;
 static CUpdatedBlock latestblock;
+static constexpr int ESTIMATION_WINDOW = 10000U;
 
 extern void TxToJSON(const CTransaction& tx, const uint256 hashBlock, UniValue& entry);
 void ScriptPubKeyToJSON(const CScript& scriptPubKey, UniValue& out, bool fIncludeHex);
@@ -77,14 +78,37 @@ double GetDifficulty(const CBlockIndex* blockindex)
     return dDiff;
 }
 
+double EstimateTPS(const CBlockIndex *current) {
+    assert(chainActive.Contains(current));
+
+    auto tpsref = chainActive.Genesis();
+
+    if (current->nHeight > ESTIMATION_WINDOW) {
+        tpsref = chainActive[current->nHeight - ESTIMATION_WINDOW];
+    }
+
+    auto timespan = current->GetBlockTime() - tpsref->GetBlockTime();
+
+    if (timespan <= 0) {
+        timespan = 1;
+    }
+
+    return double(current->nChainTx - tpsref->nChainTx) / timespan;
+}
+
 UniValue blockheaderToJSON(const CBlockIndex* blockindex)
 {
     UniValue result(UniValue::VOBJ);
     result.push_back(Pair("hash", blockindex->GetBlockHash().GetHex()));
     int confirmations = -1;
-    // Only report confirmations if the block is on the main chain
-    if (chainActive.Contains(blockindex))
+    double chaintps = 0;
+
+    // Only report estimations if the block is on the main chain
+    if (chainActive.Contains(blockindex)) {
         confirmations = chainActive.Height() - blockindex->nHeight + 1;
+        chaintps = EstimateTPS(blockindex);
+    }
+
     result.push_back(Pair("confirmations", confirmations));
     result.push_back(Pair("height", blockindex->nHeight));
     result.push_back(Pair("version", blockindex->nVersion));
@@ -96,6 +120,7 @@ UniValue blockheaderToJSON(const CBlockIndex* blockindex)
     result.push_back(Pair("difficulty", GetDifficulty(blockindex)));
     result.push_back(Pair("chainwork", blockindex->nChainWork.GetHex()));
     result.push_back(Pair("chaintx", (uint64_t)blockindex->nChainTx));
+    result.push_back(Pair("chaintps", chaintps));
 
     if (blockindex->IsProofOfWork()) {
         result.push_back(Pair("hashmix", blockindex->hashMix.GetHex()));
@@ -121,9 +146,14 @@ UniValue blockToJSON(const CBlock& block, const CBlockIndex* blockindex, bool tx
     result.push_back(Pair("hash", blockindex->GetBlockHash().GetHex()));
     result.push_back(Pair("hashpow", block.GetPOWHash().GetHex()));
     int confirmations = -1;
-    // Only report confirmations if the block is on the main chain
-    if (chainActive.Contains(blockindex))
+    double chaintps = 0;
+
+    // Only report estimations if the block is on the main chain
+    if (chainActive.Contains(blockindex)) {
         confirmations = chainActive.Height() - blockindex->nHeight + 1;
+        chaintps = EstimateTPS(blockindex);
+    }
+
     result.push_back(Pair("confirmations", confirmations));
     result.push_back(Pair("size", (int)::GetSerializeSize(block, SER_NETWORK, PROTOCOL_VERSION)));
     result.push_back(Pair("height", blockindex->nHeight));
@@ -149,6 +179,7 @@ UniValue blockToJSON(const CBlock& block, const CBlockIndex* blockindex, bool tx
     result.push_back(Pair("difficulty", GetDifficulty(blockindex)));
     result.push_back(Pair("chainwork", blockindex->nChainWork.GetHex()));
     result.push_back(Pair("chaintx", (uint64_t)blockindex->nChainTx));
+    result.push_back(Pair("chaintps", chaintps));
 
     if (blockindex->IsProofOfWork()) {
         result.push_back(Pair("hashmix", blockindex->hashMix.GetHex()));
@@ -721,6 +752,7 @@ UniValue getblockheader(const JSONRPCRequest& request)
             "  \"nextblockhash\" : \"hash\",      (string) The hash of the next block\n"
             "  \"chainwork\" : \"0000...1f3\"     (string) Expected number of hashes required to produce the current chain (in hex)\n"
             "  \"chaintx\" : n          (numeric) Transaction count in current chain\n"
+            "  \"chaintps\" : n         (numeric) Estimated transactions per second in current chain\n"
             "\nResult (for verbose=false):\n"
             "\"data\"             (string) A string that is serialized, hex-encoded data for block 'hash'.\n"
             "\nExamples:\n"
@@ -786,6 +818,7 @@ UniValue getblockheaders(const JSONRPCRequest& request)
             "  \"nextblockhash\" : \"hash\",      (string)  The hash of the next block\n"
             "  \"chainwork\" : \"0000...1f3\"     (string)  Expected number of hashes required to produce the current chain (in hex)\n"
             "  \"chaintx\" : n          (numeric) Transaction count in current chain\n"
+            "  \"chaintps\" : n         (numeric) Estimated transactions per second in current chain\n"
             "}, {\n"
             "       ...\n"
             "   },\n"
@@ -877,6 +910,7 @@ UniValue getblock(const JSONRPCRequest& request)
             "  \"difficulty\" : x.xxx,  (numeric) The difficulty\n"
             "  \"chainwork\" : \"0000...1f3\",  (string) Expected number of hashes required to produce the chain up to this block (in hex)\n"
             "  \"chaintx\" : n          (numeric) Transaction count in current chain\n"
+            "  \"chaintps\" : n         (numeric) Estimated transactions per second in current chain\n"
             "  \"hashmix\" : \"hash\",  (string) PoW: The hashmix of the block\n"
             "  \"nonce\" : n,           (numeric) PoW: The nonce\n"
             "  \"posproof\" : \"hash\", (string) PoS: proof value\n"
