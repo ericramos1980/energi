@@ -54,6 +54,33 @@ unsigned int static DarkGravityWave(const CBlockIndex* pindexLast, const CBlockH
         return bnPowLimit.GetCompact();
     }
 
+    if (pblock->IsProofOfStake()) {
+        int64_t nActualSpacing = 0;
+
+        if (pindexLast->pprev) {
+            nActualSpacing = pindexLast->GetBlockTime() - pindexLast->pprev->GetBlockTime();
+        }
+
+        if (nActualSpacing < 0) {
+            nActualSpacing = 1;
+        }
+
+        // ppcoin: target change every block
+        // ppcoin: retarget with exponential moving toward target spacing
+        arith_uint256 bnNew;
+        bnNew.SetCompact(pindexLast->nBits);
+
+        int64_t nInterval = nTargetTimespan / nTargetSpacing;
+        bnNew *= ((nInterval - 1) * nTargetSpacing + nActualSpacing + nActualSpacing);
+        bnNew /= ((nInterval + 1) * nTargetSpacing);
+
+        if (bnNew <= 0 || bnNew > bnPowLimit) {
+            bnNew = bnPowLimit;
+        }
+
+        return bnNew.GetCompact();
+    }
+
     const CBlockIndex *pindex = pindexLast;
     arith_uint256 bnPastTargetAvg;
 
