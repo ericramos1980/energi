@@ -2882,6 +2882,40 @@ static void PruneBlockIndexCandidates() {
     assert(!setBlockIndexCandidates.empty());
 }
 
+static void VerifyBestHeader() {
+    // NOTE: sometimes block invalidation with complex forks may
+    //       lead to situation when not all children get invalidated.
+    //       This affects only startup sync.
+    auto tip = chainActive.Tip();
+
+    if (tip == pindexBestHeader) return;
+
+    decltype(tip) last_invalid = nullptr;
+
+    for (auto pindex = pindexBestHeader; pindex != nullptr; pindex = pindex->pprev) {
+        if (tip->nHeight > pindex->nHeight) break;
+
+        if (pindex->nStatus & BLOCK_FAILED_MASK) {
+            last_invalid = pindex;
+        }
+    }
+
+    if (last_invalid != nullptr) {
+        error("Detected best header appeared to be on invalid chain!");
+
+        for (auto pindex = pindexBestHeader; pindex != last_invalid; pindex = pindex->pprev) {
+            if (pindex->nStatus & BLOCK_FAILED_MASK) continue;
+
+            pindex->nStatus |= BLOCK_FAILED_CHILD;
+            setDirtyBlockIndex.insert(pindex);
+        }
+
+        // Do not search again.
+        // The worst case would be re-download of headers.
+        pindexBestHeader = tip;
+    }
+}
+
 /**
  * Try to make some progress towards making pindexMostWork the active block.
  * pblock is either NULL or a pointer to a CBlock corresponding to pindexMostWork.
@@ -4104,6 +4138,7 @@ bool static LoadBlockIndexDB(const CChainParams& chainparams)
     chainActive.SetTip(it->second);
 
     PruneBlockIndexCandidates();
+    VerifyBestHeader();
 
     LogPrintf("%s: hashBestChain=%s height=%d date=%s progress=%f\n", __func__,
         chainActive.Tip()->GetBlockHash().ToString(), chainActive.Height(),
