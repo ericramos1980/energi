@@ -1318,7 +1318,7 @@ static inline bool TryPostponedHeaders(CNode* pfrom, int64_t nTimeReceived, cons
     }
 
     if (have_headers) {
-        LogPrint("net", "Retrying postponed headers for peer %d", pfrom->GetId());
+        LogPrint("net", "Retrying postponed headers for peer %d \n", pfrom->GetId());
         CDataStream vHeadersMsg(SER_NETWORK, PROTOCOL_VERSION);
         vHeadersMsg << std::vector<CBlock>();
         return ProcessMessage(pfrom, NetMsgType::HEADERS, vHeadersMsg, nTimeReceived, chainparams, connman, interruptMsgProc);
@@ -2460,6 +2460,7 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
     {
         std::vector<CBlockHeader> headers;
 
+      {
         // Bypass the normal CBlock deserialization, as we don't want to risk deserializing 2000 full blocks.
         unsigned int nCount = ReadCompactSize(vRecv);
         if (nCount > MAX_HEADERS_RESULTS) {
@@ -2472,6 +2473,7 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
             vRecv >> headers[n];
             ReadCompactSize(vRecv); // ignore tx count; assume it is 0.
         }
+      }
 
         const CBlockIndex *pindexLast = NULL;
         const CBlockIndex *pindexPrev = NULL;
@@ -2481,18 +2483,19 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
         CNodeState *nodestate = State(pfrom->GetId());
 
         if (!nodestate->vPostponedHeaders.empty()) {
-            if (nCount != 0) {
-                LogPrint("net", "New headers while having postponed headers from %d", pfrom->GetId());
+            if (headers.size() != 0) {
+                LogPrint("net", "New headers while having postponed headers from %d\n", pfrom->GetId());
             }
 
             nodestate->vPostponedHeaders.swap(headers);
             get_more_headers = true; // force any way
-        } else if (nCount == 0) {
+        } else if (headers.size() == 0) {
             // Nothing interesting. Stop asking this peers for more headers.
             return true;
         }
 
         auto prev_iter = mapBlockIndex.find(headers[0].hashPrevBlock);
+        pindexPrev = (prev_iter == mapBlockIndex.end()) ? nullptr : prev_iter->second;
 
         // If this looks like it could be a block announcement (nCount <
         // MAX_BLOCKS_TO_ANNOUNCE), use special logic for handling headers that
@@ -2502,8 +2505,8 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
         //   don't connect before giving DoS points
         // - Once a headers message is received that is valid and does connect,
         //   nUnconnectingHeaders gets reset back to 0.
-        if ((prev_iter == mapBlockIndex.end()) &&
-            (nCount < MAX_BLOCKS_TO_ANNOUNCE)
+        if ((pindexPrev == nullptr) &&
+            (headers.size() < MAX_BLOCKS_TO_ANNOUNCE)
         ) {
             nodestate->nUnconnectingHeaders++;
             connman.PushMessage(pfrom, msgMaker.Make(NetMsgType::GETHEADERS, chainActive.GetLocator(pindexBestHeader), uint256()));
@@ -2522,8 +2525,6 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
             }
             return true;
         }
-
-        pindexPrev = prev_iter->second;
 
         uint256 hashLastBlock;
         for (const CBlockHeader& header : headers) {
@@ -2556,12 +2557,19 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
                     auto curr_iter = headers.begin();
 
                     while ((curr_iter != headers.end()) &&
-                           int(curr_iter->nHeight) < pindexLast->nHeight)
+                           int(curr_iter->nHeight) <= pindexLast->nHeight)
                     {
                         ++curr_iter;
                     }
                     headers.erase(headers.begin(), curr_iter);
                 }
+            }
+            if (pindexLast == nullptr) {
+                // This situation should not happen in normal operation, just some safety measurements.
+                // It may happen during invalidation of active chain on our side.
+                LOCK(cs_main);
+                Misbehaving(pfrom->GetId(), 50);
+                return error("unconnected header case");
             }
         }
 
@@ -2576,12 +2584,15 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
         assert(pindexLast);
         UpdateBlockAvailability(pfrom->GetId(), pindexLast->GetBlockHash());
 
+        bool fCanDirectFetch = CanDirectFetch(chainparams.GetConsensus());
+
         if (!nodestate->vPostponedHeaders.empty()) {
             // Just in case. It should not really happen
             LogPrint("net", "peer %d sent us more headers while we were processing current postponed \n", pfrom->id);
         } else if (state.IsTransientError() && !headers.empty()) {
             nodestate->vPostponedHeaders.swap(headers);
             LogPrint("net", "saving postponed headers for peer %d \n", pfrom->id);
+            fCanDirectFetch = true;
         } else if (get_more_headers) {
             // If nCount=0 - then we are in postponed headers situation, try to get more.
 
@@ -2592,16 +2603,24 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
             connman.PushMessage(pfrom, msgMaker.Make(NetMsgType::GETHEADERS, chainActive.GetLocator(pindexLast), uint256()));
         }
 
-        bool fCanDirectFetch = CanDirectFetch(chainparams.GetConsensus());
         // If this set of headers is valid and ends in a block with at least as
         // much work as our tip, download as much as possible.
         if (fCanDirectFetch && pindexLast->IsValid(BLOCK_VALID_TREE) && chainActive.Tip()->nChainWork <= pindexLast->nChainWork) {
-            std::vector<const CBlockIndex *> vToFetch;
+            std::deque<const CBlockIndex *> vToFetch;
             const CBlockIndex *pindexWalk = pindexLast;
             // Calculate all the blocks we'd need to switch to pindexLast, up to a limit.
-            while (pindexWalk && !chainActive.Contains(pindexWalk) && vToFetch.size() <= MAX_BLOCKS_IN_TRANSIT_PER_PEER) {
+            while (pindexWalk && !chainActive.Contains(pindexWalk)) {
                 if (!(pindexWalk->nStatus & BLOCK_HAVE_DATA) &&
                         !mapBlocksInFlight.count(pindexWalk->GetBlockHash())) {
+                    if (vToFetch.size() >= MAX_BLOCKS_IN_TRANSIT_PER_PEER) {
+                        if (get_more_headers) {
+                            // Either initial sync or in the middle of a fork (then see below)
+                            vToFetch.pop_front();
+                        } else {
+                            break;
+                        }
+                    }
+
                     // We don't have this block, and it's not yet in flight.
                     vToFetch.push_back(pindexWalk);
                 }

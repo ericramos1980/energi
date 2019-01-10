@@ -46,7 +46,7 @@ class PoSSyncTest(BitcoinTestFramework):
         assert_equal(self.nodes[3].getblockchaininfo()['pos'], False)
         
         logging.info("Adding more PoS blocks")
-        for i in range(500):
+        for i in range(1000):
             set_node_times(self.nodes, GENESISTIME + i*180)
             assert_equal(len(self.nodes[0].generate(5, 50)), 5)
 
@@ -57,6 +57,8 @@ class PoSSyncTest(BitcoinTestFramework):
         connect_nodes_bi(self.nodes, 3, 2)
         self.sync_all()
         assert_equal(self.nodes[3].getblockchaininfo()['pos'], True)
+        assert_equal(self.nodes[0].getinfo()['blocks'], 5103)
+        assert_equal(self.nodes[3].getinfo()['blocks'], 5103)
 
 
 if __name__ == '__main__':
