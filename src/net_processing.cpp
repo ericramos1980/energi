@@ -2630,7 +2630,7 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
             // very large reorg at a time we think we're close to caught up to
             // the main chain -- this shouldn't really happen.  Bail out on the
             // direct fetch and rely on parallel download instead.
-            if (!chainActive.Contains(pindexWalk)) {
+            if (!chainActive.Contains(pindexWalk) && !IsPoSEnforcedHeight(pindexWalk->nHeight)) {
                 LogPrint("net", "Large reorg, won't direct fetch to %s (%d)\n",
                         pindexLast->GetBlockHash().ToString(),
                         pindexLast->nHeight);
