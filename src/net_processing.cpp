@@ -498,18 +498,40 @@ void FindNextBlocksToDownload(CNode* pnode, unsigned int count, std::vector<cons
         int max_height = pindexBestHeader->nHeight - MAX_BLOCKS_IN_TRANSIT_PER_PEER;
         max_height = std::min<int>(max_height, pnode->nStartingHeight);
 
-        while (pIndexWalk != nullptr && (vBlocks.size() < count)) {
-            if ((pIndexWalk->nHeight <= max_height) &&
-                pIndexWalk->IsValid(BLOCK_VALID_TREE) &&
-                !(pIndexWalk->nStatus & BLOCK_HAVE_DATA) &&
-                !chainActive.Contains(pIndexWalk) &&
+        // Minimize the work done on walk till the oldest not fetched blocks.
+        // There is little sense to check blocks outside of the range with fully loaded outbound peers.
+        max_height = std::min<int>(max_height, chainActive.Tip()->nHeight + (MAX_BLOCKS_IN_TRANSIT_PER_PEER * MAX_OUTBOUND_CONNECTIONS));
+
+        // Make sure we fetch the oldest blocks first to properly reflect our progress.
+        std::deque<const CBlockIndex*> to_fetch;
+
+        for (; pIndexWalk != nullptr; pIndexWalk = pIndexWalk->pprev) {
+            if (pIndexWalk->nHeight > max_height) {
+                // optimize skip
+                continue;
+            }
+
+            if (chainActive.Contains(pIndexWalk)) {
+                break;
+            }
+
+            if (!pIndexWalk->IsValid(BLOCK_VALID_TREE)) {
+                // This should never happen by fact
+                break;
+            }
+
+            if (!(pIndexWalk->nStatus & BLOCK_HAVE_DATA) &&
                 (mapBlocksInFlight.find(pIndexWalk->GetBlockHash()) == mapBlocksInFlight.end())
             ) {
-                vBlocks.push_back(pIndexWalk);
+                if (to_fetch.size() >= count) {
+                    to_fetch.pop_front();
+                }
+
+                to_fetch.push_back(pIndexWalk);
             }
-            pIndexWalk = pIndexWalk->pprev;
         }
 
+        std::copy(to_fetch.begin(), to_fetch.end(), std::back_inserter(vBlocks));
         return;
     }
 
