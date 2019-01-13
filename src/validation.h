@@ -150,6 +150,9 @@ static const bool DEFAULT_USEDAG = false;
 /** Maximum number of headers to announce when relaying blocks with headers message.*/
 static const unsigned int MAX_BLOCKS_TO_ANNOUNCE = 8;
 
+/** Due to high computation requirements for Energi PoW & PoS we need to limit message loop blocking */
+static constexpr unsigned int MAX_NEW_HEADER_BURST = 32;
+
 /** Maximum number of unconnecting headers announcements before DoS score */
 static const int MAX_UNCONNECTING_HEADERS = 10;
 
@@ -273,7 +276,7 @@ void InitDAG(egihash::progress_callback_type callback = [](egihash::dag_t::size_
  * @param[in]  chainparams The params for the chain we want to connect to
  * @param[out] ppindex If set, the pointer will be set to point to the last new block index object for the given headers
  */
-bool ProcessNewBlockHeaders(const std::vector<CBlockHeader>& block, CValidationState& state, const CChainParams& chainparams, const CBlockIndex** ppindex=NULL);
+bool ProcessNewBlockHeaders(std::deque<CBlockHeader>& headers, CValidationState& state, const CChainParams& chainparams, const CBlockIndex** ppindex=NULL, int burst_limit=MAX_HEADERS_RESULTS);
 
 /** Check whether enough disk space is available for an incoming block */
 bool CheckDiskSpace(uint64_t nAdditionalBytes = 0);

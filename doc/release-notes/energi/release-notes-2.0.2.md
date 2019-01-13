@@ -33,7 +33,7 @@ Major changes:
 * CHANGED: testnet reset to block 46999
 * FIXED: to ignore best header from invalid ancestor on startup
   - Common Bitcoin/Dash issue
-
+* NEW: parallel initial block download (at least x8 speedup)
 
 Minor changes:
 
@@ -41,4 +41,5 @@ Minor changes:
 * FIXED: PoS-enabled chain startup
 * FIXED: ExecuteSpork() to be called on local node
 * FIXED: active PoS detection on startup & ignore of invalid spork override
+* FIXED: initial header sync blocking network stack for too long
 * NEW: chaintps estimations in getblock- RPC

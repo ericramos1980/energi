@@ -206,7 +206,7 @@ struct CNodeState {
     bool fSupportsDesiredCmpctVersion;
 
     //! Headers from the last message
-    std::vector<CBlockHeader> vPostponedHeaders;
+    std::deque<CBlockHeader> vPostponedHeaders;
 
     CNodeState(CAddress addrIn, std::string addrNameIn) : address(addrIn), name(addrNameIn) {
         fCurrentlyConnected = false;
@@ -478,16 +478,62 @@ const CBlockIndex* LastCommonAncestor(const CBlockIndex* pa, const CBlockIndex* 
 
 /** Update pindexLastCommonBlock and add not-in-flight missing successors to vBlocks, until it has
  *  at most count entries. */
-void FindNextBlocksToDownload(NodeId nodeid, unsigned int count, std::vector<const CBlockIndex*>& vBlocks, NodeId& nodeStaller, const Consensus::Params& consensusParams) {
+void FindNextBlocksToDownload(CNode* pnode, unsigned int count, std::vector<const CBlockIndex*>& vBlocks, NodeId& nodeStaller, const Consensus::Params& consensusParams) {
     if (count == 0)
         return;
 
+    auto nodeid = pnode->GetId();
     vBlocks.reserve(vBlocks.size() + count);
     CNodeState *state = State(nodeid);
     assert(state != NULL);
 
     // Make sure pindexBestKnownBlock is up to date, we'll need it.
     ProcessBlockAvailability(nodeid);
+
+    // A special case to to do parallel initial download
+    if ((state->pindexBestKnownBlock == NULL) && IsInitialBlockDownload() && (pindexBestHeader != nullptr)) {
+        auto pIndexWalk = pindexBestHeader;
+
+        // Keep the last blocks for selected sync peer
+        int max_height = pindexBestHeader->nHeight - MAX_BLOCKS_IN_TRANSIT_PER_PEER;
+        max_height = std::min<int>(max_height, pnode->nStartingHeight);
+
+        // Minimize the work done on walk till the oldest not fetched blocks.
+        // There is little sense to check blocks outside of the range with fully loaded outbound peers.
+        max_height = std::min<int>(max_height, chainActive.Tip()->nHeight + (MAX_BLOCKS_IN_TRANSIT_PER_PEER * MAX_OUTBOUND_CONNECTIONS));
+
+        // Make sure we fetch the oldest blocks first to properly reflect our progress.
+        std::deque<const CBlockIndex*> to_fetch;
+
+        for (; pIndexWalk != nullptr; pIndexWalk = pIndexWalk->pprev) {
+            if (pIndexWalk->nHeight > max_height) {
+                // optimize skip
+                continue;
+            }
+
+            if (chainActive.Contains(pIndexWalk)) {
+                break;
+            }
+
+            if (!pIndexWalk->IsValid(BLOCK_VALID_TREE)) {
+                // This should never happen by fact
+                break;
+            }
+
+            if (!(pIndexWalk->nStatus & BLOCK_HAVE_DATA) &&
+                (mapBlocksInFlight.find(pIndexWalk->GetBlockHash()) == mapBlocksInFlight.end())
+            ) {
+                if (to_fetch.size() >= count) {
+                    to_fetch.pop_front();
+                }
+
+                to_fetch.push_back(pIndexWalk);
+            }
+        }
+
+        std::copy(to_fetch.begin(), to_fetch.end(), std::back_inserter(vBlocks));
+        return;
+    }
 
     if (state->pindexBestKnownBlock == NULL || state->pindexBestKnownBlock->nChainWork < chainActive.Tip()->nChainWork || state->pindexBestKnownBlock->nChainWork < UintToArith256(consensusParams.nMinimumChainWork)) {
         // This peer has nothing interesting.
@@ -2206,7 +2252,9 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
 
         const CBlockIndex *pindex = NULL;
         CValidationState state;
-        if (!ProcessNewBlockHeaders({cmpctblock.header}, state, chainparams, &pindex)) {
+        std::deque<CBlockHeader> headers{cmpctblock.header};
+
+        if (!ProcessNewBlockHeaders(headers, state, chainparams, &pindex)) {
             int nDoS;
             if (state.IsInvalid(nDoS)) {
                 if (nDoS > 0) {
@@ -2458,7 +2506,7 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
 
     else if (strCommand == NetMsgType::HEADERS && !fImporting && !fReindex) // Ignore headers received while importing
     {
-        std::vector<CBlockHeader> headers;
+        std::deque<CBlockHeader> headers;
 
       {
         // Bypass the normal CBlock deserialization, as we don't want to risk deserializing 2000 full blocks.
@@ -2506,7 +2554,7 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
         // - Once a headers message is received that is valid and does connect,
         //   nUnconnectingHeaders gets reset back to 0.
         if ((pindexPrev == nullptr) &&
-            (headers.size() < MAX_BLOCKS_TO_ANNOUNCE)
+            (headers.size() <= MAX_BLOCKS_TO_ANNOUNCE)
         ) {
             nodestate->nUnconnectingHeaders++;
             connman.PushMessage(pfrom, msgMaker.Make(NetMsgType::GETHEADERS, chainActive.GetLocator(pindexBestHeader), uint256()));
@@ -2537,7 +2585,7 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
         }
 
         CValidationState state;
-        if (!ProcessNewBlockHeaders(headers, state, chainparams, &pindexLast)) {
+        if (!ProcessNewBlockHeaders(headers, state, chainparams, &pindexLast, MAX_NEW_HEADER_BURST)) {
             int nDoS;
             if (state.IsInvalid(nDoS)) {
                 if (nDoS > 0) {
@@ -2552,16 +2600,6 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
                 if (pindexLast == nullptr) {
                     // edge case of the first header error
                     pindexLast = pindexPrev;
-                } else {
-                    // Avoid excessive hashing and lookup work on the following runs.
-                    auto curr_iter = headers.begin();
-
-                    while ((curr_iter != headers.end()) &&
-                           int(curr_iter->nHeight) <= pindexLast->nHeight)
-                    {
-                        ++curr_iter;
-                    }
-                    headers.erase(headers.begin(), curr_iter);
                 }
             }
             if (pindexLast == nullptr) {
@@ -2589,7 +2627,7 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
         if (!nodestate->vPostponedHeaders.empty()) {
             // Just in case. It should not really happen
             LogPrint("net", "peer %d sent us more headers while we were processing current postponed \n", pfrom->id);
-        } else if (state.IsTransientError() && !headers.empty()) {
+        } else if (!headers.empty()) {
             nodestate->vPostponedHeaders.swap(headers);
             LogPrint("net", "saving postponed headers for peer %d \n", pfrom->id);
             fCanDirectFetch = true;
@@ -2630,7 +2668,7 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
             // very large reorg at a time we think we're close to caught up to
             // the main chain -- this shouldn't really happen.  Bail out on the
             // direct fetch and rely on parallel download instead.
-            if (!chainActive.Contains(pindexWalk)) {
+            if (!chainActive.Contains(pindexWalk) && !IsPoSEnforcedHeight(pindexWalk->nHeight)) {
                 LogPrint("net", "Large reorg, won't direct fetch to %s (%d)\n",
                         pindexLast->GetBlockHash().ToString(),
                         pindexLast->nHeight);
@@ -2645,8 +2683,8 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
                     }
                     vGetData.push_back(CInv(MSG_BLOCK, pindex->GetBlockHash()));
                     MarkBlockAsInFlight(pfrom->GetId(), pindex->GetBlockHash(), chainparams.GetConsensus(), pindex);
-                    LogPrint("net", "Requesting block %s from  peer=%d\n",
-                            pindex->GetBlockHash().ToString(), pfrom->id);
+                    LogPrint("net", "Requesting block %s (%d) from  peer=%d\n",
+                            pindex->GetBlockHash().ToString(), pindex->nHeight, pfrom->id);
                 }
                 if (vGetData.size() > 1) {
                     LogPrint("net", "Downloading blocks toward %s (%d) via headers direct fetch\n",
@@ -2661,6 +2699,8 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
                 }
             }
         }
+
+        return !nodestate->vPostponedHeaders.empty();
         }
     }
 
@@ -2993,6 +3033,17 @@ bool ProcessMessages(CNode* pfrom, CConnman& connman, const std::atomic<bool>& i
     //  (x) data
     //
     bool fMoreWork = false;
+
+    // Continue processing after burst limit got reached
+    {
+        LOCK(cs_main);
+        auto state = State(pfrom->GetId());
+
+        if ((state->nBlocksInFlight == 0) && !state->vPostponedHeaders.empty()) {
+            TryPostponedHeaders(pfrom, GetAdjustedTime(), chainparams, connman, interruptMsgProc);
+            fMoreWork = true;
+        }
+    }
 
     if (!pfrom->vRecvGetData.empty())
         ProcessGetData(pfrom, chainparams.GetConsensus(), connman, interruptMsgProc);
@@ -3565,7 +3616,7 @@ bool SendMessages(CNode* pto, CConnman& connman, const std::atomic<bool>& interr
         if (!pto->fClient && (fFetch || !IsInitialBlockDownload()) && state.nBlocksInFlight < MAX_BLOCKS_IN_TRANSIT_PER_PEER) {
             std::vector<const CBlockIndex*> vToDownload;
             NodeId staller = -1;
-            FindNextBlocksToDownload(pto->GetId(), MAX_BLOCKS_IN_TRANSIT_PER_PEER - state.nBlocksInFlight, vToDownload, staller, consensusParams);
+            FindNextBlocksToDownload(pto, MAX_BLOCKS_IN_TRANSIT_PER_PEER - state.nBlocksInFlight, vToDownload, staller, consensusParams);
             BOOST_FOREACH(const CBlockIndex *pindex, vToDownload) {
                 vGetData.push_back(CInv(MSG_BLOCK, pindex->GetBlockHash()));
                 MarkBlockAsInFlight(pto->GetId(), pindex->GetBlockHash(), consensusParams, pindex);

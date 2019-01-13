@@ -3668,17 +3668,26 @@ static bool AcceptBlockHeader(const CBlockHeader& block, CValidationState& state
 }
 
 // Exposed wrapper for AcceptBlockHeader
-bool ProcessNewBlockHeaders(const std::vector<CBlockHeader>& headers, CValidationState& state, const CChainParams& chainparams, const CBlockIndex** ppindex)
+bool ProcessNewBlockHeaders(std::deque<CBlockHeader>& headers, CValidationState& state, const CChainParams& chainparams, const CBlockIndex** ppindex, int burst_limit)
 {
     {
         LOCK(cs_main);
-        for (const CBlockHeader& header : headers) {
+
+        while (!headers.empty()) {
             CBlockIndex *pindex = NULL; // Use a temp pindex instead of ppindex to avoid a const_cast
-            if (!AcceptBlockHeader(header, state, chainparams, &pindex)) {
+
+            if (!AcceptBlockHeader(headers.front(), state, chainparams, &pindex)) {
                 return false;
             }
+
+            headers.pop_front();
+
             if (ppindex) {
                 *ppindex = pindex;
+            }
+
+            if (--burst_limit <= 0) {
+                break;
             }
         }
     }
