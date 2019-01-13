@@ -478,16 +478,40 @@ const CBlockIndex* LastCommonAncestor(const CBlockIndex* pa, const CBlockIndex* 
 
 /** Update pindexLastCommonBlock and add not-in-flight missing successors to vBlocks, until it has
  *  at most count entries. */
-void FindNextBlocksToDownload(NodeId nodeid, unsigned int count, std::vector<const CBlockIndex*>& vBlocks, NodeId& nodeStaller, const Consensus::Params& consensusParams) {
+void FindNextBlocksToDownload(CNode* pnode, unsigned int count, std::vector<const CBlockIndex*>& vBlocks, NodeId& nodeStaller, const Consensus::Params& consensusParams) {
     if (count == 0)
         return;
 
+    auto nodeid = pnode->GetId();
     vBlocks.reserve(vBlocks.size() + count);
     CNodeState *state = State(nodeid);
     assert(state != NULL);
 
     // Make sure pindexBestKnownBlock is up to date, we'll need it.
     ProcessBlockAvailability(nodeid);
+
+    // A special case to to do parallel initial download
+    if ((state->pindexBestKnownBlock == NULL) && IsInitialBlockDownload() && (pindexBestHeader != nullptr)) {
+        auto pIndexWalk = pindexBestHeader;
+
+        // Keep the last blocks for selected sync peer
+        int max_height = pindexBestHeader->nHeight - MAX_BLOCKS_IN_TRANSIT_PER_PEER;
+        max_height = std::min<int>(max_height, pnode->nStartingHeight);
+
+        while (pIndexWalk != nullptr && (vBlocks.size() < count)) {
+            if ((pIndexWalk->nHeight <= max_height) &&
+                pIndexWalk->IsValid(BLOCK_VALID_TREE) &&
+                !(pIndexWalk->nStatus & BLOCK_HAVE_DATA) &&
+                !chainActive.Contains(pIndexWalk) &&
+                (mapBlocksInFlight.find(pIndexWalk->GetBlockHash()) == mapBlocksInFlight.end())
+            ) {
+                vBlocks.push_back(pIndexWalk);
+            }
+            pIndexWalk = pIndexWalk->pprev;
+        }
+
+        return;
+    }
 
     if (state->pindexBestKnownBlock == NULL || state->pindexBestKnownBlock->nChainWork < chainActive.Tip()->nChainWork || state->pindexBestKnownBlock->nChainWork < UintToArith256(consensusParams.nMinimumChainWork)) {
         // This peer has nothing interesting.
@@ -2645,8 +2669,8 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
                     }
                     vGetData.push_back(CInv(MSG_BLOCK, pindex->GetBlockHash()));
                     MarkBlockAsInFlight(pfrom->GetId(), pindex->GetBlockHash(), chainparams.GetConsensus(), pindex);
-                    LogPrint("net", "Requesting block %s from  peer=%d\n",
-                            pindex->GetBlockHash().ToString(), pfrom->id);
+                    LogPrint("net", "Requesting block %s (%d) from  peer=%d\n",
+                            pindex->GetBlockHash().ToString(), pindex->nHeight, pfrom->id);
                 }
                 if (vGetData.size() > 1) {
                     LogPrint("net", "Downloading blocks toward %s (%d) via headers direct fetch\n",
@@ -3565,7 +3589,7 @@ bool SendMessages(CNode* pto, CConnman& connman, const std::atomic<bool>& interr
         if (!pto->fClient && (fFetch || !IsInitialBlockDownload()) && state.nBlocksInFlight < MAX_BLOCKS_IN_TRANSIT_PER_PEER) {
             std::vector<const CBlockIndex*> vToDownload;
             NodeId staller = -1;
-            FindNextBlocksToDownload(pto->GetId(), MAX_BLOCKS_IN_TRANSIT_PER_PEER - state.nBlocksInFlight, vToDownload, staller, consensusParams);
+            FindNextBlocksToDownload(pto, MAX_BLOCKS_IN_TRANSIT_PER_PEER - state.nBlocksInFlight, vToDownload, staller, consensusParams);
             BOOST_FOREACH(const CBlockIndex *pindex, vToDownload) {
                 vGetData.push_back(CInv(MSG_BLOCK, pindex->GetBlockHash()));
                 MarkBlockAsInFlight(pto->GetId(), pindex->GetBlockHash(), consensusParams, pindex);

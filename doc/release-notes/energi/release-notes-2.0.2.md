@@ -33,7 +33,7 @@ Major changes:
 * CHANGED: testnet reset to block 46999
 * FIXED: to ignore best header from invalid ancestor on startup
   - Common Bitcoin/Dash issue
-
+* NEW: parallel initial block download (at least x8 speedup)
 
 Minor changes:
 
