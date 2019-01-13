@@ -206,7 +206,7 @@ struct CNodeState {
     bool fSupportsDesiredCmpctVersion;
 
     //! Headers from the last message
-    std::vector<CBlockHeader> vPostponedHeaders;
+    std::deque<CBlockHeader> vPostponedHeaders;
 
     CNodeState(CAddress addrIn, std::string addrNameIn) : address(addrIn), name(addrNameIn) {
         fCurrentlyConnected = false;
@@ -2230,7 +2230,9 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
 
         const CBlockIndex *pindex = NULL;
         CValidationState state;
-        if (!ProcessNewBlockHeaders({cmpctblock.header}, state, chainparams, &pindex)) {
+        std::deque<CBlockHeader> headers{cmpctblock.header};
+
+        if (!ProcessNewBlockHeaders(headers, state, chainparams, &pindex)) {
             int nDoS;
             if (state.IsInvalid(nDoS)) {
                 if (nDoS > 0) {
@@ -2482,7 +2484,7 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
 
     else if (strCommand == NetMsgType::HEADERS && !fImporting && !fReindex) // Ignore headers received while importing
     {
-        std::vector<CBlockHeader> headers;
+        std::deque<CBlockHeader> headers;
 
       {
         // Bypass the normal CBlock deserialization, as we don't want to risk deserializing 2000 full blocks.
@@ -2530,7 +2532,7 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
         // - Once a headers message is received that is valid and does connect,
         //   nUnconnectingHeaders gets reset back to 0.
         if ((pindexPrev == nullptr) &&
-            (headers.size() < MAX_BLOCKS_TO_ANNOUNCE)
+            (headers.size() <= MAX_BLOCKS_TO_ANNOUNCE)
         ) {
             nodestate->nUnconnectingHeaders++;
             connman.PushMessage(pfrom, msgMaker.Make(NetMsgType::GETHEADERS, chainActive.GetLocator(pindexBestHeader), uint256()));
@@ -2561,7 +2563,7 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
         }
 
         CValidationState state;
-        if (!ProcessNewBlockHeaders(headers, state, chainparams, &pindexLast)) {
+        if (!ProcessNewBlockHeaders(headers, state, chainparams, &pindexLast, MAX_NEW_HEADER_BURST)) {
             int nDoS;
             if (state.IsInvalid(nDoS)) {
                 if (nDoS > 0) {
@@ -2576,16 +2578,6 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
                 if (pindexLast == nullptr) {
                     // edge case of the first header error
                     pindexLast = pindexPrev;
-                } else {
-                    // Avoid excessive hashing and lookup work on the following runs.
-                    auto curr_iter = headers.begin();
-
-                    while ((curr_iter != headers.end()) &&
-                           int(curr_iter->nHeight) <= pindexLast->nHeight)
-                    {
-                        ++curr_iter;
-                    }
-                    headers.erase(headers.begin(), curr_iter);
                 }
             }
             if (pindexLast == nullptr) {
@@ -2613,7 +2605,7 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
         if (!nodestate->vPostponedHeaders.empty()) {
             // Just in case. It should not really happen
             LogPrint("net", "peer %d sent us more headers while we were processing current postponed \n", pfrom->id);
-        } else if (state.IsTransientError() && !headers.empty()) {
+        } else if (!headers.empty()) {
             nodestate->vPostponedHeaders.swap(headers);
             LogPrint("net", "saving postponed headers for peer %d \n", pfrom->id);
             fCanDirectFetch = true;
@@ -2685,6 +2677,8 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
                 }
             }
         }
+
+        return !nodestate->vPostponedHeaders.empty();
         }
     }
 
@@ -3017,6 +3011,17 @@ bool ProcessMessages(CNode* pfrom, CConnman& connman, const std::atomic<bool>& i
     //  (x) data
     //
     bool fMoreWork = false;
+
+    // Continue processing after burst limit got reached
+    {
+        LOCK(cs_main);
+        auto state = State(pfrom->GetId());
+
+        if ((state->nBlocksInFlight == 0) && !state->vPostponedHeaders.empty()) {
+            TryPostponedHeaders(pfrom, GetAdjustedTime(), chainparams, connman, interruptMsgProc);
+            fMoreWork = true;
+        }
+    }
 
     if (!pfrom->vRecvGetData.empty())
         ProcessGetData(pfrom, chainparams.GetConsensus(), connman, interruptMsgProc);
