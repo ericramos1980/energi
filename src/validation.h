@@ -151,7 +151,7 @@ static const bool DEFAULT_USEDAG = false;
 static const unsigned int MAX_BLOCKS_TO_ANNOUNCE = 8;
 
 /** Due to high computation requirements for Energi PoW & PoS we need to limit message loop blocking */
-static constexpr unsigned int MAX_NEW_HEADER_BURST = 32;
+static constexpr unsigned int MAX_NEW_HEADER_BURST = 50;
 
 /** Maximum number of unconnecting headers announcements before DoS score */
 static const int MAX_UNCONNECTING_HEADERS = 10;

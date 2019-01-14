@@ -73,6 +73,7 @@ void EraseOrphansFor(NodeId peer) EXCLUSIVE_LOCKS_REQUIRED(cs_main);
 
 static size_t vExtraTxnForCompactIt = 0;
 static std::vector<std::pair<uint256, CTransactionRef>> vExtraTxnForCompact GUARDED_BY(cs_main);
+static std::deque<const CBlockIndex*> vToFetchCache GUARDED_BY(cs_main);
 
 static const uint64_t RANDOMIZER_ID_ADDRESS_RELAY = 0x3cac0035b5866b90ULL; // SHA256("main address relay")[0:8]
 
@@ -491,47 +492,50 @@ void FindNextBlocksToDownload(CNode* pnode, unsigned int count, std::vector<cons
     ProcessBlockAvailability(nodeid);
 
     // A special case to to do parallel initial download
-    if ((state->pindexBestKnownBlock == NULL) && IsInitialBlockDownload() && (pindexBestHeader != nullptr)) {
-        auto pIndexWalk = pindexBestHeader;
-
-        // Keep the last blocks for selected sync peer
-        int max_height = pindexBestHeader->nHeight - MAX_BLOCKS_IN_TRANSIT_PER_PEER;
-        max_height = std::min<int>(max_height, pnode->nStartingHeight);
-
+    if ((state->pindexBestKnownBlock == NULL) &&
+        IsInitialBlockDownload() &&
+        (pindexBestHeader != nullptr)
+    ) {
         // Minimize the work done on walk till the oldest not fetched blocks.
-        // There is little sense to check blocks outside of the range with fully loaded outbound peers.
-        max_height = std::min<int>(max_height, chainActive.Tip()->nHeight + (MAX_BLOCKS_IN_TRANSIT_PER_PEER * MAX_OUTBOUND_CONNECTIONS));
+        auto max_height = std::min<int>(
+            pindexBestHeader->nHeight,
+            chainActive.Height() + MAX_HEADERS_RESULTS
+        );
 
-        // Make sure we fetch the oldest blocks first to properly reflect our progress.
-        std::deque<const CBlockIndex*> to_fetch;
+        if (vToFetchCache.size() < count) {
+            vToFetchCache.clear();
+            auto pIndexWalk = pindexBestHeader;
 
-        for (; pIndexWalk != nullptr; pIndexWalk = pIndexWalk->pprev) {
-            if (pIndexWalk->nHeight > max_height) {
-                // optimize skip
-                continue;
-            }
-
-            if (chainActive.Contains(pIndexWalk)) {
-                break;
-            }
-
-            if (!pIndexWalk->IsValid(BLOCK_VALID_TREE)) {
-                // This should never happen by fact
-                break;
-            }
-
-            if (!(pIndexWalk->nStatus & BLOCK_HAVE_DATA) &&
-                (mapBlocksInFlight.find(pIndexWalk->GetBlockHash()) == mapBlocksInFlight.end())
-            ) {
-                if (to_fetch.size() >= count) {
-                    to_fetch.pop_front();
+            for (; pIndexWalk != nullptr; pIndexWalk = pIndexWalk->pprev) {
+                if (pIndexWalk->nHeight > max_height) {
+                    // optimize skip
+                    continue;
                 }
 
-                to_fetch.push_back(pIndexWalk);
+                if (chainActive.Contains(pIndexWalk)) {
+                    break;
+                }
+
+                if (!pIndexWalk->IsValid(BLOCK_VALID_TREE)) {
+                    // This should never happen by fact
+                    break;
+                }
+
+                if (!(pIndexWalk->nStatus & BLOCK_HAVE_DATA) &&
+                    (mapBlocksInFlight.find(pIndexWalk->GetBlockHash()) == mapBlocksInFlight.end())
+                ) {
+                    vToFetchCache.push_front(pIndexWalk);
+                }
             }
         }
 
-        std::copy(to_fetch.begin(), to_fetch.end(), std::back_inserter(vBlocks));
+        count = std::min<int>(count, vToFetchCache.size());
+        auto begin = vToFetchCache.begin();
+        auto end = vToFetchCache.begin() + count;
+
+        std::copy(begin, end, std::back_inserter(vBlocks));
+        vToFetchCache.erase(begin, end);
+
         return;
     }
 
@@ -2630,7 +2634,6 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
         } else if (!headers.empty()) {
             nodestate->vPostponedHeaders.swap(headers);
             LogPrint("net", "saving postponed headers for peer %d \n", pfrom->id);
-            fCanDirectFetch = true;
         } else if (get_more_headers) {
             // If nCount=0 - then we are in postponed headers situation, try to get more.
 
@@ -2644,21 +2647,12 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
         // If this set of headers is valid and ends in a block with at least as
         // much work as our tip, download as much as possible.
         if (fCanDirectFetch && pindexLast->IsValid(BLOCK_VALID_TREE) && chainActive.Tip()->nChainWork <= pindexLast->nChainWork) {
-            std::deque<const CBlockIndex *> vToFetch;
+            std::vector<const CBlockIndex *> vToFetch;
             const CBlockIndex *pindexWalk = pindexLast;
             // Calculate all the blocks we'd need to switch to pindexLast, up to a limit.
-            while (pindexWalk && !chainActive.Contains(pindexWalk)) {
+            while (pindexWalk && !chainActive.Contains(pindexWalk) && vToFetch.size() <= MAX_BLOCKS_IN_TRANSIT_PER_PEER) {
                 if (!(pindexWalk->nStatus & BLOCK_HAVE_DATA) &&
                         !mapBlocksInFlight.count(pindexWalk->GetBlockHash())) {
-                    if (vToFetch.size() >= MAX_BLOCKS_IN_TRANSIT_PER_PEER) {
-                        if (get_more_headers) {
-                            // Either initial sync or in the middle of a fork (then see below)
-                            vToFetch.pop_front();
-                        } else {
-                            break;
-                        }
-                    }
-
                     // We don't have this block, and it's not yet in flight.
                     vToFetch.push_back(pindexWalk);
                 }
@@ -2668,11 +2662,10 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
             // very large reorg at a time we think we're close to caught up to
             // the main chain -- this shouldn't really happen.  Bail out on the
             // direct fetch and rely on parallel download instead.
-            if (!chainActive.Contains(pindexWalk) && !IsPoSEnforcedHeight(pindexWalk->nHeight)) {
+            if (!chainActive.Contains(pindexWalk)) {
                 LogPrint("net", "Large reorg, won't direct fetch to %s (%d)\n",
                         pindexLast->GetBlockHash().ToString(),
                         pindexLast->nHeight);
-                nodestate->vPostponedHeaders.clear();
             } else {
                 std::vector<CInv> vGetData;
                 // Download as much as possible, from earliest to latest.
