@@ -38,8 +38,11 @@ Major changes:
 Minor changes:
 
 * CHANGED: updated checkpoints & minwork
+* CHANGED: "Sync Headers" to "Initial sync" messages
 * FIXED: PoS-enabled chain startup
 * FIXED: ExecuteSpork() to be called on local node
 * FIXED: active PoS detection on startup & ignore of invalid spork override
 * FIXED: initial header sync blocking network stack for too long
+* FIXED: placeholder sync text when block time is ahead of local time
+* FIXED: default Spork 9 value
 * NEW: chaintps estimations in getblock- RPC

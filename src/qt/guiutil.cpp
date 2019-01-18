@@ -1070,6 +1070,10 @@ QString formatNiceTimeOffset(qint64 secs)
     const int YEAR_IN_SECONDS = 31556952; // Average length of year in Gregorian calendar
     if(secs < 60)
     {
+        if (secs < 1) {
+            secs = 1;
+        }
+
         timeBehindText = QObject::tr("%n second(s)","",secs);
     }
     else if(secs < 2*HOUR_IN_SECONDS)
