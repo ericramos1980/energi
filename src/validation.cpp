@@ -2873,6 +2873,9 @@ static CBlockIndex* FindMostWorkChain() {
 
 /** Delete all entries in setBlockIndexCandidates that are worse than the current tip. */
 static void PruneBlockIndexCandidates() {
+    // Chainstate got corrupted what may happen due to unordered filesystem writes and abnormal OS shutdown.
+    assert(setBlockIndexCandidates.find(chainActive.Tip()) != setBlockIndexCandidates.end());
+
     // Note that we can't delete the current block itself, as we may need to return to it later in case a
     // reorganization to a better block fails.
     std::set<CBlockIndex*, CBlockIndexWorkComparator>::iterator it = setBlockIndexCandidates.begin();
