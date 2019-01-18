@@ -656,7 +656,7 @@
     </message>
     <message>
         <location line="+23"/>
-        <source>Syncing Headers (%1%)...</source>
+        <source>Initial sync (%1%)...</source>
         <translation>正在同步開頭 (%1%)...</translation>
     </message>
     <message>
@@ -1635,7 +1635,7 @@
     </message>
     <message>
         <location filename="../modaloverlay.cpp" line="-1"/>
-        <source>Unknown. Syncing Headers (%1)...</source>
+        <source>Unknown. Initial sync (%1)...</source>
         <translation>未知。 正在同步開頭 (%1)...</translation>
     </message>
 </context>
