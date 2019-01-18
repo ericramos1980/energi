@@ -42,4 +42,5 @@ Minor changes:
 * FIXED: ExecuteSpork() to be called on local node
 * FIXED: active PoS detection on startup & ignore of invalid spork override
 * FIXED: initial header sync blocking network stack for too long
+* FIXED: placeholder sync text when block time is ahead of local time
 * NEW: chaintps estimations in getblock- RPC
