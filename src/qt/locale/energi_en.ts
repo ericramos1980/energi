@@ -52,7 +52,7 @@
         <translation>C&amp;lose</translation>
     </message>
     <message>
-        <location filename="../addressbookpage.cpp" line="+51"/>
+        <location filename="../addressbookpage.cpp" line="+52"/>
         <source>Choose the address to send coins to</source>
         <translation>Choose the address to send coins to</translation>
     </message>
@@ -125,7 +125,7 @@
 <context>
     <name>AddressTableModel</name>
     <message>
-        <location filename="../addresstablemodel.cpp" line="+171"/>
+        <location filename="../addresstablemodel.cpp" line="+172"/>
         <source>Label</source>
         <translation>Label</translation>
     </message>
@@ -163,7 +163,7 @@
         <translation>Repeat new passphrase</translation>
     </message>
     <message>
-        <location filename="../askpassphrasedialog.cpp" line="+47"/>
+        <location filename="../askpassphrasedialog.cpp" line="+48"/>
         <source>Enter the new passphrase to the wallet.&lt;br/&gt;Please use a passphrase of &lt;b&gt;ten or more random characters&lt;/b&gt;, or &lt;b&gt;eight or more words&lt;/b&gt;.</source>
         <translation>Enter the new passphrase to the wallet.&lt;br/&gt;Please use a passphrase of &lt;b&gt;ten or more random characters&lt;/b&gt;, or &lt;b&gt;eight or more words&lt;/b&gt;.</translation>
     </message>
@@ -297,7 +297,7 @@
 <context>
     <name>BanTableModel</name>
     <message>
-        <location filename="../bantablemodel.cpp" line="+89"/>
+        <location filename="../bantablemodel.cpp" line="+90"/>
         <source>IP/Netmask</source>
         <translation>IP/Netmask</translation>
     </message>
@@ -310,7 +310,7 @@
 <context>
     <name>BitcoinGUI</name>
     <message>
-        <location filename="../bitcoingui.cpp" line="+143"/>
+        <location filename="../bitcoingui.cpp" line="+147"/>
         <source>Wallet</source>
         <translation>Wallet</translation>
     </message>
@@ -320,7 +320,7 @@
         <translation>Node</translation>
     </message>
     <message>
-        <location line="+147"/>
+        <location line="+155"/>
         <source>&amp;Overview</source>
         <translation>&amp;Overview</translation>
     </message>
@@ -647,7 +647,10 @@
     <message numerus="yes">
         <location line="+372"/>
         <source>%n active connection(s) to Energi network</source>
-        <translation><numerusform>%n active connection(s) to Energi network</numerusform><numerusform>%n active connection(s) to Energi network</numerusform></translation>
+        <translation>
+            <numerusform>%n active connection(s) to Energi network</numerusform>
+            <numerusform>%n active connection(s) to Energi network</numerusform>
+        </translation>
     </message>
     <message>
         <location line="+2"/>
@@ -687,7 +690,10 @@
     <message numerus="yes">
         <location line="+9"/>
         <source>Processed %n block(s) of transaction history.</source>
-        <translation><numerusform>Processed %n block of transaction history.</numerusform><numerusform>Processed %n blocks of transaction history.</numerusform></translation>
+        <translation>
+            <numerusform>Processed %n block of transaction history.</numerusform>
+            <numerusform>Processed %n blocks of transaction history.</numerusform>
+        </translation>
     </message>
     <message>
         <location line="+26"/>
@@ -785,7 +791,17 @@
         <translation>Incoming transaction</translation>
     </message>
     <message>
-        <location line="+54"/>
+        <location line="+41"/>
+        <source>Staking is &lt;b&gt;enabled&lt;/b&gt;</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location line="+4"/>
+        <source>Staking is &lt;b&gt;disabled&lt;/b&gt;</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location line="+22"/>
         <source>HD key generation is &lt;b&gt;enabled&lt;/b&gt;</source>
         <translation>HD key generation is &lt;b&gt;enabled&lt;/b&gt;</translation>
     </message>
@@ -818,7 +834,7 @@
 <context>
     <name>ClientModel</name>
     <message>
-        <location filename="../clientmodel.cpp" line="+86"/>
+        <location filename="../clientmodel.cpp" line="+87"/>
         <source>Total: %1 (PS compatible: %2 / Enabled: %3)</source>
         <translation>Total: %1 (PS compatible: %2 / Enabled: %3)</translation>
     </message>
@@ -931,7 +947,7 @@
         <translation>Confirmed</translation>
     </message>
     <message>
-        <location filename="../coincontroldialog.cpp" line="+62"/>
+        <location filename="../coincontroldialog.cpp" line="+63"/>
         <source>Copy address</source>
         <translation>Copy address</translation>
     </message>
@@ -1111,7 +1127,7 @@
         <translation>This is the slowest and most secure option. Using maximum anonymity will cost</translation>
     </message>
     <message>
-        <location filename="../darksendconfig.cpp" line="+43"/>
+        <location filename="../darksendconfig.cpp" line="+46"/>
         <location line="+15"/>
         <location line="+15"/>
         <source>PrivateSend Configuration</source>
@@ -1161,7 +1177,7 @@
         <translation>The address associated with this address list entry. This can only be modified for sending addresses.</translation>
     </message>
     <message>
-        <location filename="../editaddressdialog.cpp" line="+29"/>
+        <location filename="../editaddressdialog.cpp" line="+30"/>
         <source>New receiving address</source>
         <translation>New receiving address</translation>
     </message>
@@ -1204,7 +1220,7 @@
 <context>
     <name>FreespaceChecker</name>
     <message>
-        <location filename="../intro.cpp" line="+79"/>
+        <location filename="../intro.cpp" line="+80"/>
         <source>A new data directory will be created.</source>
         <translation>A new data directory will be created.</translation>
     </message>
@@ -1232,7 +1248,7 @@
 <context>
     <name>HelpMessageDialog</name>
     <message>
-        <location filename="../utilitydialog.cpp" line="+41"/>
+        <location filename="../utilitydialog.cpp" line="+42"/>
         <source>version</source>
         <translation>version</translation>
     </message>
@@ -1380,7 +1396,7 @@
     </message>
     <message>
         <location line="+34"/>
-        <location filename="../masternodelist.cpp" line="+497"/>
+        <location filename="../masternodelist.cpp" line="+500"/>
         <source>Alias</source>
         <translation>Alias</translation>
     </message>
@@ -1598,7 +1614,7 @@
     <message>
         <location line="+7"/>
         <location line="+26"/>
-        <location filename="../modaloverlay.cpp" line="+141"/>
+        <location filename="../modaloverlay.cpp" line="+142"/>
         <source>Unknown...</source>
         <translation>Unknown...</translation>
     </message>
@@ -1662,7 +1678,7 @@
         <translation>Select payment request file</translation>
     </message>
     <message>
-        <location filename="../openuridialog.cpp" line="+48"/>
+        <location filename="../openuridialog.cpp" line="+49"/>
         <source>Select payment request file to open</source>
         <translation>Select payment request file to open</translation>
     </message>
@@ -2019,7 +2035,7 @@ https://www.transifex.com/projects/p/energi-cryptocurrency/</translation>
         <translation>&amp;Cancel</translation>
     </message>
     <message>
-        <location filename="../optionsdialog.cpp" line="+109"/>
+        <location filename="../optionsdialog.cpp" line="+110"/>
         <source>default</source>
         <translation>default</translation>
     </message>
@@ -2146,7 +2162,7 @@ https://www.transifex.com/projects/p/energi-cryptocurrency/</translation>
     </message>
     <message>
         <location line="+35"/>
-        <location filename="../overviewpage.cpp" line="+512"/>
+        <location filename="../overviewpage.cpp" line="+513"/>
         <location line="+12"/>
         <location line="+8"/>
         <location line="+61"/>
@@ -2282,7 +2298,10 @@ https://www.transifex.com/projects/p/energi-cryptocurrency/</translation>
         <location line="+20"/>
         <location line="+10"/>
         <source>%n Rounds</source>
-        <translation><numerusform>%n Round</numerusform><numerusform>%n Rounds</numerusform></translation>
+        <translation>
+            <numerusform>%n Round</numerusform>
+            <numerusform>%n Rounds</numerusform>
+        </translation>
     </message>
     <message>
         <location line="-13"/>
@@ -2317,7 +2336,10 @@ https://www.transifex.com/projects/p/energi-cryptocurrency/</translation>
     <message numerus="yes">
         <location line="+1"/>
         <source>Denominated inputs have %5 of %n rounds on average</source>
-        <translation><numerusform>Denominated inputs have %5 of %n round on average</numerusform><numerusform>Denominated inputs have %5 of %n rounds on average</numerusform></translation>
+        <translation>
+            <numerusform>Denominated inputs have %5 of %n round on average</numerusform>
+            <numerusform>Denominated inputs have %5 of %n rounds on average</numerusform>
+        </translation>
     </message>
     <message>
         <location line="+35"/>
@@ -2417,7 +2439,7 @@ https://www.transifex.com/projects/p/energi-cryptocurrency/</translation>
 <context>
     <name>PaymentServer</name>
     <message>
-        <location filename="../paymentserver.cpp" line="+327"/>
+        <location filename="../paymentserver.cpp" line="+328"/>
         <location line="+216"/>
         <location line="+42"/>
         <location line="+113"/>
@@ -2543,7 +2565,7 @@ https://www.transifex.com/projects/p/energi-cryptocurrency/</translation>
 <context>
     <name>PeerTableModel</name>
     <message>
-        <location filename="../peertablemodel.cpp" line="+117"/>
+        <location filename="../peertablemodel.cpp" line="+118"/>
         <source>NodeId</source>
         <translation>NodeId</translation>
     </message>
@@ -2581,12 +2603,12 @@ https://www.transifex.com/projects/p/energi-cryptocurrency/</translation>
         <translation>Error reading masternode configuration file: %1</translation>
     </message>
     <message>
-        <location filename="../bitcoinunits.cpp" line="+233"/>
+        <location filename="../bitcoinunits.cpp" line="+234"/>
         <source>Amount</source>
         <translation>Amount</translation>
     </message>
     <message>
-        <location filename="../guiutil.cpp" line="+139"/>
+        <location filename="../guiutil.cpp" line="+140"/>
         <source>Enter a Energi address (e.g. %1)</source>
         <translation>Enter a Energi address (e.g. %1)</translation>
     </message>
@@ -2627,35 +2649,53 @@ https://www.transifex.com/projects/p/energi-cryptocurrency/</translation>
         <translation>%1 ms</translation>
     </message>
     <message numerus="yes">
-        <location line="+18"/>
+        <location line="+22"/>
         <source>%n second(s)</source>
-        <translation><numerusform>%n second</numerusform><numerusform>%n seconds</numerusform></translation>
+        <translation>
+            <numerusform>%n second</numerusform>
+            <numerusform>%n seconds</numerusform>
+        </translation>
     </message>
     <message numerus="yes">
         <location line="+4"/>
         <source>%n minute(s)</source>
-        <translation><numerusform>%n minute</numerusform><numerusform>%n minutes</numerusform></translation>
+        <translation>
+            <numerusform>%n minute</numerusform>
+            <numerusform>%n minutes</numerusform>
+        </translation>
     </message>
     <message numerus="yes">
         <location line="+4"/>
         <source>%n hour(s)</source>
-        <translation><numerusform>%n hour</numerusform><numerusform>%n hours</numerusform></translation>
+        <translation>
+            <numerusform>%n hour</numerusform>
+            <numerusform>%n hours</numerusform>
+        </translation>
     </message>
     <message numerus="yes">
         <location line="+4"/>
         <source>%n day(s)</source>
-        <translation><numerusform>%n day</numerusform><numerusform>%n days</numerusform></translation>
+        <translation>
+            <numerusform>%n day</numerusform>
+            <numerusform>%n days</numerusform>
+        </translation>
     </message>
     <message numerus="yes">
         <location line="+4"/>
         <location line="+6"/>
         <source>%n week(s)</source>
-        <translation><numerusform>%n week</numerusform><numerusform>%n weeks</numerusform></translation>
+        <translation>
+            <numerusform>%n week</numerusform>
+            <numerusform>%n weeks</numerusform>
+        </translation>
     </message>
     <message numerus="yes">
         <location line="+0"/>
         <source>%n year(s)</source>
-        <translation><numerusform>%n year</numerusform><numerusform>%n years</numerusform></translation>
+        <translation>
+            <numerusform>%n year</numerusform>
+            <numerusform>%n years</numerusform>
+        </translation>
     </message>
     <message>
         <location line="+0"/>
@@ -2704,7 +2744,7 @@ https://www.transifex.com/projects/p/energi-cryptocurrency/</translation>
         <translation>&amp;Save Image...</translation>
     </message>
     <message>
-        <location filename="../qrdialog.cpp" line="+149"/>
+        <location filename="../qrdialog.cpp" line="+150"/>
         <source>Error creating QR Code.</source>
         <translation>Error creating QR Code.</translation>
     </message>
@@ -2735,7 +2775,7 @@ https://www.transifex.com/projects/p/energi-cryptocurrency/</translation>
 <context>
     <name>QRImageWidget</name>
     <message>
-        <location filename="../receiverequestdialog.cpp" line="+36"/>
+        <location filename="../receiverequestdialog.cpp" line="+37"/>
         <source>&amp;Save Image...</source>
         <translation>&amp;Save Image...</translation>
     </message>
@@ -2930,7 +2970,7 @@ https://www.transifex.com/projects/p/energi-cryptocurrency/</translation>
     </message>
     <message>
         <location line="+62"/>
-        <location filename="../rpcconsole.cpp" line="+484"/>
+        <location filename="../rpcconsole.cpp" line="+485"/>
         <location line="+788"/>
         <source>Select a peer to view detailed information.</source>
         <translation>Select a peer to view detailed information.</translation>
@@ -3357,7 +3397,7 @@ https://www.transifex.com/projects/p/energi-cryptocurrency/</translation>
         <translation>Remove</translation>
     </message>
     <message>
-        <location filename="../receivecoinsdialog.cpp" line="+48"/>
+        <location filename="../receivecoinsdialog.cpp" line="+49"/>
         <source>Copy URI</source>
         <translation>Copy URI</translation>
     </message>
@@ -3463,7 +3503,7 @@ https://www.transifex.com/projects/p/energi-cryptocurrency/</translation>
 <context>
     <name>RecentRequestsTableModel</name>
     <message>
-        <location filename="../recentrequeststablemodel.cpp" line="+29"/>
+        <location filename="../recentrequeststablemodel.cpp" line="+30"/>
         <source>Date</source>
         <translation>Date</translation>
     </message>
@@ -3502,7 +3542,7 @@ https://www.transifex.com/projects/p/energi-cryptocurrency/</translation>
     <name>SendCoinsDialog</name>
     <message>
         <location filename="../forms/sendcoinsdialog.ui" line="+14"/>
-        <location filename="../sendcoinsdialog.cpp" line="+667"/>
+        <location filename="../sendcoinsdialog.cpp" line="+668"/>
         <source>Send Coins</source>
         <translation>Send Coins</translation>
     </message>
@@ -3851,7 +3891,10 @@ https://www.transifex.com/projects/p/energi-cryptocurrency/</translation>
     <message numerus="yes">
         <location line="+67"/>
         <source>%n block(s)</source>
-        <translation><numerusform>%n block</numerusform><numerusform>%n blocks</numerusform></translation>
+        <translation>
+            <numerusform>%n block</numerusform>
+            <numerusform>%n blocks</numerusform>
+        </translation>
     </message>
     <message>
         <location line="+28"/>
@@ -3861,7 +3904,10 @@ https://www.transifex.com/projects/p/energi-cryptocurrency/</translation>
     <message numerus="yes">
         <location line="+30"/>
         <source>Estimated to begin confirmation within %n block(s).</source>
-        <translation><numerusform>Estimated to begin confirmation within %n block.</numerusform><numerusform>Estimated to begin confirmation within %n blocks.</numerusform></translation>
+        <translation>
+            <numerusform>Estimated to begin confirmation within %n block.</numerusform>
+            <numerusform>Estimated to begin confirmation within %n blocks.</numerusform>
+        </translation>
     </message>
     <message>
         <location line="+103"/>
@@ -3993,7 +4039,7 @@ https://www.transifex.com/projects/p/energi-cryptocurrency/</translation>
         <translation>Memo:</translation>
     </message>
     <message>
-        <location filename="../sendcoinsentry.cpp" line="+32"/>
+        <location filename="../sendcoinsentry.cpp" line="+33"/>
         <source>Enter a label for this address to add it to your address book</source>
         <translation>Enter a label for this address to add it to your address book</translation>
     </message>
@@ -4131,7 +4177,7 @@ https://www.transifex.com/projects/p/energi-cryptocurrency/</translation>
         <translation>Reset all verify message fields</translation>
     </message>
     <message>
-        <location filename="../signverifymessagedialog.cpp" line="+33"/>
+        <location filename="../signverifymessagedialog.cpp" line="+34"/>
         <source>Click &quot;Sign Message&quot; to generate signature</source>
         <translation>Click &quot;Sign Message&quot; to generate signature</translation>
     </message>
@@ -4205,7 +4251,7 @@ https://www.transifex.com/projects/p/energi-cryptocurrency/</translation>
 <context>
     <name>SplashScreen</name>
     <message>
-        <location filename="../networkstyle.cpp" line="+24"/>
+        <location filename="../networkstyle.cpp" line="+25"/>
         <source>[testnet]</source>
         <translation>[testnet]</translation>
     </message>
@@ -4215,7 +4261,7 @@ https://www.transifex.com/projects/p/energi-cryptocurrency/</translation>
         <translation>[testnet60x]</translation>
     </message>
     <message>
-        <location filename="../splashscreen.cpp" line="+50"/>
+        <location filename="../splashscreen.cpp" line="+51"/>
         <source>Version %1</source>
         <translation>Version %1</translation>
     </message>
@@ -4228,7 +4274,7 @@ https://www.transifex.com/projects/p/energi-cryptocurrency/</translation>
 <context>
     <name>TrafficGraphWidget</name>
     <message>
-        <location filename="../trafficgraphwidget.cpp" line="+94"/>
+        <location filename="../trafficgraphwidget.cpp" line="+95"/>
         <source>KB/s</source>
         <translation>KB/s</translation>
     </message>
@@ -4236,9 +4282,12 @@ https://www.transifex.com/projects/p/energi-cryptocurrency/</translation>
 <context>
     <name>TransactionDesc</name>
     <message numerus="yes">
-        <location filename="../transactiondesc.cpp" line="+33"/>
+        <location filename="../transactiondesc.cpp" line="+34"/>
         <source>Open for %n more block(s)</source>
-        <translation><numerusform>Open for %n more block</numerusform><numerusform>Open for %n more blocks</numerusform></translation>
+        <translation>
+            <numerusform>Open for %n more block</numerusform>
+            <numerusform>Open for %n more blocks</numerusform>
+        </translation>
     </message>
     <message>
         <location line="+2"/>
@@ -4313,7 +4362,10 @@ https://www.transifex.com/projects/p/energi-cryptocurrency/</translation>
     <message numerus="yes">
         <location line="+2"/>
         <source>, broadcast through %n node(s)</source>
-        <translation><numerusform>, broadcast through %n node</numerusform><numerusform>, broadcast through %n nodes</numerusform></translation>
+        <translation>
+            <numerusform>, broadcast through %n node</numerusform>
+            <numerusform>, broadcast through %n nodes</numerusform>
+        </translation>
     </message>
     <message>
         <location line="+4"/>
@@ -4377,7 +4429,10 @@ https://www.transifex.com/projects/p/energi-cryptocurrency/</translation>
     <message numerus="yes">
         <location line="-144"/>
         <source>matures in %n more block(s)</source>
-        <translation><numerusform>matures in %n more block</numerusform><numerusform>matures in %n more blocks</numerusform></translation>
+        <translation>
+            <numerusform>matures in %n more block</numerusform>
+            <numerusform>matures in %n more blocks</numerusform>
+        </translation>
     </message>
     <message>
         <location line="+2"/>
@@ -4488,7 +4543,7 @@ https://www.transifex.com/projects/p/energi-cryptocurrency/</translation>
         <translation>This pane shows a detailed description of the transaction</translation>
     </message>
     <message>
-        <location filename="../transactiondescdialog.cpp" line="+20"/>
+        <location filename="../transactiondescdialog.cpp" line="+21"/>
         <source>Details for %1</source>
         <translation>Details for %1</translation>
     </message>
@@ -4496,7 +4551,7 @@ https://www.transifex.com/projects/p/energi-cryptocurrency/</translation>
 <context>
     <name>TransactionTableModel</name>
     <message>
-        <location filename="../transactiontablemodel.cpp" line="+251"/>
+        <location filename="../transactiontablemodel.cpp" line="+252"/>
         <source>Date</source>
         <translation>Date</translation>
     </message>
@@ -4513,7 +4568,10 @@ https://www.transifex.com/projects/p/energi-cryptocurrency/</translation>
     <message numerus="yes">
         <location line="+60"/>
         <source>Open for %n more block(s)</source>
-        <translation><numerusform>Open for %n more block</numerusform><numerusform>Open for %n more blocks</numerusform></translation>
+        <translation>
+            <numerusform>Open for %n more block</numerusform>
+            <numerusform>Open for %n more blocks</numerusform>
+        </translation>
     </message>
     <message>
         <location line="+3"/>
@@ -4596,7 +4654,12 @@ https://www.transifex.com/projects/p/energi-cryptocurrency/</translation>
         <translation>Mined</translation>
     </message>
     <message>
-        <location line="+3"/>
+        <location line="+2"/>
+        <source>Staked</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location line="+2"/>
         <source>PrivateSend Denominate</source>
         <translation>PrivateSend Denominate</translation>
     </message>
@@ -4621,17 +4684,17 @@ https://www.transifex.com/projects/p/energi-cryptocurrency/</translation>
         <translation>PrivateSend</translation>
     </message>
     <message>
-        <location line="+31"/>
+        <location line="+32"/>
         <source>watch-only</source>
         <translation>watch-only</translation>
     </message>
     <message>
-        <location line="+17"/>
+        <location line="+18"/>
         <source>(n/a)</source>
         <translation>(n/a)</translation>
     </message>
     <message>
-        <location line="+219"/>
+        <location line="+225"/>
         <source>(no label)</source>
         <translation>(no label)</translation>
     </message>
@@ -4669,7 +4732,7 @@ https://www.transifex.com/projects/p/energi-cryptocurrency/</translation>
 <context>
     <name>TransactionView</name>
     <message>
-        <location filename="../transactionview.cpp" line="+73"/>
+        <location filename="../transactionview.cpp" line="+74"/>
         <location line="+17"/>
         <source>All</source>
         <translation>All</translation>
@@ -4748,6 +4811,11 @@ https://www.transifex.com/projects/p/energi-cryptocurrency/</translation>
         <location line="+1"/>
         <source>To yourself</source>
         <translation>To yourself</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Staked</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location line="+1"/>
@@ -4901,7 +4969,7 @@ https://www.transifex.com/projects/p/energi-cryptocurrency/</translation>
 <context>
     <name>WalletFrame</name>
     <message>
-        <location filename="../walletframe.cpp" line="+27"/>
+        <location filename="../walletframe.cpp" line="+28"/>
         <source>No wallet has been loaded.</source>
         <translation>No wallet has been loaded.</translation>
     </message>
@@ -4909,7 +4977,7 @@ https://www.transifex.com/projects/p/energi-cryptocurrency/</translation>
 <context>
     <name>WalletModel</name>
     <message>
-        <location filename="../walletmodel.cpp" line="+311"/>
+        <location filename="../walletmodel.cpp" line="+312"/>
         <location line="+12"/>
         <location line="+5"/>
         <location line="+11"/>
@@ -4931,7 +4999,7 @@ https://www.transifex.com/projects/p/energi-cryptocurrency/</translation>
 <context>
     <name>WalletView</name>
     <message>
-        <location filename="../walletview.cpp" line="+49"/>
+        <location filename="../walletview.cpp" line="+50"/>
         <source>&amp;Export</source>
         <translation>&amp;Export</translation>
     </message>
@@ -5195,6 +5263,11 @@ https://www.transifex.com/projects/p/energi-cryptocurrency/</translation>
     </message>
     <message>
         <location line="+3"/>
+        <source>Keep the specified amount available for spending at all times (default: 0)</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location line="+2"/>
         <source>Maintain a full address index, used to query for the balance, txids and unspent outputs for addresses (default: %u)</source>
         <translation>Maintain a full address index, used to query for the balance, txids and unspent outputs for addresses (default: %u)</translation>
     </message>
@@ -5685,6 +5758,11 @@ https://www.transifex.com/projects/p/energi-cryptocurrency/</translation>
     </message>
     <message>
         <location line="+1"/>
+        <source>Checkpoint validation fatal error</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location line="+1"/>
         <source>Collateral not valid.</source>
         <translation>Collateral not valid.</translation>
     </message>
@@ -5777,6 +5855,11 @@ https://www.transifex.com/projects/p/energi-cryptocurrency/</translation>
         <location line="+1"/>
         <source>Enable publish raw transaction in &lt;address&gt;</source>
         <translation>Enable publish raw transaction in &lt;address&gt;</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Enable staking functionality (0-1, default: %u)</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location line="+1"/>
@@ -6017,6 +6100,11 @@ https://www.transifex.com/projects/p/energi-cryptocurrency/</translation>
         <location line="+1"/>
         <source>Invalid amount for -paytxfee=&lt;amount&gt;: &apos;%s&apos; (must be at least %s)</source>
         <translation>Invalid amount for -paytxfee=&lt;amount&gt;: &apos;%s&apos; (must be at least %s)</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Invalid amount for -reservebalance=&lt;amount&gt;</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location line="+1"/>
@@ -6502,6 +6590,11 @@ https://www.transifex.com/projects/p/energi-cryptocurrency/</translation>
         <location line="+1"/>
         <source>Spend unconfirmed change when sending transactions (default: %u)</source>
         <translation>Spend unconfirmed change when sending transactions (default: %u)</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Staking options:</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location line="+1"/>
