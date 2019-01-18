@@ -2530,6 +2530,7 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
         const CBlockIndex *pindexLast = NULL;
         const CBlockIndex *pindexPrev = NULL;
         bool get_more_headers = headers.size() == MAX_HEADERS_RESULTS;
+        auto header_limit = MAX_NEW_HEADER_BURST;
         {
         LOCK(cs_main);
         CNodeState *nodestate = State(pfrom->GetId());
@@ -2546,7 +2547,8 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
             return true;
         }
 
-        auto prev_iter = mapBlockIndex.find(headers[0].hashPrevBlock);
+        auto& first_header = headers.front();
+        auto prev_iter = mapBlockIndex.find(first_header.hashPrevBlock);
         pindexPrev = (prev_iter == mapBlockIndex.end()) ? nullptr : prev_iter->second;
 
         // If this looks like it could be a block announcement (nCount <
@@ -2563,8 +2565,8 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
             nodestate->nUnconnectingHeaders++;
             connman.PushMessage(pfrom, msgMaker.Make(NetMsgType::GETHEADERS, chainActive.GetLocator(pindexBestHeader), uint256()));
             LogPrint("net", "received header %s/%d: missing prev block %s, sending getheaders (%d) to end (peer=%d, nUnconnectingHeaders=%d)\n",
-                    headers[0].GetHash().ToString(), headers[0].nHeight,
-                    headers[0].hashPrevBlock.ToString(),
+                    first_header.GetHash().ToString(), first_header.nHeight,
+                    first_header.hashPrevBlock.ToString(),
                     pindexBestHeader->nHeight,
                     pfrom->id, nodestate->nUnconnectingHeaders);
             // Set hashLastUnknownBlock for this peer, so that if we
@@ -2586,10 +2588,24 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
             }
             hashLastBlock = header.GetHash();
         }
+
+        int headers_ahead = int(first_header.nHeight) - chainActive.Height();
+
+        if (headers_ahead > int(header_limit)) {
+            // Let's try to keep 2x MAX_NEW_HEADER_BURST ahead
+            // This should self-balance based on parallel download performance feedback.
+            header_limit = std::max<int>(
+                std::min<int>(2*header_limit - headers_ahead, header_limit),
+                1
+            );
+            LogPrint("net", "reducing max headers batch to %u \n", header_limit);
+        }
+
+        // cs_main
         }
 
         CValidationState state;
-        if (!ProcessNewBlockHeaders(headers, state, chainparams, &pindexLast, MAX_NEW_HEADER_BURST)) {
+        if (!ProcessNewBlockHeaders(headers, state, chainparams, &pindexLast, header_limit)) {
             int nDoS;
             if (state.IsInvalid(nDoS)) {
                 if (nDoS > 0) {
