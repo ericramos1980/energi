@@ -34,6 +34,7 @@ Major changes:
 * FIXED: to ignore best header from invalid ancestor on startup
   - Common Bitcoin/Dash issue
 * NEW: parallel initial block download (at least x8 speedup)
+* NEW: reset of invalid status of the correct chain on checkpoint failure
 
 Minor changes:
 

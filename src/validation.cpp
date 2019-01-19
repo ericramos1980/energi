@@ -2873,9 +2873,6 @@ static CBlockIndex* FindMostWorkChain() {
 
 /** Delete all entries in setBlockIndexCandidates that are worse than the current tip. */
 static void PruneBlockIndexCandidates() {
-    // Chainstate got corrupted what may happen due to unordered filesystem writes and abnormal OS shutdown.
-    assert(setBlockIndexCandidates.find(chainActive.Tip()) != setBlockIndexCandidates.end());
-
     // Note that we can't delete the current block itself, as we may need to return to it later in case a
     // reorganization to a better block fails.
     std::set<CBlockIndex*, CBlockIndexWorkComparator>::iterator it = setBlockIndexCandidates.begin();
@@ -4685,6 +4682,17 @@ bool CheckpointValidateBlockIndex(const CChainParams& chainparams) {
     for (auto iter = checkpoints.mapCheckpoints.begin();
          iter != checkpoints.mapCheckpoints.end(); ++iter
     ) {
+        // Ensure checkpoint is seen as correct block
+        {
+            auto correct_iter = mapBlockIndex.find(iter->second);
+
+            if ((correct_iter != mapBlockIndex.end()) &&
+                (correct_iter->second->nStatus & BLOCK_FAILED_MASK)
+            ) {
+                ResetBlockFailureFlags(correct_iter->second);
+            }
+        }
+
         auto height = iter->first;
 
         if (chainActive.Height() < height) continue;
