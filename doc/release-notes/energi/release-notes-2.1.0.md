@@ -21,7 +21,7 @@ your operation system:
 * for macos run the installer
 * for Linux unpack to a separate folder and run from there
 
-**NOTE**: version of Energi Core prior to v2.1.0 must not be used with the same data files.
+**NOTE**: version of Energi Core prior to v2.0.0 must not be used with the same data files.
 
 
 v2.1.0 changelog
@@ -29,10 +29,22 @@ v2.1.0 changelog
 
 Major changes:
 
+* CHANGED: adjusted PoS consensus logic
+* CHANGED: testnet reset to block 46999
+* FIXED: to ignore best header from invalid ancestor on startup
+  - Common Bitcoin/Dash issue
+* NEW: parallel initial block download (at least x8 speedup)
 * NEW: reset of invalid status of the correct chain on checkpoint failure
 * NEW: checkpoint to the last superblock at 383040 & block 383300
 
 Minor changes:
 
 * CHANGED: updated checkpoints & minwork
+* CHANGED: "Sync Headers" to "Initial sync" messages
+* FIXED: PoS-enabled chain startup
+* FIXED: ExecuteSpork() to be called on local node
+* FIXED: active PoS detection on startup & ignore of invalid spork override
+* FIXED: initial header sync blocking network stack for too long
+* FIXED: placeholder sync text when block time is ahead of local time
 * FIXED: default Spork 9 value
+* NEW: chaintps estimations in getblock- RPC
