@@ -35,6 +35,7 @@ Major changes:
   - Common Bitcoin/Dash issue
 * NEW: parallel initial block download (at least x8 speedup)
 * NEW: reset of invalid status of the correct chain on checkpoint failure
+* NEW: checkpoint to the last superblock at 383040
 
 Minor changes:
 
