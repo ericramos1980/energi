@@ -4643,7 +4643,14 @@ bool CheckpointValidateBlockIndex(const CChainParams& chainparams) {
             if ((correct_iter != mapBlockIndex.end()) &&
                 (correct_iter->second->nStatus & BLOCK_FAILED_MASK)
             ) {
-                ResetBlockFailureFlags(correct_iter->second);
+                auto pinvalid_root = correct_iter->second;
+
+                // Walk to the invalid root
+                while (pinvalid_root->pprev && (pinvalid_root->nStatus & BLOCK_FAILED_MASK)) {
+                    pinvalid_root = pinvalid_root->pprev;
+                }
+
+                ResetBlockFailureFlags(pinvalid_root);
             }
         }
 
