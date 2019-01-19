@@ -4636,6 +4636,17 @@ bool CheckpointValidateBlockIndex(const CChainParams& chainparams) {
     for (auto iter = checkpoints.mapCheckpoints.begin();
          iter != checkpoints.mapCheckpoints.end(); ++iter
     ) {
+        // Ensure checkpoint is seen as correct block
+        {
+            auto correct_iter = mapBlockIndex.find(iter->second);
+
+            if ((correct_iter != mapBlockIndex.end()) &&
+                (correct_iter->second->nStatus & BLOCK_FAILED_MASK)
+            ) {
+                ResetBlockFailureFlags(correct_iter->second);
+            }
+        }
+
         auto height = iter->first;
 
         if (chainActive.Height() < height) continue;
