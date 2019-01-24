@@ -36,6 +36,7 @@ Major changes:
 * NEW: parallel initial block download (at least x8 speedup)
 * NEW: reset of invalid status of the correct chain on checkpoint failure
 * NEW: checkpoint to the last superblock at 383040 & block 383300
+* NEW: dynamic checkpoints support via spork functionality
 
 Minor changes:
 

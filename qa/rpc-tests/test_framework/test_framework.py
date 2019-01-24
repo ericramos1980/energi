@@ -41,6 +41,7 @@ class BitcoinTestFramework(object):
         self.num_nodes = 4
         self.setup_clean_chain = False
         self.nodes = None
+        self.extra_args = [['-debug']] * self.num_nodes
 
     def run_test(self):
         raise NotImplementedError
@@ -61,7 +62,7 @@ class BitcoinTestFramework(object):
         stop_node(self.nodes[num_node], num_node)
 
     def setup_nodes(self):
-        return start_nodes(self.num_nodes, self.options.tmpdir)
+        return start_nodes(self.num_nodes, self.options.tmpdir, self.extra_args)
 
     def setup_network(self, split = False):
         self.nodes = self.setup_nodes()

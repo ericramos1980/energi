@@ -1011,6 +1011,12 @@ bool static AlreadyHave(const CInv& inv) EXCLUSIVE_LOCKS_REQUIRED(cs_main)
 
     case MSG_MASTERNODE_VERIFY:
         return mnodeman.mapSeenMasternodeVerification.count(inv.hash);
+
+    case MSG_CHECKPOINT:
+        {
+            LOCK(cs_main);
+            return mapSporkCheckpoints.count(inv.hash);
+        }
     }
 
     // Don't know what it is, just say we already got one
@@ -1311,6 +1317,15 @@ void static ProcessGetData(CNode* pfrom, const Consensus::Params& consensusParam
                 if (!push && inv.type == MSG_MASTERNODE_VERIFY) {
                     if(mnodeman.mapSeenMasternodeVerification.count(inv.hash)) {
                         connman.PushMessage(pfrom, msgMaker.Make(NetMsgType::MNVERIFY, mnodeman.mapSeenMasternodeVerification[inv.hash]));
+                        push = true;
+                    }
+                }
+
+                if (!push && inv.type == MSG_CHECKPOINT) {
+                    LOCK(cs_main);
+
+                    if(mapSporkCheckpoints.count(inv.hash)) {
+                        connman.PushMessage(pfrom, msgMaker.Make(NetMsgType::CHECKPOINT, mapSporkCheckpoints[inv.hash]));
                         push = true;
                     }
                 }
