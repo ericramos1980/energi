@@ -49,4 +49,5 @@ Minor changes:
 * FIXED: placeholder sync text when block time is ahead of local time
 * FIXED: default Spork 9 value
 * FIXED: checkpoints to correctly handle edge cases with multiple forks
+* FIXED: spork 12 limit to match Energi 24h block count
 * NEW: chaintps estimations in getblock- RPC
