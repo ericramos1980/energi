@@ -47,4 +47,5 @@ Minor changes:
 * FIXED: initial header sync blocking network stack for too long
 * FIXED: placeholder sync text when block time is ahead of local time
 * FIXED: default Spork 9 value
+* FIXED: checkpoints to correctly handle edge cases with multiple forks
 * NEW: chaintps estimations in getblock- RPC
