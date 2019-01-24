@@ -14,6 +14,8 @@
 
 class CSporkMessage;
 class CSporkManager;
+class CSporkCheckpoint;
+using SporkCheckpointMap = std::map<uint256, CSporkCheckpoint>;
 
 /*
     Don't ever reuse these IDs for other sporks
@@ -36,6 +38,7 @@ static const int SPORK_END                                              = SPORK_
 
 extern std::map<int, int64_t> mapSporkDefaults;
 extern std::map<uint256, CSporkMessage> mapSporks;
+extern SporkCheckpointMap mapSporkCheckpoints;
 extern CSporkManager sporkManager;
 
 //
@@ -86,12 +89,60 @@ public:
     void Relay(CConnman& connman);
 };
 
+class CSporkCheckpoint {
+public:
+    static constexpr auto MAX_AGE = 30 * 24 * 60 * 60; // one month
+
+private:
+    std::vector<unsigned char> vchSig;
+
+public:
+    int nHeight{0};
+    uint256 hashBlock;
+    int64_t nTimeSigned{0};
+
+    CSporkCheckpoint(int nHeight, const uint256& hashBlock, int64_t nTimeSigned) :
+        nHeight(nHeight),
+        hashBlock(hashBlock),
+        nTimeSigned(nTimeSigned)
+        {}
+
+    CSporkCheckpoint() = default;
+
+    bool operator==(const CSporkCheckpoint& other) const {
+        return vchSig == other.vchSig;
+    }
+
+    ADD_SERIALIZE_METHODS;
+
+    template <typename Stream, typename Operation>
+    inline void SerializationOp(Stream& s, Operation ser_action) {
+        READWRITE(nHeight);
+        READWRITE(hashBlock);
+        READWRITE(nTimeSigned);
+
+        if (!(s.GetType() & SER_GETHASH)) {
+            READWRITE(vchSig);
+        }
+    }
+
+    uint256 GetHash() const;
+    uint256 GetSignatureHash() const;
+
+    bool Sign(const CKey& key);
+    bool CheckSignature(const CKeyID& pubKeyId) const;
+    void Relay(CConnman& connman);
+};
 
 class CSporkManager
 {
+public:
+    using ActiveCheckpointMap = std::map<int, CSporkCheckpoint>;
+
 private:
     std::vector<unsigned char> vchSig;
     std::map<int, CSporkMessage> mapSporksActive;
+    ActiveCheckpointMap mapCheckpointsActive;
 
     CKeyID sporkPubKeyID;
     CKey sporkPrivKey;
@@ -102,7 +153,9 @@ public:
 
     void ProcessSpork(CNode* pfrom, const std::string& strCommand, CDataStream& vRecv, CConnman& connman);
     void ExecuteSpork(int nSporkID, int nValue);
+    void ExecuteCheckpoint(int height, const uint256& block_hash);
     bool UpdateSpork(int nSporkID, int64_t nValue, CConnman& connman);
+    bool UpdateCheckpoint(int height, const uint256& block_hash, CConnman& connman);
 
     bool IsSporkActive(int nSporkID);
     int64_t GetSporkValue(int nSporkID);
@@ -111,6 +164,8 @@ public:
 
     bool SetSporkAddress(const std::string& strAddress);
     bool SetPrivKey(const std::string& strPrivKey);
+
+    ActiveCheckpointMap GetActiveCheckpoints() const;
 };
 
 #endif

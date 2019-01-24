@@ -4697,35 +4697,42 @@ bool CheckpointValidateBlockIndex(const CChainParams& chainparams) {
                 }
 
                 ResetBlockFailureFlags(pinvalid_root);
+
+                CValidationState state;
+                ActivateBestChain(state, Params());
+
+                if (!state.IsInvalid()) {
+                    error("Checkpoint: failed to activate the best chain after failed mask reset: %s", FormatStateMessage(state));
+                }
             }
         }
 
         auto height = iter->first;
 
-        if (chainActive.Height() < height) continue;
+        while (chainActive.Height() >= height) {
+            auto pindex = chainActive[height];
+            auto hash = pindex->GetBlockHash();
 
-        auto pindex = chainActive[height];
-        auto hash = pindex->GetBlockHash();
+            if (Checkpoints::ValidateCheckpoint(checkpoints, height, hash)) {
+                break;
+            }
 
-        if (Checkpoints::ValidateCheckpoint(checkpoints, height, hash)) {
-            continue;
+            error("Checkpoint: Invalid fork with hash %s found at %d, invalidating",
+                height, hash.ToString().c_str());
+            InvalidateBlock(state, chainparams, pindex);
+
+            if (state.IsInvalid()) {
+                return false;
+            }
+
+            ActivateBestChain(state, chainparams);
+
+            if (state.IsInvalid()) {
+                return false;
+            }
+
+            flush = true;
         }
-
-        error("Checkpoint: Invalid fork with hash %s found at %d, invalidating",
-              height, hash.ToString().c_str());
-        InvalidateBlock(state, chainparams, pindex);
-
-        if (state.IsInvalid()) {
-            return false;
-        }
-
-        ActivateBestChain(state, chainparams);
-
-        if (state.IsInvalid()) {
-            return false;
-        }
-
-        flush = true;
     }
 
     if (flush && !FlushStateToDisk(state, FLUSH_STATE_ALWAYS)) {

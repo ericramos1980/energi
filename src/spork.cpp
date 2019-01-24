@@ -11,7 +11,9 @@
 #include "messagesigner.h"
 #include "net_processing.h"
 #include "netmessagemaker.h"
+#include "checkpoints.h"
 
+#include <algorithm>
 #include <boost/lexical_cast.hpp>
 
 CSporkManager sporkManager;
@@ -30,6 +32,7 @@ std::map<int, int64_t> mapSporkDefaults = {
     {SPORK_15_FIRST_POS_BLOCK,               999999ULL},     // OFF
     {SPORK_16_MASTERNODE_MIN_PROTOCOL,       MIN_PEER_PROTO_VERSION }, // Actual
 };
+SporkCheckpointMap mapSporkCheckpoints GUARDED_BY(cs_main);
 
 void CSporkManager::ProcessSpork(CNode* pfrom, const std::string& strCommand, CDataStream& vRecv, CConnman& connman)
 {
@@ -83,8 +86,79 @@ void CSporkManager::ProcessSpork(CNode* pfrom, const std::string& strCommand, CD
             connman.PushMessage(pfrom, CNetMsgMaker(pfrom->GetSendVersion()).Make(NetMsgType::SPORK, it->second));
             it++;
         }
-    }
 
+        // Dynamic checkpoints are closely related to sporks functionality
+        if (pfrom->nVersion >= SPORK_CHECKPOINT_VERSION) {
+            LOCK(cs_main);
+
+            auto min_time = GetAdjustedTime() - CSporkCheckpoint::MAX_AGE;
+
+            for (auto iter = mapSporkCheckpoints.begin(); iter != mapSporkCheckpoints.end();) {
+                auto& cp = iter->second;
+
+                // Avoid polluting network with old checkpoints
+                if (cp.nTimeSigned < min_time) {
+                    // Cleanup active as side-effect
+                    auto active_iter = mapCheckpointsActive.find(cp.nHeight);
+
+                    if ((active_iter != mapCheckpointsActive.end()) &&
+                        (active_iter->second == cp)
+                    ) {
+                        mapCheckpointsActive.erase(active_iter);
+                    }
+
+                    auto todel = iter++;
+                    mapSporkCheckpoints.erase(todel);
+                    continue;
+                }
+
+                connman.PushMessage(
+                    pfrom,
+                    CNetMsgMaker(pfrom->GetSendVersion()).Make(NetMsgType::CHECKPOINT, cp));
+                ++iter;
+            }
+        }
+    } else if (strCommand == NetMsgType::CHECKPOINT) {
+
+        CSporkCheckpoint checkpoint;
+        vRecv >> checkpoint;
+
+        {
+            auto height = checkpoint.nHeight;
+            auto hash = checkpoint.GetHash();
+
+            LOCK(cs_main);
+
+            pfrom->setAskFor.erase(hash);
+
+            std::string strLogMsg = strprintf("DYNCHECKPOINT -- hash: %s height: %d block: %s peer=%d", hash.ToString(), height, checkpoint.hashBlock.ToString(), pfrom->id);
+
+            auto iter = mapCheckpointsActive.find(height);
+
+            if(iter != mapCheckpointsActive.end()) {
+                if (iter->second.nTimeSigned >= checkpoint.nTimeSigned) {
+                    LogPrint("spork", "%s seen\n", strLogMsg);
+                    return;
+                } else {
+                    LogPrintf("%s updated\n", strLogMsg);
+                }
+            } else {
+                LogPrintf("%s new\n", strLogMsg);
+            }
+
+            if(!checkpoint.CheckSignature(sporkPubKeyID)) {
+                LogPrintf("CSporkManager::ProcessSpork -- ERROR: invalid signature\n");
+                Misbehaving(pfrom->GetId(), 100);
+                return;
+            }
+
+            mapSporkCheckpoints[hash] = checkpoint;
+            mapCheckpointsActive[height] = checkpoint;
+            ExecuteCheckpoint(height, checkpoint.hashBlock);
+        }
+
+        checkpoint.Relay(connman);
+    }
 }
 
 void CSporkManager::ExecuteSpork(int nSporkID, int nValue)
@@ -92,7 +166,7 @@ void CSporkManager::ExecuteSpork(int nSporkID, int nValue)
     //correct fork via spork technology
     if(nSporkID == SPORK_12_RECONSIDER_BLOCKS && nValue > 0) {
         // allow to reprocess 24h of blocks max, which should be enough to resolve any issues
-        int64_t nMaxBlocks = 576;
+        int64_t nMaxBlocks = 1440;
         // this potentially can be a heavy operation, so only allow this to be executed once per 10 minutes
         int64_t nTimeout = 10 * 60;
 
@@ -137,6 +211,38 @@ bool CSporkManager::UpdateSpork(int nSporkID, int64_t nValue, CConnman& connman)
         mapSporks[spork.GetHash()] = spork;
         mapSporksActive[nSporkID] = spork;
         ExecuteSpork(nSporkID, nValue);
+        return true;
+    }
+
+    return false;
+}
+
+void CSporkManager::ExecuteCheckpoint(int height, const uint256& block_hash)
+{
+    LOCK(cs_main);
+
+    LogPrintf("Adding dynamic checkpoint at height %d with hash %s\n",
+                height, block_hash.ToString().c_str());
+
+    auto& chainparams = Params();
+    Params(chainparams.NetworkIDString()).AddCheckpoint(height, block_hash);
+    CheckpointValidateBlockIndex(chainparams);
+}
+
+bool CSporkManager::UpdateCheckpoint(int height, const uint256& block_hash, CConnman& connman)
+{
+    auto checkpoint = CSporkCheckpoint(height, block_hash, GetAdjustedTime());
+
+    if(checkpoint.Sign(sporkPrivKey)) {
+        checkpoint.Relay(connman);
+
+        {
+            LOCK(cs_main);
+            mapSporkCheckpoints[checkpoint.GetHash()] = checkpoint;
+            mapCheckpointsActive[height] = checkpoint;
+            ExecuteCheckpoint(height, block_hash);
+        }
+
         return true;
     }
 
@@ -248,6 +354,12 @@ bool CSporkManager::SetPrivKey(const std::string& strPrivKey)
     }
 }
 
+CSporkManager::ActiveCheckpointMap CSporkManager::GetActiveCheckpoints() const {
+    LOCK(cs_main);
+    auto ret = mapCheckpointsActive;
+    return ret;
+}
+
 uint256 CSporkMessage::GetHash() const
 {
     return SerializeHash(*this);
@@ -334,4 +446,60 @@ void CSporkMessage::Relay(CConnman& connman)
 {
     CInv inv(MSG_SPORK, GetHash());
     connman.RelayInv(inv);
+}
+
+
+uint256 CSporkCheckpoint::GetHash() const
+{
+    return SerializeHash(*this);
+}
+
+uint256 CSporkCheckpoint::GetSignatureHash() const
+{
+    return GetHash();
+}
+
+bool CSporkCheckpoint::Sign(const CKey& key)
+{
+    if (!key.IsValid()) {
+        LogPrintf("CSporkCheckpoint::Sign -- signing key is not valid\n");
+        return false;
+    }
+
+    CKeyID pubKeyId = key.GetPubKey().GetID();
+    std::string strError = "";
+
+    uint256 hash = GetSignatureHash();
+
+    if(!CHashSigner::SignHash(hash, key, vchSig)) {
+        LogPrintf("CSporkCheckpoint::Sign -- SignHash() failed\n");
+        return false;
+    }
+
+    if (!CHashSigner::VerifyHash(hash, pubKeyId, vchSig, strError)) {
+        LogPrintf("CSporkCheckpoint::Sign -- VerifyHash() failed, error: %s\n", strError);
+        return false;
+    }
+
+    return true;
+}
+
+bool CSporkCheckpoint::CheckSignature(const CKeyID& pubKeyId) const
+{
+    std::string strError;
+
+    uint256 hash = GetSignatureHash();
+
+    if (!CHashSigner::VerifyHash(hash, pubKeyId, vchSig, strError)) {
+        LogPrintf("CSporkCheckpoint::CheckSignature -- VerifyHash() failed, error: %s\n", strError);
+        return false;
+    }
+
+    return true;
+}
+
+void CSporkCheckpoint::Relay(CConnman& connman)
+{
+    CInv inv(MSG_CHECKPOINT, GetHash());
+    connman.RelayInv(inv, SPORK_CHECKPOINT_VERSION);
 }

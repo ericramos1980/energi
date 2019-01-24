@@ -15,6 +15,7 @@
 
 #include <boost/foreach.hpp>
 
+
 namespace Checkpoints {
 
     CBlockIndex* GetLastSeenCheckpoint(const CCheckpointData& data)

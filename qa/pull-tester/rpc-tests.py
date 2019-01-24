@@ -177,6 +177,7 @@ testScripts = [
     'p2p-compactblocks.py',
     'pos-sync.py',
     'pos-load.py',
+    'spork-checkpoints.py',
 ]
 if ENABLE_ZMQ:
     testScripts.append('zmq_test.py')

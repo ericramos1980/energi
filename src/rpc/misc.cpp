@@ -245,10 +245,32 @@ UniValue spork(const JSONRPCRequest& request)
                     ret.push_back(Pair(sporkManager.GetSporkNameByID(nSporkID), sporkManager.IsSporkActive(nSporkID)));
             }
             return ret;
+        } else if(strCommand == "checkpoint"){
+            UniValue ret(UniValue::VARR);
+            auto curr_time = GetAdjustedTime();
+
+            for (auto& item : sporkManager.GetActiveCheckpoints()) {
+                auto& cp = item.second;
+
+                UniValue ret_item(UniValue::VOBJ);
+                ret_item.push_back(Pair("height", int64_t(cp.nHeight)));
+                ret_item.push_back(Pair("hash", cp.hashBlock.ToString()));
+                ret_item.push_back(Pair("expires_in", int64_t(cp.nTimeSigned + CSporkCheckpoint::MAX_AGE) - curr_time));
+                ret.push_back(ret_item);
+            }
+
+            return ret;
         }
     }
 
-    if (request.fHelp || request.params.size() != 2) {
+    bool show_help = request.fHelp || request.params.size() < 2;
+
+    if (!show_help) {
+        auto req_params = (request.params[0].get_str() == "checkpoint") ? 3U : 2U;
+        show_help = (request.params.size() != req_params);
+    }
+
+    if (show_help) {
         // default help, for basic mode
         throw std::runtime_error(
             "spork \"command\"\n"
@@ -266,9 +288,41 @@ UniValue spork(const JSONRPCRequest& request)
             "  \"SPORK_NAME\" : true|false,     (boolean) 'true' for time-based sporks if spork is active and 'false' otherwise\n"
             "  ...\n"
             "}\n"
+            "For 'checkpoint':\n"
+            "[\n"
+            "  {\n"
+            "    \"height\" : height,           (number) the block height\n"
+            "    \"hash\" : \"hash\",           (string) the block hash\n"
+            "    \"expires_in\" : seconds,      (number) the checkpoint expires in seconds\n"
+            "  }.\n"
+            "  ...\n"
+            "]\n"
             "\nExamples:\n"
             + HelpExampleCli("spork", "show")
             + HelpExampleRpc("spork", "\"show\""));
+    } else if (request.params[0].get_str() == "checkpoint") {
+        if (!g_connman) {
+            throw JSONRPCError(RPC_CLIENT_P2P_DISABLED, "Error: Peer-to-peer functionality missing or disabled");
+        }
+
+        auto height = request.params[1].get_int64();
+        auto block_hash = uint256S(request.params[2].get_str());
+
+        if(sporkManager.UpdateCheckpoint(height, block_hash, *g_connman)){
+            return "success";
+        } else {
+            throw std::runtime_error(
+                "spork checkpoint \"height\" \"hash\"\n"
+                "\nUpdate the value of the specific spork checkpoint. Requires \"-sporkkey\" to be set to sign the message.\n"
+                "\nArguments:\n"
+                "1. \"height\"     (number, required) The block height \n"
+                "2. \"hash\"       (string, required) The block hash of valid chain\n"
+                "\nResult:\n"
+                "  result               (string) \"success\" if spork value was updated or this help otherwise\n"
+                "\nExamples:\n"
+                + HelpExampleCli("spork", "SPORK_2_INSTANTSEND_ENABLED 4070908800")
+                + HelpExampleRpc("spork", "\"SPORK_2_INSTANTSEND_ENABLED\", 4070908800"));
+        }
     } else {
         // advanced mode, update spork values
         int nSporkID = sporkManager.GetSporkIDByName(request.params[0].get_str());
@@ -283,7 +337,6 @@ UniValue spork(const JSONRPCRequest& request)
 
         //broadcast new spork
         if(sporkManager.UpdateSpork(nSporkID, nValue, *g_connman)){
-            sporkManager.ExecuteSpork(nSporkID, nValue);
             return "success";
         } else {
             throw std::runtime_error(
@@ -295,8 +348,8 @@ UniValue spork(const JSONRPCRequest& request)
                 "\nResult:\n"
                 "  result               (string) \"success\" if spork value was updated or this help otherwise\n"
                 "\nExamples:\n"
-                + HelpExampleCli("spork", "SPORK_2_INSTANTSEND_ENABLED 4070908800")
-                + HelpExampleRpc("spork", "\"SPORK_2_INSTANTSEND_ENABLED\", 4070908800"));
+                + HelpExampleCli("spork", "checkpoint 1000 abdcdef...0123")
+                + HelpExampleRpc("spork", "\"checkpoint\", 4070908800, \"abdcdef...0123\""));
         }
     }
 

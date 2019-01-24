@@ -1136,7 +1136,7 @@ bool AppInitParameterInteraction()
             auto height = std::stoi(cp.substr(0, sep));
             auto hash = uint256S(cp.substr(sep+1));
             Params(Params().NetworkIDString()).AddCheckpoint(height, hash);
-            LogPrintf("Adding custom checkpoint at height %d with hash %s",
+            LogPrintf("Adding custom checkpoint at height %d with hash %s\n",
                       height, hash.ToString().c_str());
         }
     }

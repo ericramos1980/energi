@@ -36,6 +36,7 @@ Major changes:
 * NEW: parallel initial block download (at least x8 speedup)
 * NEW: reset of invalid status of the correct chain on checkpoint failure
 * NEW: checkpoint to the last superblock at 383040 & block 383300
+* NEW: dynamic checkpoints support via spork functionality
 
 Minor changes:
 
@@ -47,4 +48,6 @@ Minor changes:
 * FIXED: initial header sync blocking network stack for too long
 * FIXED: placeholder sync text when block time is ahead of local time
 * FIXED: default Spork 9 value
+* FIXED: checkpoints to correctly handle edge cases with multiple forks
+* FIXED: spork 12 limit to match Energi 24h block count
 * NEW: chaintps estimations in getblock- RPC
