@@ -340,7 +340,7 @@ BOOST_AUTO_TEST_CASE(PoS_header_throttle) {
         int dos = 0;
         BOOST_CHECK(fail_state.IsInvalid(dos));
         BOOST_CHECK_EQUAL(dos, 10);
-        BOOST_CHECK_EQUAL(fail_state.GetRejectReason(), "bad-unkown-stake");
+        BOOST_CHECK_EQUAL(fail_state.GetRejectReason(), "throttle-stake-input");
 
         BOOST_CHECK(!PassStakeInputThrottle(fail_state, out123_1));
     }
@@ -378,13 +378,14 @@ BOOST_AUTO_TEST_CASE(PoS_header_throttle) {
         BOOST_CHECK(ProcessNewBlockHeaders(headers, fail_state, params, NULL));
 
         blk.hashMerkleRoot = uint256S("1234");
+        BOOST_CHECK(coinbaseKey.SignCompact(blk.GetHash(), blk.posBlockSig));
         headers.push_back(blk);
         BOOST_CHECK(!ProcessNewBlockHeaders(headers, fail_state, params, NULL));
 
         int dos = 0;
         BOOST_CHECK(fail_state.IsInvalid(dos));
         BOOST_CHECK_EQUAL(dos, 10);
-        BOOST_CHECK_EQUAL(fail_state.GetRejectReason(), "bad-unkown-stake");
+        BOOST_CHECK_EQUAL(fail_state.GetRejectReason(), "throttle-stake-input");
     }
 }
 

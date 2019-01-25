@@ -523,10 +523,10 @@ public:
         consensus.vDeployments[Consensus::DEPLOYMENT_BIP147].nThreshold = 50; // 50% of 100
 
         // The best chain should have at least this much work.
-        consensus.nMinimumChainWork = uint256S("0x000000000000000000000000000000000000000000000000000189eaa09423e0");
+        consensus.nMinimumChainWork = uint256S("0x0000000000000000000000000000000000000000000000000000213698677431");
 
         // By default assume that the signatures in ancestors of this block are valid.
-        consensus.defaultAssumeValid = uint256S("0x407bae28ca1d7b4d8ad9fefcc74fc27eeade9b2da15784cb25bf1b4d4ad8971f");
+        consensus.defaultAssumeValid = uint256S("0xb4f8601acbca2073fde7691c58145886534ae4c6806ccdf3bfff77d3fa6acbaf");
 
         pchMessageStart[0] = 0xd9;
         pchMessageStart[1] = 0x2a;
@@ -603,14 +603,13 @@ public:
             (  25000, uint256S("0x59049b920a2cbf4f61fce77ef3341ff9a393e0b70b734cc5812902dd105f4de8"))
             (  31000, uint256S("0xf2b400d4d516ac50cfb806d365e26e55c4e216e21f678f3e60405942bf266409"))
             (  45000, uint256S("0xb4f8601acbca2073fde7691c58145886534ae4c6806ccdf3bfff77d3fa6acbaf"))
-            (  47950, uint256S("0x407bae28ca1d7b4d8ad9fefcc74fc27eeade9b2da15784cb25bf1b4d4ad8971f"))
         };
 
         chainTxData = ChainTxData{
-            1547039930,     // * UNIX timestamp of last checkpoint block
-            50851,          // * total number of transactions between genesis and last checkpoint
+            1544404999,     // * UNIX timestamp of last checkpoint block
+            47119,          // * total number of transactions between genesis and last checkpoint
                             //   (the tx=... number in the SetBestChain debug.log lines)
-            0.01            // * estimated number of transactions per second after that timestamp
+            0.004           // * estimated number of transactions per second after that timestamp
         };
 
     }

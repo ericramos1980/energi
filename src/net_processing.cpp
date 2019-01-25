@@ -492,7 +492,7 @@ void FindNextBlocksToDownload(CNode* pnode, unsigned int count, std::vector<cons
     ProcessBlockAvailability(nodeid);
 
     // A special case to to do parallel initial download
-    if ((state->pindexBestKnownBlock == NULL) &&
+    if (((state->pindexBestKnownBlock == nullptr) || state->fSyncStarted) &&
         IsInitialBlockDownload() &&
         (pindexBestHeader != nullptr)
     ) {
@@ -529,12 +529,20 @@ void FindNextBlocksToDownload(CNode* pnode, unsigned int count, std::vector<cons
             }
         }
 
-        count = std::min<int>(count, vToFetchCache.size());
         auto begin = vToFetchCache.begin();
-        auto end = vToFetchCache.begin() + count;
+        auto curr = begin;
 
-        std::copy(begin, end, std::back_inserter(vBlocks));
-        vToFetchCache.erase(begin, end);
+        while ((curr != vToFetchCache.end()) && (vBlocks.size() < count)) {
+            // Opportunistic assumption of block availability
+            if ((*curr)->nHeight > pnode->nStartingHeight) {
+                break;
+            }
+
+            vBlocks.push_back(*curr);
+            ++curr;
+        }
+
+        vToFetchCache.erase(begin, curr);
 
         return;
     }
@@ -1386,10 +1394,11 @@ static inline bool TryPostponedHeaders(CNode* pfrom, int64_t nTimeReceived, cons
         LogPrint("net", "Retrying postponed headers for peer %d \n", pfrom->GetId());
         CDataStream vHeadersMsg(SER_NETWORK, PROTOCOL_VERSION);
         vHeadersMsg << std::vector<CBlock>();
-        return ProcessMessage(pfrom, NetMsgType::HEADERS, vHeadersMsg, nTimeReceived, chainparams, connman, interruptMsgProc);
+        ProcessMessage(pfrom, NetMsgType::HEADERS, vHeadersMsg, nTimeReceived, chainparams, connman, interruptMsgProc);
     }
 
-    return true;
+    // Does not much matter that we return the state before processing, but saves Mutex ops.
+    return have_headers;
 }
 
 bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStream& vRecv, int64_t nTimeReceived, const CChainParams& chainparams, CConnman& connman, const std::atomic<bool>& interruptMsgProc)
@@ -2437,7 +2446,6 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
             if (fNewBlock)
                 pfrom->nLastBlockTime = GetTime();
 
-            {
             LOCK(cs_main); // hold cs_main for CBlockIndex::IsValid()
             if (pindex->IsValid(BLOCK_VALID_TRANSACTIONS)) {
                 // Clear download state for this block, which is in
@@ -2446,9 +2454,6 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
                 // can't be used to interfere with block relay.
                 MarkBlockAsReceived(pblock->GetHash());
             }
-            } // cs_main
-
-            return TryPostponedHeaders(pfrom, nTimeReceived, chainparams, connman, interruptMsgProc);
         }
 
     }
@@ -2517,8 +2522,6 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
             ProcessNewBlock(chainparams, pblock, true, &fNewBlock);
             if (fNewBlock)
                 pfrom->nLastBlockTime = GetTime();
-
-            TryPostponedHeaders(pfrom, nTimeReceived, chainparams, connman, interruptMsgProc);
         }
     }
 
@@ -2627,7 +2630,7 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
                     LOCK(cs_main);
                     Misbehaving(pfrom->GetId(), nDoS);
                 }
-                return error("invalid header received");
+                return error("invalid header received: %s", state.GetRejectReason().c_str());
             }
             if (state.IsTransientError()) {
                 LogPrint("net", "peer %d sent us header which we are unable to process yet \n", pfrom->id);
@@ -2723,8 +2726,6 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
                 }
             }
         }
-
-        return !nodestate->vPostponedHeaders.empty();
         }
     }
 
@@ -2754,8 +2755,6 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
         ProcessNewBlock(chainparams, pblock, forceProcessing, &fNewBlock);
         if (fNewBlock)
             pfrom->nLastBlockTime = GetTime();
-
-        return TryPostponedHeaders(pfrom, nTimeReceived, chainparams, connman, interruptMsgProc);
     }
 
 
@@ -3059,14 +3058,8 @@ bool ProcessMessages(CNode* pfrom, CConnman& connman, const std::atomic<bool>& i
     bool fMoreWork = false;
 
     // Continue processing after burst limit got reached
-    {
-        LOCK(cs_main);
-        auto state = State(pfrom->GetId());
-
-        if ((state->nBlocksInFlight == 0) && !state->vPostponedHeaders.empty()) {
-            TryPostponedHeaders(pfrom, GetAdjustedTime(), chainparams, connman, interruptMsgProc);
-            fMoreWork = true;
-        }
+    if (TryPostponedHeaders(pfrom, GetAdjustedTime(), chainparams, connman, interruptMsgProc)) {
+        fMoreWork = true;
     }
 
     if (!pfrom->vRecvGetData.empty())
@@ -3091,7 +3084,7 @@ bool ProcessMessages(CNode* pfrom, CConnman& connman, const std::atomic<bool>& i
             msgs.splice(msgs.begin(), pfrom->vProcessMsg, pfrom->vProcessMsg.begin());
             pfrom->nProcessQueueSize -= msgs.front().vRecv.size() + CMessageHeader::HEADER_SIZE;
             pfrom->fPauseRecv = pfrom->nProcessQueueSize > connman.GetReceiveFloodSize();
-            fMoreWork = !pfrom->vProcessMsg.empty();
+            fMoreWork = fMoreWork || !pfrom->vProcessMsg.empty();
         }
         CNetMessage& msg(msgs.front());
 
