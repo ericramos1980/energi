@@ -492,7 +492,7 @@ void FindNextBlocksToDownload(CNode* pnode, unsigned int count, std::vector<cons
     ProcessBlockAvailability(nodeid);
 
     // A special case to to do parallel initial download
-    if ((state->pindexBestKnownBlock == NULL) &&
+    if (((state->pindexBestKnownBlock == nullptr) || state->fSyncStarted) &&
         IsInitialBlockDownload() &&
         (pindexBestHeader != nullptr)
     ) {
