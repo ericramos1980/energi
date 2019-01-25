@@ -3194,8 +3194,15 @@ bool CWallet::SelectStakeCoins(StakeCandidates& setCoins, CAmount nTargetAmount)
             continue;
         }
 
+        auto outpoint = COutPoint(tx_hash, out.i);
+
         // Check another way if spent
-        if (!pcoinsTip->HaveCoin(COutPoint(tx_hash, out.i))) {
+        if (!pcoinsTip->HaveCoin(outpoint)) {
+            continue;
+        }
+
+        // Check if we recently created block with this stake
+        if (IsThottledStakeInput(outpoint)) {
             continue;
         }
 

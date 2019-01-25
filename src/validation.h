@@ -158,6 +158,9 @@ static const int MAX_UNCONNECTING_HEADERS = 10;
 
 static const bool DEFAULT_PEERBLOOMFILTERS = true;
 
+/** Do not accept more than one header/stake with the same stake input */
+static constexpr unsigned int STAKE_INPUT_THROTTLE_PERIOD = 60;
+
 struct BlockHasher
 {
     size_t operator()(const uint256& hash) const { return hash.GetCheapHash(); }
@@ -608,5 +611,8 @@ void CorrectPoSHeight();
 
 bool CheckProof(CValidationState& state, const CBlockIndex &pindex, const Consensus::Params& params);
 bool CheckProof(CValidationState& state, const CBlockHeader &block, const Consensus::Params& params);
+
+bool PassStakeInputThrottle(CValidationState& state, const COutPoint &out);
+bool IsThottledStakeInput(const COutPoint &out);
 
 #endif // BITCOIN_VALIDATION_H

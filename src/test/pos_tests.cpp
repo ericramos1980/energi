@@ -309,4 +309,83 @@ BOOST_AUTO_TEST_CASE(PoS_coinbase_maturity) {
     }
 }
 
+BOOST_AUTO_TEST_CASE(PoS_header_throttle) {
+    auto params = Params();
+    auto consensus = params.GetConsensus();
+
+    auto out123_0 = COutPoint(uint256S("123"), 0);
+    auto out123_1 = COutPoint(uint256S("123"), 1);
+    auto out234_0 = COutPoint(uint256S("234"), 0);
+
+    // Should not throttle
+    BOOST_CHECK(!IsThottledStakeInput(out123_0));
+    BOOST_CHECK(!IsThottledStakeInput(out123_1));
+    BOOST_CHECK(!IsThottledStakeInput(out234_0));
+    BOOST_CHECK(!IsThottledStakeInput(out123_0));
+    BOOST_CHECK(!IsThottledStakeInput(out123_1));
+    BOOST_CHECK(!IsThottledStakeInput(out234_0));
+
+    // Throttle #1
+    CValidationState state;
+    BOOST_CHECK(PassStakeInputThrottle(state, out123_0));
+    BOOST_CHECK(PassStakeInputThrottle(state, out123_1));
+    BOOST_CHECK(IsThottledStakeInput(out123_0));
+    BOOST_CHECK(IsThottledStakeInput(out123_1));
+    BOOST_CHECK(!IsThottledStakeInput(out234_0));
+
+    {
+        CValidationState fail_state;
+        BOOST_CHECK(!PassStakeInputThrottle(fail_state, out123_0));
+
+        int dos = 0;
+        BOOST_CHECK(fail_state.IsInvalid(dos));
+        BOOST_CHECK_EQUAL(dos, 10);
+        BOOST_CHECK_EQUAL(fail_state.GetRejectReason(), "bad-unkown-stake");
+
+        BOOST_CHECK(!PassStakeInputThrottle(fail_state, out123_1));
+    }
+
+    // Half-period still throttle
+    mock_time += STAKE_INPUT_THROTTLE_PERIOD / 2;
+    SetMockTime(mock_time);
+
+    {
+        CValidationState fail_state;
+        BOOST_CHECK(!PassStakeInputThrottle(fail_state, out123_0));
+        BOOST_CHECK(!PassStakeInputThrottle(fail_state, out123_1));
+        BOOST_CHECK(PassStakeInputThrottle(fail_state, out234_0));
+    }
+
+    mock_time += STAKE_INPUT_THROTTLE_PERIOD / 2;
+    SetMockTime(mock_time);
+    BOOST_CHECK(PassStakeInputThrottle(state, out123_0));
+    BOOST_CHECK(PassStakeInputThrottle(state, out123_1));
+    BOOST_CHECK(!PassStakeInputThrottle(state, out234_0));
+    {
+        CValidationState fail_state;
+        BOOST_CHECK(!PassStakeInputThrottle(fail_state, out123_0));
+        BOOST_CHECK(!PassStakeInputThrottle(fail_state, out123_1));
+        BOOST_CHECK(!PassStakeInputThrottle(fail_state, out234_0));
+    }
+
+    {
+        auto pblk = BlockAssembler(Params()).CreateNewBlock(CScript(), pwalletMain)->block;
+        auto &blk = *pblk;
+
+        CValidationState fail_state;
+        std::deque<CBlockHeader> headers;
+        headers.push_back(blk);
+        BOOST_CHECK(ProcessNewBlockHeaders(headers, fail_state, params, NULL));
+
+        blk.hashMerkleRoot = uint256S("1234");
+        headers.push_back(blk);
+        BOOST_CHECK(!ProcessNewBlockHeaders(headers, fail_state, params, NULL));
+
+        int dos = 0;
+        BOOST_CHECK(fail_state.IsInvalid(dos));
+        BOOST_CHECK_EQUAL(dos, 10);
+        BOOST_CHECK_EQUAL(fail_state.GetRejectReason(), "bad-unkown-stake");
+    }
+}
+
 BOOST_AUTO_TEST_SUITE_END()
