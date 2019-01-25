@@ -2028,6 +2028,10 @@ void CConnman::OpenNetworkConnectionAsync(
     const CAddress& addrConnect, bool fCountFailure, CSemaphoreGrant *grantOutbound,
     const char *strDest, bool fOneShot, bool fFeeler, bool fAddnode)
 {
+    if (!CanOpenNetworkConnection(addrConnect, strDest)) {
+        return;
+    }
+
     struct AsyncHelper {
         AsyncHelper(CConnman& connman) :
             connman(connman)
@@ -2097,6 +2101,34 @@ void CConnman::OpenNetworkConnectionAsync(
     ah.release();
 }
 
+bool CConnman::CanOpenNetworkConnection(const CAddress& addrConnect, const char *strDest)
+{
+    if (!strDest) {
+        // banned or exact match?
+        if (IsBanned(addrConnect) || FindNode(addrConnect.ToStringIPPort())) {
+            return false;
+        }
+
+        // local and not a connection to itself?
+        bool fAllowLocal = Params().AllowMultiplePorts() && addrConnect.GetPort() != GetListenPort();
+
+        if (!fAllowLocal && IsLocal(addrConnect)) {
+            return false;
+        }
+
+        // if multiple ports for same IP are allowed, search for IP:PORT match, otherwise search for IP-only match
+        if ((!Params().AllowMultiplePorts() && FindNode((CNetAddr)addrConnect)) ||
+            (Params().AllowMultiplePorts() && FindNode((CService)addrConnect))
+        ) {
+            return false;
+        }
+
+    } else if (FindNode(std::string(strDest))) {
+        return false;
+    }
+
+    return true;
+}
 
 // if successful, this moves the passed grant to the constructed node
 bool CConnman::OpenNetworkConnection(const CAddress& addrConnect, bool fCountFailure, CSemaphoreGrant *grantOutbound, const char *pszDest, bool fOneShot, bool fFeeler, bool fAddnode, bool fConnectToMasternode)
@@ -2110,20 +2142,9 @@ bool CConnman::OpenNetworkConnection(const CAddress& addrConnect, bool fCountFai
     if (!fNetworkActive) {
         return false;
     }
-    if (!pszDest) {
-        // banned or exact match?
-        if (IsBanned(addrConnect) || FindNode(addrConnect.ToStringIPPort()))
-            return false;
-        // local and not a connection to itself?
-        bool fAllowLocal = Params().AllowMultiplePorts() && addrConnect.GetPort() != GetListenPort();
-        if (!fAllowLocal && IsLocal(addrConnect))
-            return false;
-        // if multiple ports for same IP are allowed, search for IP:PORT match, otherwise search for IP-only match
-        if ((!Params().AllowMultiplePorts() && FindNode((CNetAddr)addrConnect)) ||
-            (Params().AllowMultiplePorts() && FindNode((CService)addrConnect)))
-            return false;
-    } else if (FindNode(std::string(pszDest)))
+    if (!CanOpenNetworkConnection(addrConnect, pszDest)) {
         return false;
+    }
 
     CNode* pnode = ConnectNode(addrConnect, pszDest, fCountFailure);
 
