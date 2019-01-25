@@ -529,12 +529,20 @@ void FindNextBlocksToDownload(CNode* pnode, unsigned int count, std::vector<cons
             }
         }
 
-        count = std::min<int>(count, vToFetchCache.size());
         auto begin = vToFetchCache.begin();
-        auto end = vToFetchCache.begin() + count;
+        auto curr = begin;
 
-        std::copy(begin, end, std::back_inserter(vBlocks));
-        vToFetchCache.erase(begin, end);
+        while ((curr != vToFetchCache.end()) && (vBlocks.size() < count)) {
+            // Opportunistic assumption of block availability
+            if ((*curr)->nHeight > pnode->nStartingHeight) {
+                break;
+            }
+
+            vBlocks.push_back(*curr);
+            ++curr;
+        }
+
+        vToFetchCache.erase(begin, curr);
 
         return;
     }
