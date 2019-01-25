@@ -3630,10 +3630,6 @@ static bool AcceptBlockHeader(const CBlockHeader& block, CValidationState& state
             return true;
         }
 
-        if (block.IsProofOfStake() && !PassStakeInputThrottle(state, block.StakeInput())) {
-            return false;
-        }
-
         if (!CheckBlockHeader(block, state, chainparams.GetConsensus(), true))
             return error("%s: Consensus::CheckBlockHeader: %s, %s", __func__, hash.ToString(), FormatStateMessage(state));
 
@@ -3655,6 +3651,10 @@ static bool AcceptBlockHeader(const CBlockHeader& block, CValidationState& state
                 error("%s: Consensus::ContextualCheckBlockHeader: %s, %s", __func__, hash.ToString(), FormatStateMessage(state));
             }
 
+            return false;
+        }
+
+        if (block.IsProofOfStake() && !PassStakeInputThrottle(state, block.StakeInput())) {
             return false;
         }
     }
@@ -4895,7 +4895,7 @@ void CorrectPoSHeight() {
         nFirstPoSBlock = std::min<int32_t>(pindex->nHeight, nFirstPoSBlock);
     }
 
-    LogPrint("stake", "Detected nFirstPoSBlock = %d", nFirstPoSBlock);
+    LogPrint("stake", "Detected nFirstPoSBlock = %d\n", nFirstPoSBlock);
 }
 
 /** Check PoW or PoS based in block index **/
@@ -4956,7 +4956,7 @@ bool PassStakeInputThrottle(CValidationState& state, const COutPoint &out) {
     //---
     if (IsThottledStakeInput(out)) {
         // NOTE: do not ban possible victims immediately
-        return state.DoS(10, false, REJECT_INVALID, "bad-unkown-stake");
+        return state.DoS(10, false, REJECT_INVALID, "throttle-stake-input");
     }
 
     mapStakeInputSeen[out] = now;

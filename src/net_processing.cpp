@@ -2627,7 +2627,7 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
                     LOCK(cs_main);
                     Misbehaving(pfrom->GetId(), nDoS);
                 }
-                return error("invalid header received");
+                return error("invalid header received: %s", state.GetRejectReason().c_str());
             }
             if (state.IsTransientError()) {
                 LogPrint("net", "peer %d sent us header which we are unable to process yet \n", pfrom->id);
