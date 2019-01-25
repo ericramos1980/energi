@@ -380,13 +380,11 @@ bool CheckStakeKernelHash(unsigned int nBits, const CBlockIndex &blockFrom, cons
 }
 
 // Check kernel hash target and coinstake signature
-bool CheckProofOfStake(CValidationState &state, const CBlockHeader &header)
+bool CheckProofOfStake(CValidationState &state, const CBlockHeader &header, const Consensus::Params& consensus)
 {
     if (header.posBlockSig.empty()) {
         return state.DoS(100, false, REJECT_MALFORMED, "bad-pos-sig", false, "missing PoS signature");
     }
-
-    auto &consensus = Params().GetConsensus();
 
     COutPoint prevout = header.StakeInput();
 
@@ -398,7 +396,7 @@ bool CheckProofOfStake(CValidationState &state, const CBlockHeader &header)
     if (!GetTransaction(prevout.hash, txinPrevRef, consensus, txinHashBlock, true)) {
         BlockMap::iterator it = mapBlockIndex.find(header.hashPrevBlock);
         
-        if (it == mapBlockIndex.end()) {
+        if ((it != mapBlockIndex.end()) && chainActive.Contains(it->second)) {
             return state.DoS(100, false, REJECT_INVALID, "bad-unkown-stake");
         } else {
             // We do not have the previous block, so the block may be valid
@@ -406,18 +404,16 @@ bool CheckProofOfStake(CValidationState &state, const CBlockHeader &header)
         }
     }
 
-    // NOTE: coin maturity checks are part of block validation as with PoW. So, headers may get accepted.
-
     // Check tx input block is known
     {
         BlockMap::iterator it = mapBlockIndex.find(txinHashBlock);
 
-        if (it != mapBlockIndex.end()) {
+        if ((it != mapBlockIndex.end()) && chainActive.Contains(it->second)) {
             pindex_tx = it->second;
         } else {
             it = mapBlockIndex.find(header.hashPrevBlock);
             
-            if (it == mapBlockIndex.end()) {
+            if ((it != mapBlockIndex.end()) && chainActive.Contains(it->second)) {
                 return state.DoS(100, false, REJECT_INVALID, "bad-stake-mempool",
                                  false, "stake from mempool");
             } else {
@@ -425,6 +421,34 @@ bool CheckProofOfStake(CValidationState &state, const CBlockHeader &header)
                 return state.TransientError("tmp-bad-stake-mempool");
             }
         }
+    }
+
+    // Check if UTXO is beyond possible fork point
+    {
+        BlockMap::iterator it = mapBlockIndex.find(header.hashPrevBlock);
+
+        // It must never happen as it's part of header validation.
+        if (it == mapBlockIndex.end()) {
+            return state.DoS(100, false, REJECT_INVALID, "bad-prev-header",
+                                false, "previous PoS header is not known");
+        }
+
+        auto pindex_fork = chainActive.FindFork(it->second);
+
+        if (!pindex_fork || (pindex_fork->nHeight < pindex_tx->nHeight)) {
+            return state.DoS(100, false, REJECT_INVALID, "bad-stake-after-fork",
+                                false, "rogue fork tries to use UTXO from the current chain");
+        }
+    }
+
+    // NOTE: stake age check is part of CheckStakeKernelHash()
+
+    // Check stake maturity (double checking with other functionality for DoS mitigation)
+    if (txinPrevRef->IsCoinBase() &&
+        ((header.nHeight - pindex_tx->nHeight) <= COINBASE_MATURITY)
+    ) {
+        return state.DoS(100, false, REJECT_INVALID, "bad-stake-coinbase-maturity",
+                            false, "coinbase maturity mismatch for stake");
     }
 
     // Extract stake public key ID and verify block signature

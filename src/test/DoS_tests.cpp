@@ -216,4 +216,5 @@ BOOST_AUTO_TEST_CASE(DoS_mapOrphans)
     BOOST_CHECK(mapOrphanTransactions.empty());
 }
 
+
 BOOST_AUTO_TEST_SUITE_END()

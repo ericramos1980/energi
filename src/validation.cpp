@@ -108,6 +108,7 @@ CAmount maxTxFee = DEFAULT_TRANSACTION_MAXFEE;
 
 CTxMemPool mempool(::minRelayTxFee);
 std::map<uint256, int64_t> mapRejectedBlocks GUARDED_BY(cs_main);
+static std::map<COutPoint, int64_t> mapStakeInputSeen GUARDED_BY(cs_main);
 
 static void CheckBlockIndex(const Consensus::Params& consensusParams);
 
@@ -3629,6 +3630,10 @@ static bool AcceptBlockHeader(const CBlockHeader& block, CValidationState& state
             return true;
         }
 
+        if (block.IsProofOfStake() && !PassStakeInputThrottle(state, block.StakeInput())) {
+            return false;
+        }
+
         if (!CheckBlockHeader(block, state, chainparams.GetConsensus(), true))
             return error("%s: Consensus::CheckBlockHeader: %s, %s", __func__, hash.ToString(), FormatStateMessage(state));
 
@@ -4903,7 +4908,7 @@ bool CheckProof(CValidationState &state, const CBlockIndex &index, const Consens
         return true;
     }
 
-    return CheckProofOfStake(state, index.GetBlockHeader());
+    return CheckProofOfStake(state, index.GetBlockHeader(), params);
 }
 
 /** Check PoW or PoS based on actual block **/
@@ -4916,7 +4921,56 @@ bool CheckProof(CValidationState &state, const CBlockHeader &block, const Consen
         return true;
     }
     
-    return CheckProofOfStake(state, block);
+    return CheckProofOfStake(state, block, params);
+}
+
+/**
+ * Temporary delay accepting new headers/blocks with the same stake input.
+ * 
+ * NOTE: it's dangerous for ourselves to strictly forbid duplicates and to ban peers.
+ *       So, we have to throttle a possible DoS damage.
+ */
+bool PassStakeInputThrottle(CValidationState& state, const COutPoint &out) {
+    if (fReindex || fImporting) {
+        return true;
+    }
+
+    LOCK(cs_main);
+
+    static int64_t last_cleanup = 0;
+    auto now = GetAdjustedTime();
+
+    //---
+    if ((last_cleanup + STAKE_INPUT_THROTTLE_PERIOD) > now) {
+        for (auto iter = mapStakeInputSeen.begin(); iter != mapStakeInputSeen.end();) {
+            auto curr = iter++;
+
+            if ((iter->second + STAKE_INPUT_THROTTLE_PERIOD) < now) {
+                mapStakeInputSeen.erase(curr);
+            }
+        }
+
+        last_cleanup = now;
+    }
+
+    //---
+    if (IsThottledStakeInput(out)) {
+        // NOTE: do not ban possible victims immediately
+        return state.DoS(10, false, REJECT_INVALID, "bad-unkown-stake");
+    }
+
+    mapStakeInputSeen[out] = now;
+    return true;
+}
+
+/** Check if stake input was not recently used **/
+bool IsThottledStakeInput(const COutPoint &out) {
+    LOCK(cs_main);
+
+    auto iter = mapStakeInputSeen.find(out);
+
+    return (iter != mapStakeInputSeen.end()) &&
+           ((iter->second + STAKE_INPUT_THROTTLE_PERIOD) > GetAdjustedTime());
 }
 
 //! Guess how far we are in the verification process at the given block index
