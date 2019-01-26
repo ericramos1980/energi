@@ -4445,11 +4445,29 @@ bool LoadExternalBlockFile(const CChainParams& chainparams, FILE* fileIn, CDiskB
                 // process in case the block isn't known yet
                 if (mapBlockIndex.count(hash) == 0 || (mapBlockIndex[hash]->nStatus & BLOCK_HAVE_DATA) == 0) {
                     LOCK(cs_main);
+
+                    if (pblock->IsProofOfStake() && !IsPoSEnforcedHeight(pblock->nHeight)) {
+                        nFirstPoSBlock = pblock->nHeight;
+                        LogPrintf("%s: Detected nFirstPoSBlock = %d\n", __func__, nFirstPoSBlock);
+                    }
+
                     CValidationState state;
                     if (AcceptBlock(pblock, state, chainparams, NULL, true, dbp, NULL))
                         nLoaded++;
                     if (state.IsError())
                         break;
+
+                    if (state.IsTransientError()) {
+                        CValidationState state2;
+
+                        if (ActivateBestChain(state2, chainparams) &&
+                            AcceptBlock(pblock, state2, chainparams, NULL, true, dbp, NULL)
+                        ) {
+                            nLoaded++;
+                        } else {
+                            break;
+                        }
+                    }
                 } else if (hash != chainparams.GetConsensus().hashGenesisBlock && mapBlockIndex[hash]->nHeight % 1000 == 0) {
                     LogPrint("reindex", "Block Import: already had block %s at height %d\n", hash.ToString(), mapBlockIndex[hash]->nHeight);
                 }
@@ -4479,11 +4497,21 @@ bool LoadExternalBlockFile(const CChainParams& chainparams, FILE* fileIn, CDiskB
                             LogPrint("reindex", "%s: Processing out of order child %s of %s\n", __func__, pblockrecursive->GetHash().ToString(),
                                     head.ToString());
                             LOCK(cs_main);
-                            CValidationState dummy;
-                            if (AcceptBlock(pblockrecursive, dummy, chainparams, NULL, true, &it->second, NULL))
+                            CValidationState state;
+                            if (AcceptBlock(pblockrecursive, state, chainparams, NULL, true, &it->second, NULL))
                             {
                                 nLoaded++;
                                 queue.push_back(pblockrecursive->GetHash());
+                            }
+                            if (state.IsTransientError()) {
+                                CValidationState state2;
+
+                                if (ActivateBestChain(state2, chainparams) &&
+                                    AcceptBlock(pblock, state2, chainparams, NULL, true, dbp, NULL)
+                                ) {
+                                    nLoaded++;
+                                    queue.push_back(pblockrecursive->GetHash());
+                                }
                             }
                         }
                         range.first++;
