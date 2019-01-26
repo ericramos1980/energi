@@ -423,7 +423,7 @@ bool CheckProofOfStake(CValidationState &state, const CBlockHeader &header, cons
         }
     }
 
-    // Check if UTXO is beyond possible fork point
+    // Header-only chain specific validation
     {
         BlockMap::iterator it = mapBlockIndex.find(header.hashPrevBlock);
 
@@ -433,11 +433,32 @@ bool CheckProofOfStake(CValidationState &state, const CBlockHeader &header, cons
                                 false, "previous PoS header is not known");
         }
 
-        auto pindex_fork = chainActive.FindFork(it->second);
+        auto pindex_prev = it->second;
+        const auto pindex_fork = chainActive.FindFork(pindex_prev);
 
-        if (!pindex_fork || (pindex_fork->nHeight < pindex_tx->nHeight)) {
+        // Just in case, it must never happen.
+        if (!pindex_fork) {
+            return state.DoS(100, false, REJECT_INVALID, "bad-fork-point",
+                                false, "the fork point is not found");
+        }
+
+        // Check if UTXO is beyond possible fork point
+        if (pindex_fork->nHeight < pindex_tx->nHeight) {
             return state.DoS(100, false, REJECT_INVALID, "bad-stake-after-fork",
                                 false, "rogue fork tries to use UTXO from the current chain");
+        }
+
+        // Check if UTXO is used in headers before the last known fully validated block
+        for (auto pindex_walk = pindex_prev;
+             (pindex_walk != pindex_fork) &&
+                pindex_walk->IsProofOfStake() &&
+                !pindex_walk->IsValid(BLOCK_VALID_SCRIPTS);
+             pindex_walk = pindex_fork->pprev
+        ) {
+            if (prevout == pindex_walk->StakeInput()) {
+                return state.DoS(100, false, REJECT_INVALID, "bad-header-double-spent",
+                                 false, "rogue fork tries use the same UTXO twice");
+            }
         }
     }
 

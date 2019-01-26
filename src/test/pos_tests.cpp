@@ -413,12 +413,17 @@ BOOST_AUTO_TEST_CASE(PoS_old_fork) {
     // Advance in time
     mock_time += OLD_POS_BLOCK_AGE_FOR_FORK;
     SetMockTime(mock_time);
-    CreateAndProcessBlock(CMutableTransactionList(), CScript());
+
+    for (auto i = 0; i < CBlockIndex::nMedianTimeSpan; ++i) {
+        CreateAndProcessBlock(CMutableTransactionList(), CScript());
+    }
 
     // old fork
     {
         blk.hashMerkleRoot = uint256();
         BOOST_CHECK(coinbaseKey.SignCompact(blk.GetHash(), blk.posBlockSig));
+
+        mock_time = chainActive.Tip()->GetMedianTimePast() + MIN_POS_TIP_AGE_FOR_OLD_FORK - 1;
 
         // Fail first
         {
@@ -433,7 +438,7 @@ BOOST_AUTO_TEST_CASE(PoS_old_fork) {
             BOOST_CHECK_EQUAL(state.GetRejectReason(), "too-old-pos-fork");
         }
 
-        mock_time = chainActive.Tip()->GetBlockTime() + MIN_POS_TIP_AGE_FOR_OLD_FORK;
+        mock_time += 1;
         SetMockTime(mock_time);
 
         // OK
@@ -443,7 +448,85 @@ BOOST_AUTO_TEST_CASE(PoS_old_fork) {
             headers.push_back(blk);
             BOOST_CHECK(ProcessNewBlockHeaders(headers, state, params, NULL));
             BOOST_CHECK_EQUAL(state.GetRejectReason(), "");
+
+            // Just repeat
+            BOOST_CHECK(ProcessNewBlockHeaders(headers, state, params, NULL));
+            BOOST_CHECK_EQUAL(state.GetRejectReason(), "");
         }
+    }
+}
+
+BOOST_AUTO_TEST_CASE(PoS_header_double_spent) {
+    auto params = Params();
+    auto consensus = params.GetConsensus();
+
+    UpdateMockTime();
+
+    auto blk = CreateAndProcessBlock(CMutableTransactionList(), CScript());
+    auto tip = chainActive.Tip();
+
+    UpdateMockTime();
+    CreateAndProcessBlock(CMutableTransactionList(), CScript());
+    UpdateMockTime();
+    CreateAndProcessBlock(CMutableTransactionList(), CScript());
+
+    // Fork case
+    {
+        mock_time += STAKE_INPUT_THROTTLE_PERIOD;
+        SetMockTime(mock_time);
+
+        // First block
+        blk.hashPrevBlock = tip->GetBlockHash();
+        blk.nHeight = tip->nHeight + 1;
+        BOOST_CHECK(coinbaseKey.SignCompact(blk.GetHash(), blk.posBlockSig));
+
+        CValidationState state;
+        std::deque<CBlockHeader> headers;
+        headers.push_back(blk);
+        BOOST_CHECK(ProcessNewBlockHeaders(headers, state, params, NULL));
+        BOOST_CHECK_EQUAL(state.GetRejectReason(), "");
+
+        mock_time += STAKE_INPUT_THROTTLE_PERIOD;
+        SetMockTime(mock_time);
+
+        // Second block
+        blk.hashPrevBlock = blk.GetHash();
+        blk.nHeight++;
+        BOOST_CHECK(coinbaseKey.SignCompact(blk.GetHash(), blk.posBlockSig));
+
+        headers.push_back(blk);
+        BOOST_CHECK(!ProcessNewBlockHeaders(headers, state, params, NULL));
+        BOOST_CHECK_EQUAL(state.GetRejectReason(), "bad-header-double-spent");
+    }
+
+    // Active chain case
+    {
+        tip = chainActive.Tip();
+        mock_time += STAKE_INPUT_THROTTLE_PERIOD;
+        SetMockTime(mock_time);
+
+        // First block
+        blk.hashPrevBlock = tip->GetBlockHash();
+        blk.nHeight = tip->nHeight + 1;
+        BOOST_CHECK(coinbaseKey.SignCompact(blk.GetHash(), blk.posBlockSig));
+
+        CValidationState state;
+        std::deque<CBlockHeader> headers;
+        headers.push_back(blk);
+        BOOST_CHECK(ProcessNewBlockHeaders(headers, state, params, NULL));
+        BOOST_CHECK_EQUAL(state.GetRejectReason(), "");
+
+        mock_time += STAKE_INPUT_THROTTLE_PERIOD;
+        SetMockTime(mock_time);
+
+        // Second block
+        blk.hashPrevBlock = blk.GetHash();
+        blk.nHeight++;
+        BOOST_CHECK(coinbaseKey.SignCompact(blk.GetHash(), blk.posBlockSig));
+
+        headers.push_back(blk);
+        BOOST_CHECK(!ProcessNewBlockHeaders(headers, state, params, NULL));
+        BOOST_CHECK_EQUAL(state.GetRejectReason(), "bad-header-double-spent");
     }
 }
 
