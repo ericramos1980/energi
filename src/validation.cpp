@@ -3662,8 +3662,9 @@ static bool AcceptBlockHeader(const CBlockHeader& block, CValidationState& state
             auto now = GetAdjustedTime();
 
             // Prevent flooding the network with rogue historical forks
+            // NOTE: this check is good for PoW as well...
             if (((pindexPrev->GetBlockTime() + OLD_POS_BLOCK_AGE_FOR_FORK) < now) &&
-                ((chainActive.Tip()->GetBlockTime() + MIN_POS_TIP_AGE_FOR_OLD_FORK) > now)
+                ((chainActive.Tip()->GetMedianTimePast() + MIN_POS_TIP_AGE_FOR_OLD_FORK) > now)
             ) {
                 return state.DoS(100, false, REJECT_INVALID, "too-old-pos-fork",
                                 false, "PoS fork too far in the past");

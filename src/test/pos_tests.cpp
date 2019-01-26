@@ -413,12 +413,17 @@ BOOST_AUTO_TEST_CASE(PoS_old_fork) {
     // Advance in time
     mock_time += OLD_POS_BLOCK_AGE_FOR_FORK;
     SetMockTime(mock_time);
-    CreateAndProcessBlock(CMutableTransactionList(), CScript());
+
+    for (auto i = 0; i < CBlockIndex::nMedianTimeSpan; ++i) {
+        CreateAndProcessBlock(CMutableTransactionList(), CScript());
+    }
 
     // old fork
     {
         blk.hashMerkleRoot = uint256();
         BOOST_CHECK(coinbaseKey.SignCompact(blk.GetHash(), blk.posBlockSig));
+
+        mock_time = chainActive.Tip()->GetMedianTimePast() + MIN_POS_TIP_AGE_FOR_OLD_FORK - 1;
 
         // Fail first
         {
@@ -433,7 +438,7 @@ BOOST_AUTO_TEST_CASE(PoS_old_fork) {
             BOOST_CHECK_EQUAL(state.GetRejectReason(), "too-old-pos-fork");
         }
 
-        mock_time = chainActive.Tip()->GetBlockTime() + MIN_POS_TIP_AGE_FOR_OLD_FORK;
+        mock_time += 1;
         SetMockTime(mock_time);
 
         // OK
@@ -441,6 +446,10 @@ BOOST_AUTO_TEST_CASE(PoS_old_fork) {
             CValidationState state;
             std::deque<CBlockHeader> headers;
             headers.push_back(blk);
+            BOOST_CHECK(ProcessNewBlockHeaders(headers, state, params, NULL));
+            BOOST_CHECK_EQUAL(state.GetRejectReason(), "");
+
+            // Just repeat
             BOOST_CHECK(ProcessNewBlockHeaders(headers, state, params, NULL));
             BOOST_CHECK_EQUAL(state.GetRejectReason(), "");
         }
