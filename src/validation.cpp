@@ -3654,8 +3654,20 @@ static bool AcceptBlockHeader(const CBlockHeader& block, CValidationState& state
             return false;
         }
 
-        if (block.IsProofOfStake() && !PassStakeInputThrottle(state, block.StakeInput())) {
-            return false;
+        if (block.IsProofOfStake()) {
+            if (!PassStakeInputThrottle(state, block.StakeInput())) {
+                return false;
+            }
+
+            auto now = GetAdjustedTime();
+
+            // Prevent flooding the network with rogue historical forks
+            if (((pindexPrev->GetBlockTime() + OLD_POS_BLOCK_AGE_FOR_FORK) < now) &&
+                ((chainActive.Tip()->GetBlockTime() + MIN_POS_TIP_AGE_FOR_OLD_FORK) > now)
+            ) {
+                return state.DoS(100, false, REJECT_INVALID, "too-old-pos-fork",
+                                false, "PoS fork too far in the past");
+            }
         }
     }
     if (pindex == NULL)

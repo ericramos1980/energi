@@ -389,4 +389,62 @@ BOOST_AUTO_TEST_CASE(PoS_header_throttle) {
     }
 }
 
+BOOST_AUTO_TEST_CASE(PoS_old_fork) {
+    auto params = Params();
+    auto consensus = params.GetConsensus();
+
+    UpdateMockTime();
+
+    auto blk = CreateAndProcessBlock(CMutableTransactionList(), CScript());
+
+    // Recent fork
+    {
+        blk.hashPrevBlock = chainActive.Tip()->pprev->GetBlockHash();
+        blk.nHeight = chainActive.Height();
+        BOOST_CHECK(coinbaseKey.SignCompact(blk.GetHash(), blk.posBlockSig));
+
+        CValidationState state;
+        std::deque<CBlockHeader> headers;
+        headers.push_back(blk);
+        BOOST_CHECK(ProcessNewBlockHeaders(headers, state, params, NULL));
+        BOOST_CHECK_EQUAL(state.GetRejectReason(), "");
+    }
+
+    // Advance in time
+    mock_time += OLD_POS_BLOCK_AGE_FOR_FORK;
+    SetMockTime(mock_time);
+    CreateAndProcessBlock(CMutableTransactionList(), CScript());
+
+    // old fork
+    {
+        blk.hashMerkleRoot = uint256();
+        BOOST_CHECK(coinbaseKey.SignCompact(blk.GetHash(), blk.posBlockSig));
+
+        // Fail first
+        {
+            CValidationState state;
+            std::deque<CBlockHeader> headers;
+            headers.push_back(blk);
+            BOOST_CHECK(!ProcessNewBlockHeaders(headers, state, params, NULL));
+
+            int dos = 0;
+            BOOST_CHECK(state.IsInvalid(dos));
+            BOOST_CHECK_EQUAL(dos, 100);
+            BOOST_CHECK_EQUAL(state.GetRejectReason(), "too-old-pos-fork");
+        }
+
+        mock_time = chainActive.Tip()->GetBlockTime() + MIN_POS_TIP_AGE_FOR_OLD_FORK;
+        SetMockTime(mock_time);
+
+        // OK
+        {
+            CValidationState state;
+            std::deque<CBlockHeader> headers;
+            headers.push_back(blk);
+            BOOST_CHECK(ProcessNewBlockHeaders(headers, state, params, NULL));
+            BOOST_CHECK_EQUAL(state.GetRejectReason(), "");
+        }
+    }
+}
+
 BOOST_AUTO_TEST_SUITE_END()

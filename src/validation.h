@@ -130,6 +130,10 @@ static const bool DEFAULT_RELAYPRIORITY = true;
 static const int64_t DEFAULT_MAX_TIP_AGE = 6 * 60 * 60; // ~144 blocks behind -> 2 x fork detection time, was 24 * 60 * 60 in bitcoin
 /** Maximum age of our tip in seconds for us to be considered current for fee estimation */
 static const int64_t MAX_FEE_ESTIMATION_TIP_AGE = 3 * 60 * 60;
+/** Minimum tip age to allow historical fork */
+static constexpr int64_t MIN_POS_TIP_AGE_FOR_OLD_FORK = 15 * 60;
+/** Historical fork age */
+static constexpr int64_t OLD_POS_BLOCK_AGE_FOR_FORK = 60 * 60;
 
 /** Default for -permitbaremultisig */
 static const bool DEFAULT_PERMIT_BAREMULTISIG = true;

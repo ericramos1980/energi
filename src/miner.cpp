@@ -685,19 +685,24 @@ void PoSMiner(CWallet* pwallet, CThreadInterrupt &interrupt)
             }
         }
 
-        while (pwallet->IsLocked(true) || !fMintableCoins || nReserveBalance >= pwallet->GetBalance() || !masternodeSync.IsSynced()) {
+        while (pwallet->IsLocked(true) ||
+               !fMintableCoins ||
+               (nReserveBalance >= pwallet->GetBalance()) ||
+               !masternodeSync.IsSynced() ||
+               (g_connman->GetNodeCount(CConnman::CONNECTIONS_ALL) == 0)) {
             if (interrupt) {
                 return;
             }
 
             nLastCoinStakeSearchTime = 0;
             interrupt.sleep_for(std::chrono::seconds(10));
-            LogPrint("stake", "%s : not ready to mine locked=%d coins=%d reserve=%d mnsync=%d\n",
+            LogPrint("stake", "%s : not ready to mine locked=%d coins=%d reserve=%d mnsync=%d peers=%d\n",
                      __func__,
                      int(pwallet->IsLocked(true)),
                      int(!fMintableCoins),
                      int(nReserveBalance >= pwallet->GetBalance()),
-                     int(!masternodeSync.IsSynced()));
+                     int(!masternodeSync.IsSynced()),
+                     int(g_connman->GetNodeCount(CConnman::CONNECTIONS_ALL)));
         }
 
         if (last_height == chainActive.Tip()->nHeight)
