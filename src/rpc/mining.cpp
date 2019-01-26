@@ -1029,6 +1029,51 @@ UniValue reservebalance(const JSONRPCRequest& request)
     return result;
 }
 
+UniValue getstakingstatus(const JSONRPCRequest& request)
+{
+    auto &params = request.params;
+
+    if (request.fHelp || params.size() != 0) {
+        throw std::runtime_error(
+            "getstakingstatus\n"
+            "\nReturns an object containing various staking information.\n"
+
+            "\nResult:\n"
+            "{\n"
+            "  \"validtime\": true|false,          (boolean) if the chain tip is within staking phases\n"
+            "  \"haveconnections\": true|false,    (boolean) if network connections are present\n"
+            "  \"walletunlocked\": true|false,     (boolean) if the wallet is unlocked\n"
+            "  \"mintablecoins\": true|false,      (boolean) if the wallet has mintable coins\n"
+            "  \"enoughcoins\": true|false,        (boolean) if available coins are greater than reserve balance\n"
+            "  \"mnsync\": true|false,             (boolean) if masternode data is synced\n"
+            "  \"staking\": true|false,            (boolean) if the wallet is staking or not\n"
+            "}\n"
+
+            "\nExamples:\n" +
+            HelpExampleCli("getstakingstatus", "") + HelpExampleRpc("getstakingstatus", ""));
+    }
+
+#ifdef ENABLE_WALLET
+    LOCK2(cs_main, pwalletMain ? &pwalletMain->cs_wallet : NULL);
+#else
+    LOCK(cs_main);
+#endif
+
+    UniValue obj(UniValue::VOBJ);
+    obj.push_back(Pair("validtime", IsPoSEnforcedHeight(chainActive.Height() + 1)));
+    obj.push_back(Pair("haveconnections", g_connman->GetNodeCount(CConnman::CONNECTIONS_ALL) > 0));
+    if (pwalletMain) {
+        obj.push_back(Pair("walletunlocked", !pwalletMain->IsLocked()));
+        obj.push_back(Pair("mintablecoins", pwalletMain->MintableCoins()));
+        obj.push_back(Pair("enoughcoins", nReserveBalance <= pwalletMain->GetBalance()));
+    }
+    obj.push_back(Pair("mnsync", masternodeSync.IsSynced()));
+    obj.push_back(Pair("staking", IsStakingActive()));
+
+    return obj;
+}
+
+
 static const CRPCCommand commands[] =
 { //  category              name                      actor (function)         okSafeMode
   //  --------------------- ------------------------  -----------------------  ----------
@@ -1038,6 +1083,7 @@ static const CRPCCommand commands[] =
     { "mining",             "getblocktemplate",       &getblocktemplate,       true,  {"template_request"} },
     { "mining",             "submitblock",            &submitblock,            true,  {"hexdata","parameters"} },
     { "mining",             "reservebalance",         &reservebalance,         true,  {"reserve", "amount"} },
+    { "mining",             "getstakingstatus",       &getstakingstatus,       true,  {} },
 
     { "generating",         "generate",               &generate,               true,  {"nblocks","maxtries"} },
     { "generating",         "generatetoaddress",      &generatetoaddress,      true,  {"nblocks","address","maxtries"} },
