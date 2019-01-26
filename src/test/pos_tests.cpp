@@ -456,4 +456,78 @@ BOOST_AUTO_TEST_CASE(PoS_old_fork) {
     }
 }
 
+BOOST_AUTO_TEST_CASE(PoS_header_double_spent) {
+    auto params = Params();
+    auto consensus = params.GetConsensus();
+
+    UpdateMockTime();
+
+    auto blk = CreateAndProcessBlock(CMutableTransactionList(), CScript());
+    auto tip = chainActive.Tip();
+
+    UpdateMockTime();
+    CreateAndProcessBlock(CMutableTransactionList(), CScript());
+    UpdateMockTime();
+    CreateAndProcessBlock(CMutableTransactionList(), CScript());
+
+    // Fork case
+    {
+        mock_time += STAKE_INPUT_THROTTLE_PERIOD;
+        SetMockTime(mock_time);
+
+        // First block
+        blk.hashPrevBlock = tip->GetBlockHash();
+        blk.nHeight = tip->nHeight + 1;
+        BOOST_CHECK(coinbaseKey.SignCompact(blk.GetHash(), blk.posBlockSig));
+
+        CValidationState state;
+        std::deque<CBlockHeader> headers;
+        headers.push_back(blk);
+        BOOST_CHECK(ProcessNewBlockHeaders(headers, state, params, NULL));
+        BOOST_CHECK_EQUAL(state.GetRejectReason(), "");
+
+        mock_time += STAKE_INPUT_THROTTLE_PERIOD;
+        SetMockTime(mock_time);
+
+        // Second block
+        blk.hashPrevBlock = blk.GetHash();
+        blk.nHeight++;
+        BOOST_CHECK(coinbaseKey.SignCompact(blk.GetHash(), blk.posBlockSig));
+
+        headers.push_back(blk);
+        BOOST_CHECK(!ProcessNewBlockHeaders(headers, state, params, NULL));
+        BOOST_CHECK_EQUAL(state.GetRejectReason(), "bad-header-double-spent");
+    }
+
+    // Active chain case
+    {
+        tip = chainActive.Tip();
+        mock_time += STAKE_INPUT_THROTTLE_PERIOD;
+        SetMockTime(mock_time);
+
+        // First block
+        blk.hashPrevBlock = tip->GetBlockHash();
+        blk.nHeight = tip->nHeight + 1;
+        BOOST_CHECK(coinbaseKey.SignCompact(blk.GetHash(), blk.posBlockSig));
+
+        CValidationState state;
+        std::deque<CBlockHeader> headers;
+        headers.push_back(blk);
+        BOOST_CHECK(ProcessNewBlockHeaders(headers, state, params, NULL));
+        BOOST_CHECK_EQUAL(state.GetRejectReason(), "");
+
+        mock_time += STAKE_INPUT_THROTTLE_PERIOD;
+        SetMockTime(mock_time);
+
+        // Second block
+        blk.hashPrevBlock = blk.GetHash();
+        blk.nHeight++;
+        BOOST_CHECK(coinbaseKey.SignCompact(blk.GetHash(), blk.posBlockSig));
+
+        headers.push_back(blk);
+        BOOST_CHECK(!ProcessNewBlockHeaders(headers, state, params, NULL));
+        BOOST_CHECK_EQUAL(state.GetRejectReason(), "bad-header-double-spent");
+    }
+}
+
 BOOST_AUTO_TEST_SUITE_END()
