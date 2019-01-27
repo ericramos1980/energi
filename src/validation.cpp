@@ -1244,7 +1244,7 @@ bool WriteBlockToDisk(const CBlock& block, CDiskBlockPos& pos, const CMessageHea
     return true;
 }
 
-bool ReadBlockFromDisk(CBlock& block, const CDiskBlockPos& pos, const Consensus::Params& consensusParams)
+bool ReadBlockFromDisk(CBlock& block, const CDiskBlockPos& pos, const Consensus::Params& consensusParams, bool check)
 {
     block.SetNull();
 
@@ -1263,7 +1263,7 @@ bool ReadBlockFromDisk(CBlock& block, const CDiskBlockPos& pos, const Consensus:
 
     CValidationState state;
 
-    if (!CheckProof(state, block, consensusParams)) {
+    if (check && !CheckProof(state, block, consensusParams)) {
         return error("ReadBlockFromDisk: Errors in block proof at %s (%s)",
                      pos.ToString(), state.GetRejectReason().c_str());
     }
@@ -1271,9 +1271,10 @@ bool ReadBlockFromDisk(CBlock& block, const CDiskBlockPos& pos, const Consensus:
     return true;
 }
 
-bool ReadBlockFromDisk(CBlock& block, const CBlockIndex* pindex, const Consensus::Params& consensusParams)
+bool ReadBlockFromDisk(CBlock& block, const CBlockIndex* pindex,
+                       const Consensus::Params& consensusParams, bool check)
 {
-    if (!ReadBlockFromDisk(block, pindex->GetBlockPos(), consensusParams))
+    if (!ReadBlockFromDisk(block, pindex->GetBlockPos(), consensusParams, check))
         return false;
     if (block.GetHash() != pindex->GetBlockHash())
         return error("ReadBlockFromDisk(CBlock&, CBlockIndex*): GetHash() doesn't match index for %s at %s",
@@ -4511,7 +4512,7 @@ bool LoadExternalBlockFile(const CChainParams& chainparams, FILE* fileIn, CDiskB
                     while (range.first != range.second) {
                         std::multimap<uint256, CDiskBlockPos>::iterator it = range.first;
                         std::shared_ptr<CBlock> pblockrecursive = std::make_shared<CBlock>();
-                        if (ReadBlockFromDisk(*pblockrecursive, it->second, chainparams.GetConsensus()))
+                        if (ReadBlockFromDisk(*pblockrecursive, it->second, chainparams.GetConsensus(), false))
                         {
                             hash = pblockrecursive->GetHash();
                             LogPrint("reindex", "%s: Processing out of order child %s of %s\n",
@@ -4527,7 +4528,7 @@ bool LoadExternalBlockFile(const CChainParams& chainparams, FILE* fileIn, CDiskB
                                 state = CValidationState();
 
                                 if (ActivateBestChain(state, chainparams) &&
-                                    AcceptBlock(pblock, state, chainparams, NULL, true, dbp, NULL)
+                                    AcceptBlock(pblockrecursive, state, chainparams, NULL, true, dbp, NULL)
                                 ) {
                                     nLoaded++;
                                     queue.push_back(hash);
