@@ -3654,7 +3654,8 @@ static bool AcceptBlockHeader(const CBlockHeader& block, CValidationState& state
             return false;
         }
 
-        if (block.IsProofOfStake()) {
+        // DoS protection
+        if (block.IsProofOfStake() && !fReindex && !fImporting) {
             if (!PassStakeInputThrottle(state, block.StakeInput())) {
                 return false;
             }
