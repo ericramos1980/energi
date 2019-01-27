@@ -777,6 +777,9 @@ void ThreadImport(std::vector<boost::filesystem::path> vImportFiles)
         }
     }
 
+    // Signal to clear internal allocations
+    LoadExternalBlockFile(chainparams, nullptr);
+
     // scan for better chains in the block chain database, that are not yet connected in the active best chain
     CValidationState state;
     if (!ActivateBestChain(state, chainparams)) {
