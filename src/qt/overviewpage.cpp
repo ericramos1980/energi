@@ -665,6 +665,10 @@ void OverviewPage::SetupTransactionList(int nNumItems) {
     if(walletModel && walletModel->getOptionsModel()) {
         // Set up transaction list
         filter.reset(new TransactionFilterProxy());
+        // NOTE: avoid XOR in case COMMON_TYPES changes
+        filter->setTypeFilter(
+            TransactionFilterProxy::COMMON_TYPES &
+            ~TransactionFilterProxy::TYPE(TransactionRecord::Stake));
         filter->setSourceModel(walletModel->getTransactionTableModel());
         filter->setLimit(nNumItems);
         filter->setDynamicSortFilter(true);
