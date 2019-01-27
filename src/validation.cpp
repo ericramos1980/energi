@@ -1244,7 +1244,7 @@ bool WriteBlockToDisk(const CBlock& block, CDiskBlockPos& pos, const CMessageHea
     return true;
 }
 
-bool ReadBlockFromDisk(CBlock& block, const CDiskBlockPos& pos, const Consensus::Params& consensusParams)
+bool ReadBlockFromDisk(CBlock& block, const CDiskBlockPos& pos, const Consensus::Params& consensusParams, bool check)
 {
     block.SetNull();
 
@@ -1263,7 +1263,7 @@ bool ReadBlockFromDisk(CBlock& block, const CDiskBlockPos& pos, const Consensus:
 
     CValidationState state;
 
-    if (!CheckProof(state, block, consensusParams)) {
+    if (check && !CheckProof(state, block, consensusParams)) {
         return error("ReadBlockFromDisk: Errors in block proof at %s (%s)",
                      pos.ToString(), state.GetRejectReason().c_str());
     }
@@ -1271,9 +1271,10 @@ bool ReadBlockFromDisk(CBlock& block, const CDiskBlockPos& pos, const Consensus:
     return true;
 }
 
-bool ReadBlockFromDisk(CBlock& block, const CBlockIndex* pindex, const Consensus::Params& consensusParams)
+bool ReadBlockFromDisk(CBlock& block, const CBlockIndex* pindex,
+                       const Consensus::Params& consensusParams, bool check)
 {
-    if (!ReadBlockFromDisk(block, pindex->GetBlockPos(), consensusParams))
+    if (!ReadBlockFromDisk(block, pindex->GetBlockPos(), consensusParams, check))
         return false;
     if (block.GetHash() != pindex->GetBlockHash())
         return error("ReadBlockFromDisk(CBlock&, CBlockIndex*): GetHash() doesn't match index for %s at %s",
@@ -3654,7 +3655,8 @@ static bool AcceptBlockHeader(const CBlockHeader& block, CValidationState& state
             return false;
         }
 
-        if (block.IsProofOfStake()) {
+        // DoS protection
+        if (block.IsProofOfStake() && !fReindex && !fImporting) {
             if (!PassStakeInputThrottle(state, block.StakeInput())) {
                 return false;
             }
@@ -4389,7 +4391,14 @@ bool LoadExternalBlockFile(const CChainParams& chainparams, FILE* fileIn, CDiskB
 {
     // Map of disk positions for blocks with unknown parent (only used for reindex)
     static std::multimap<uint256, CDiskBlockPos> mapBlocksUnknownParent;
+    static std::set<uint256> mapBlockFailed;
     int64_t nStart = GetTimeMillis();
+
+    if (fileIn == nullptr) {
+        mapBlocksUnknownParent.clear();
+        mapBlockFailed.clear();
+        return false;
+    }
 
     int nLoaded = 0;
     try {
@@ -4435,6 +4444,13 @@ bool LoadExternalBlockFile(const CChainParams& chainparams, FILE* fileIn, CDiskB
                 // detect out of order blocks, and store them for later
                 uint256 hash = block.GetHash();
                 if (hash != chainparams.GetConsensus().hashGenesisBlock && mapBlockIndex.find(block.hashPrevBlock) == mapBlockIndex.end()) {
+                    if (mapBlockFailed.find(block.hashPrevBlock) != mapBlockFailed.end()) {
+                        LogPrint("reindex", "%s: block from invalid chain %s, parent %s\n",
+                                 __func__, hash.ToString(), block.hashPrevBlock.ToString());
+                        mapBlockFailed.emplace(hash);
+                        continue;
+                    }
+
                     LogPrint("reindex", "%s: Out of order block %s, parent %s not known\n", __func__, hash.ToString(),
                             block.hashPrevBlock.ToString());
                     if (dbp)
@@ -4442,31 +4458,35 @@ bool LoadExternalBlockFile(const CChainParams& chainparams, FILE* fileIn, CDiskB
                     continue;
                 }
 
+                if (block.IsProofOfStake() && !IsPoSEnforcedHeight(block.nHeight)) {
+                    nFirstPoSBlock = block.nHeight;
+                    LogPrintf("%s: Detected nFirstPoSBlock = %d\n", __func__, nFirstPoSBlock);
+                }
+
                 // process in case the block isn't known yet
                 if (mapBlockIndex.count(hash) == 0 || (mapBlockIndex[hash]->nStatus & BLOCK_HAVE_DATA) == 0) {
                     LOCK(cs_main);
 
-                    if (pblock->IsProofOfStake() && !IsPoSEnforcedHeight(pblock->nHeight)) {
-                        nFirstPoSBlock = pblock->nHeight;
-                        LogPrintf("%s: Detected nFirstPoSBlock = %d\n", __func__, nFirstPoSBlock);
-                    }
-
                     CValidationState state;
-                    if (AcceptBlock(pblock, state, chainparams, NULL, true, dbp, NULL))
+                    if (AcceptBlock(pblock, state, chainparams, NULL, true, dbp, NULL)) {
                         nLoaded++;
-                    if (state.IsError())
-                        break;
+                    } else if (state.IsTransientError()) {
+                        state = CValidationState();
 
-                    if (state.IsTransientError()) {
-                        CValidationState state2;
-
-                        if (ActivateBestChain(state2, chainparams) &&
-                            AcceptBlock(pblock, state2, chainparams, NULL, true, dbp, NULL)
+                        if (ActivateBestChain(state, chainparams) &&
+                            AcceptBlock(pblock, state, chainparams, NULL, true, dbp, NULL)
                         ) {
                             nLoaded++;
-                        } else {
-                            break;
                         }
+                    }
+
+                    if (!state.IsValid()) {
+                        if (!state.IsTransientError()) {
+                            LogPrint("reindex", "%s: found invalid fork block %s: %s \n",
+                                     __func__, hash.ToString(), state.GetRejectReason());
+                            mapBlockFailed.emplace(hash);
+                        }
+                        continue;
                     }
                 } else if (hash != chainparams.GetConsensus().hashGenesisBlock && mapBlockIndex[hash]->nHeight % 1000 == 0) {
                     LogPrint("reindex", "Block Import: already had block %s at height %d\n", hash.ToString(), mapBlockIndex[hash]->nHeight);
@@ -4492,26 +4512,33 @@ bool LoadExternalBlockFile(const CChainParams& chainparams, FILE* fileIn, CDiskB
                     while (range.first != range.second) {
                         std::multimap<uint256, CDiskBlockPos>::iterator it = range.first;
                         std::shared_ptr<CBlock> pblockrecursive = std::make_shared<CBlock>();
-                        if (ReadBlockFromDisk(*pblockrecursive, it->second, chainparams.GetConsensus()))
+                        if (ReadBlockFromDisk(*pblockrecursive, it->second, chainparams.GetConsensus(), false))
                         {
-                            LogPrint("reindex", "%s: Processing out of order child %s of %s\n", __func__, pblockrecursive->GetHash().ToString(),
-                                    head.ToString());
+                            hash = pblockrecursive->GetHash();
+                            LogPrint("reindex", "%s: Processing out of order child %s of %s\n",
+                                    __func__, hash.ToString(), head.ToString());
                             LOCK(cs_main);
                             CValidationState state;
                             if (AcceptBlock(pblockrecursive, state, chainparams, NULL, true, &it->second, NULL))
                             {
                                 nLoaded++;
-                                queue.push_back(pblockrecursive->GetHash());
+                                queue.push_back(hash);
                             }
                             if (state.IsTransientError()) {
-                                CValidationState state2;
+                                state = CValidationState();
 
-                                if (ActivateBestChain(state2, chainparams) &&
-                                    AcceptBlock(pblock, state2, chainparams, NULL, true, dbp, NULL)
+                                if (ActivateBestChain(state, chainparams) &&
+                                    AcceptBlock(pblockrecursive, state, chainparams, NULL, true, dbp, NULL)
                                 ) {
                                     nLoaded++;
-                                    queue.push_back(pblockrecursive->GetHash());
+                                    queue.push_back(hash);
                                 }
+                            }
+
+                            if (!state.IsValid() && !state.IsTransientError()) {
+                                LogPrint("reindex", "%s: found invalid fork block %s: %s (2) \n",
+                                        __func__, hash.ToString(), state.GetRejectReason());
+                                mapBlockFailed.emplace(hash);
                             }
                         }
                         range.first++;
