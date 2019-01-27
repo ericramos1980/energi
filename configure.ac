@@ -541,6 +541,11 @@ fi
 
 AX_CHECK_LINK_FLAG([[-Wl,--large-address-aware]], [LDFLAGS="$LDFLAGS -Wl,--large-address-aware"])
 
+# Workarounds binutils 2.30 regression
+if test x$CLANG != x; then
+    AX_CHECK_LINK_FLAG([[-fuse-ld=gold]], [LDFLAGS="$LDFLAGS -fuse-ld=gold"])
+fi
+
 AX_GCC_FUNC_ATTRIBUTE([visibility])
 AX_GCC_FUNC_ATTRIBUTE([dllexport])
 AX_GCC_FUNC_ATTRIBUTE([dllimport])
