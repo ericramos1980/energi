@@ -73,13 +73,12 @@ elif which apt-get >/dev/null 2>&1; then
     pip_install() {
         ( which futoin-cid && cd $srcdir && CC=gcc CXX=g++ cte pip install "$@" )
 
-        if [ -e /usr/local/bin/pip3 ]; then
-            CC=gcc CXX=g++ /usr/local/bin/pip3 install --user "$@"
-        elif [ -e /usr/local/bin/pip ]; then
-            CC=gcc CXX=g++ /usr/local/bin/pip install --user "$@"
-        else
-            CC=gcc CXX=g++ /usr/bin/pip install --user "$@"
-        fi
+        for pip in /usr/local/bin/pip3 /usr/bin/pip3 /usr/local/bin/pip3 /usr/bin/pip; do
+            if [ -e $pip ]; then
+                CC=gcc CXX=g++ $pip install --user "$@";
+                break
+            fi
+        done
     }
 elif which yum >/dev/null 2>&1; then
     rpm_list=""
