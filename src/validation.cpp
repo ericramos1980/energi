@@ -4528,7 +4528,7 @@ bool LoadExternalBlockFile(const CChainParams& chainparams, FILE* fileIn, CDiskB
                                 state = CValidationState();
 
                                 if (ActivateBestChain(state, chainparams) &&
-                                    AcceptBlock(pblockrecursive, state, chainparams, NULL, true, dbp, NULL)
+                                    AcceptBlock(pblockrecursive, state, chainparams, NULL, true, &it->second, NULL)
                                 ) {
                                     nLoaded++;
                                     queue.push_back(hash);
