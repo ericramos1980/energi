@@ -542,7 +542,7 @@ fi
 AX_CHECK_LINK_FLAG([[-Wl,--large-address-aware]], [LDFLAGS="$LDFLAGS -Wl,--large-address-aware"])
 
 # Workarounds binutils 2.30 regression
-if test x$CLANG != x; then
+if test x$CLANG != xyes; then
     AX_CHECK_LINK_FLAG([[-fuse-ld=gold]], [LDFLAGS="$LDFLAGS -fuse-ld=gold"])
 fi
 
