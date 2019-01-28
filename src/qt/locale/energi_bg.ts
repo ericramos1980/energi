@@ -180,7 +180,7 @@
     </message>
     <message>
         <location line="-3"/>
-        <source>Unlock wallet for mixing only</source>
+        <source>Unlock wallet for mixing and staking only</source>
         <translation>Отключете портфейла само за миксиране</translation>
     </message>
     <message>
@@ -801,7 +801,7 @@
     </message>
     <message>
         <location line="+10"/>
-        <source>Wallet is &lt;b&gt;encrypted&lt;/b&gt; and currently &lt;b&gt;unlocked&lt;/b&gt; for mixing only</source>
+        <source>Wallet is &lt;b&gt;encrypted&lt;/b&gt; and currently &lt;b&gt;unlocked&lt;/b&gt; for mixing and staking only</source>
         <translation>Портфеилът е &lt;b&gt;криптиран&lt;/b&gt; и в момента &lt;b&gt;е отключен&lt;/b&gt; само за миксиране</translation>
     </message>
     <message>

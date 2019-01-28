@@ -600,7 +600,7 @@ WalletModel::UnlockContext WalletModel::requestUnlock(bool fForMixingOnly)
     bool fMixingToFullFailed = fMixingToFullRequested && !(encStatusNew == Unlocked);
     // If wallet is still locked, unlock failed or was cancelled, mark context as invalid
     bool fInvalid = (encStatusNew == Locked) || fMixingUnlockFailed || fMixingToFullFailed;
-    // Wallet was not locked in any way or user tried to unlock it for mixing only and succeeded, keep it unlocked
+    // Wallet was not locked in any way or user tried to unlock it for mixing and staking only and succeeded, keep it unlocked
     bool fKeepUnlocked = !was_locked || (fForMixingOnly && !fMixingUnlockFailed);
 
     return UnlockContext(this, !fInvalid, !fKeepUnlocked, was_mixing);

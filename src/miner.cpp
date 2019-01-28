@@ -209,7 +209,11 @@ std::unique_ptr<CBlockTemplate> BlockAssembler::CreateNewBlock(
     //---
     if (pblock->IsProofOfStake()) {
         assert(pwallet != nullptr);
-        assert(!pwallet->IsLocked());
+
+        if(pwallet->IsLocked(true)) {
+            error("%s: wallet is locked!", __func__);
+            return std::move(pblocktemplate);
+        }
 
         boost::this_thread::interruption_point();
         bool fStakeFound = pwallet->CreateCoinStake(*pwallet, *pblock, coinbaseTx);
