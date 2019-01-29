@@ -46,7 +46,7 @@ static const int DIP0001_PROTOCOL_VERSION = 70208;
 static const int SHORT_IDS_BLOCKS_VERSION = 70209;
 
 //! Proof-of-Stake protocol version
-static const int PROOF_OF_STAKE_VERSION = 70210;
+static const int PROOF_OF_STAKE_VERSION = 70211;
 
 //! Dynamic spork checkpoint protocol version
 static const int SPORK_CHECKPOINT_VERSION = 70211;
