@@ -2019,7 +2019,7 @@ UniValue walletpassphrase(const JSONRPCRequest& request)
             "\nExamples:\n"
             "\nUnlock the wallet for 60 seconds\n"
             + HelpExampleCli("walletpassphrase", "\"my pass phrase\" 60") +
-            "\nUnlock the wallet for 60 seconds but allow PrivateSend mixing only\n"
+            "\nUnlock the wallet for 60 seconds but allow PrivateSend mixing and staking only\n"
             + HelpExampleCli("walletpassphrase", "\"my pass phrase\" 60 true") +
             "\nLock the wallet again (before 60 seconds)\n"
             + HelpExampleCli("walletlock", "") +
@@ -2048,7 +2048,7 @@ UniValue walletpassphrase(const JSONRPCRequest& request)
         fForMixingOnly = request.params[2].get_bool();
 
     if (fForMixingOnly && !pwalletMain->IsLocked(true) && pwalletMain->IsLocked())
-        throw JSONRPCError(RPC_WALLET_ALREADY_UNLOCKED, "Error: Wallet is already unlocked for mixing only.");
+        throw JSONRPCError(RPC_WALLET_ALREADY_UNLOCKED, "Error: Wallet is already unlocked for mixing and staking only.");
 
     if (!pwalletMain->IsLocked())
         throw JSONRPCError(RPC_WALLET_ALREADY_UNLOCKED, "Error: Wallet is already fully unlocked.");

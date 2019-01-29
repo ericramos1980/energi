@@ -1,4 +1,6 @@
-<?xml version="1.0" ?><!DOCTYPE TS><TS language="en" version="2.1">
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE TS>
+<TS version="2.1" language="en">
 <context>
     <name>AddressBookPage</name>
     <message>
@@ -180,8 +182,8 @@
     </message>
     <message>
         <location line="-3"/>
-        <source>Unlock wallet for mixing only</source>
-        <translation>Unlock wallet for mixing only</translation>
+        <source>Unlock wallet for mixing and staking only</source>
+        <translation>Unlock wallet for mixing and staking only</translation>
     </message>
     <message>
         <location line="+8"/>
@@ -465,7 +467,7 @@
         <translation>&amp;Lock Wallet</translation>
     </message>
     <message>
-        <location line="+1"/>
+        <location line="+3"/>
         <source>Sign &amp;message...</source>
         <translation>Sign &amp;message...</translation>
     </message>
@@ -585,17 +587,27 @@
         <translation>&amp;Command-line options</translation>
     </message>
     <message>
-        <location line="+292"/>
+        <location line="+294"/>
         <source>%1 client</source>
         <translation>%1 client</translation>
     </message>
     <message>
-        <location line="-288"/>
+        <location line="-290"/>
         <source>&amp;PrivateSend information</source>
         <translation>&amp;PrivateSend information</translation>
     </message>
     <message>
-        <location line="-39"/>
+        <location line="-42"/>
+        <source>Start Staking...</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Unlock wallet for mixing and staking only</source>
+        <translation type="unfinished">Unlock wallet for mixing and staking only</translation>
+    </message>
+    <message>
+        <location line="+2"/>
         <source>Sign messages with your Energi addresses to prove you own them</source>
         <translation>Sign messages with your Energi addresses to prove you own them</translation>
     </message>
@@ -620,7 +632,7 @@
         <translation>Show the PrivateSend basic information</translation>
     </message>
     <message>
-        <location line="+62"/>
+        <location line="+63"/>
         <source>&amp;File</source>
         <translation>&amp;File</translation>
     </message>
@@ -630,7 +642,7 @@
         <translation>&amp;Settings</translation>
     </message>
     <message>
-        <location line="+13"/>
+        <location line="+14"/>
         <source>&amp;Tools</source>
         <translation>&amp;Tools</translation>
     </message>
@@ -811,17 +823,17 @@
         <translation>HD key generation is &lt;b&gt;disabled&lt;/b&gt;</translation>
     </message>
     <message>
-        <location line="+22"/>
+        <location line="+23"/>
         <source>Wallet is &lt;b&gt;encrypted&lt;/b&gt; and currently &lt;b&gt;unlocked&lt;/b&gt;</source>
         <translation>Wallet is &lt;b&gt;encrypted&lt;/b&gt; and currently &lt;b&gt;unlocked&lt;/b&gt;</translation>
     </message>
     <message>
-        <location line="+10"/>
-        <source>Wallet is &lt;b&gt;encrypted&lt;/b&gt; and currently &lt;b&gt;unlocked&lt;/b&gt; for mixing only</source>
-        <translation>Wallet is &lt;b&gt;encrypted&lt;/b&gt; and currently &lt;b&gt;unlocked&lt;/b&gt; for mixing only</translation>
+        <location line="+11"/>
+        <source>Wallet is &lt;b&gt;encrypted&lt;/b&gt; and currently &lt;b&gt;unlocked&lt;/b&gt; for mixing and staking only</source>
+        <translation>Wallet is &lt;b&gt;encrypted&lt;/b&gt; and currently &lt;b&gt;unlocked&lt;/b&gt; for mixing and staking only</translation>
     </message>
     <message>
-        <location line="+10"/>
+        <location line="+11"/>
         <source>Wallet is &lt;b&gt;encrypted&lt;/b&gt; and currently &lt;b&gt;locked&lt;/b&gt;</source>
         <translation>Wallet is &lt;b&gt;encrypted&lt;/b&gt; and currently &lt;b&gt;locked&lt;/b&gt;</translation>
     </message>
@@ -2349,7 +2361,7 @@ https://www.transifex.com/projects/p/energi-cryptocurrency/</translation>
     <message>
         <location line="+15"/>
         <location line="+48"/>
-        <location line="+140"/>
+        <location line="+144"/>
         <location line="+1"/>
         <location line="+1"/>
         <location line="+3"/>
@@ -2357,7 +2369,7 @@ https://www.transifex.com/projects/p/energi-cryptocurrency/</translation>
         <translation>Disabled</translation>
     </message>
     <message>
-        <location line="-180"/>
+        <location line="-184"/>
         <source>Very low number of keys left since last automatic backup!</source>
         <translation>Very low number of keys left since last automatic backup!</translation>
     </message>
@@ -4961,7 +4973,7 @@ https://www.transifex.com/projects/p/energi-cryptocurrency/</translation>
 <context>
     <name>UnitDisplayStatusBarControl</name>
     <message>
-        <location filename="../bitcoingui.cpp" line="+138"/>
+        <location filename="../bitcoingui.cpp" line="+139"/>
         <source>Unit to show amounts in. Click to select another unit.</source>
         <translation>Unit to show amounts in. Click to select another unit.</translation>
     </message>

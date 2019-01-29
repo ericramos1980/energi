@@ -162,7 +162,7 @@ public:
     // if CCryptoKeyStore is fully locked so that no operations requiring access
     // to private keys are possible:
     //      IsLocked(true)
-    // or if CCryptoKeyStore's private keys are available for mixing only:
+    // or if CCryptoKeyStore's private keys are available for mixing and staking only:
     //      !IsLocked(true) && IsLocked()
     // or if they are available for everything:
     //      !IsLocked()
