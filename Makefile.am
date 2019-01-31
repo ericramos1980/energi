@@ -24,6 +24,8 @@ BITCOIN_QT_BIN=$(top_builddir)/src/qt/$(BITCOIN_GUI_NAME)$(EXEEXT)
 BITCOIN_CLI_BIN=$(top_builddir)/src/$(BITCOIN_CLI_NAME)$(EXEEXT)
 
 ENERGI_DEBUG_NAME=$(PACKAGE)-$(PACKAGE_VERSION)-$(TARGET_OS)-debug
+ENERGI_DEBUG_TAR=$(ENERGI_DEBUG_NAME).txz
+
 ENERGI_LINUX_TAR=$(PACKAGE)-$(PACKAGE_VERSION)-linux.tar.gz
 BITCOIN_WIN_INSTALLER=$(PACKAGE)-$(PACKAGE_VERSION)-win$(WINDOWS_BITS)-setup$(EXEEXT)
 ENERGI_OSX_DMG=$(PACKAGE)-$(PACKAGE_VERSION)-macos.dmg
@@ -81,17 +83,20 @@ else
 	$(OBJCOPY) --enable-deterministic-archives -p --only-keep-debug $(BITCOIND_BIN) $(top_builddir)/$(ENERGI_DEBUG_NAME)/energid.dbg
 	$(OBJCOPY) --enable-deterministic-archives -p --only-keep-debug $(BITCOIN_QT_BIN) $(top_builddir)/$(ENERGI_DEBUG_NAME)/energi-qt.dbg
 	$(OBJCOPY) --enable-deterministic-archives -p --only-keep-debug $(BITCOIN_CLI_BIN) $(top_builddir)/$(ENERGI_DEBUG_NAME)/energi-cli.dbg
-	$(OBJCOPY) --enable-deterministic-archives -p --add-gnu-debuglink=$(ENERGI_DEBUG_NAME)/energid.dbg $(BITCOIND_BIN)
-	$(OBJCOPY) --enable-deterministic-archives -p --add-gnu-debuglink=$(ENERGI_DEBUG_NAME)/energi-qt.dbg $(BITCOIN_QT_BIN)
-	$(OBJCOPY) --enable-deterministic-archives -p --add-gnu-debuglink=$(ENERGI_DEBUG_NAME)/energi-cli.dbg $(BITCOIN_CLI_BIN)
 endif
-	tar cJf $(ENERGI_DEBUG_NAME).txz -C $(top_builddir) $(ENERGI_DEBUG_NAME)
+	tar cJf $(ENERGI_DEBUG_TAR) -C $(top_builddir) $(ENERGI_DEBUG_NAME)
 
 $(ENERGI_LINUX_TAR): split-debug
 	$(MKDIR_P) $(top_builddir)/$(PACKAGE)-$(PACKAGE_VERSION)/bin
 	STRIPPROG="$(STRIP)" $(INSTALL_STRIP_PROGRAM) $(BITCOIND_BIN) $(top_builddir)/$(PACKAGE)-$(PACKAGE_VERSION)/bin
 	STRIPPROG="$(STRIP)" $(INSTALL_STRIP_PROGRAM) $(BITCOIN_QT_BIN) $(top_builddir)/$(PACKAGE)-$(PACKAGE_VERSION)/bin
 	STRIPPROG="$(STRIP)" $(INSTALL_STRIP_PROGRAM) $(BITCOIN_CLI_BIN) $(top_builddir)/$(PACKAGE)-$(PACKAGE_VERSION)/bin
+	$(OBJCOPY) --enable-deterministic-archives -p --add-gnu-debuglink=$(ENERGI_DEBUG_NAME)/energid.dbg $(top_builddir)/$(PACKAGE)-$(PACKAGE_VERSION)/bin/energid
+	$(OBJCOPY) --enable-deterministic-archives -p --add-gnu-debuglink=$(ENERGI_DEBUG_NAME)/energi-qt.dbg $(top_builddir)/$(PACKAGE)-$(PACKAGE_VERSION)/bin/energi-qt
+	$(OBJCOPY) --enable-deterministic-archives -p --add-gnu-debuglink=$(ENERGI_DEBUG_NAME)/energi-cli.dbg $(top_builddir)/$(PACKAGE)-$(PACKAGE_VERSION)/bin/energi-cli
+	$(top_builddir)/contrib/devtools/mini-debug.sh $(BITCOIND_BIN) $(top_builddir)/$(PACKAGE)-$(PACKAGE_VERSION)/bin/energid
+	$(top_builddir)/contrib/devtools/mini-debug.sh $(BITCOIN_QT_BIN) $(top_builddir)/$(PACKAGE)-$(PACKAGE_VERSION)/bin/energi-qt
+	$(top_builddir)/contrib/devtools/mini-debug.sh $(BITCOIN_CLI_BIN) $(top_builddir)/$(PACKAGE)-$(PACKAGE_VERSION)/bin/energi-cli
 	tar czf $(ENERGI_LINUX_TAR) -C $(top_builddir) $(PACKAGE)-$(PACKAGE_VERSION)
 
 $(BITCOIN_WIN_INSTALLER): split-debug
@@ -99,6 +104,9 @@ $(BITCOIN_WIN_INSTALLER): split-debug
 	STRIPPROG="$(STRIP)" $(INSTALL_STRIP_PROGRAM) $(BITCOIND_BIN) $(top_builddir)/release
 	STRIPPROG="$(STRIP)" $(INSTALL_STRIP_PROGRAM) $(BITCOIN_QT_BIN) $(top_builddir)/release
 	STRIPPROG="$(STRIP)" $(INSTALL_STRIP_PROGRAM) $(BITCOIN_CLI_BIN) $(top_builddir)/release
+	$(OBJCOPY) --enable-deterministic-archives -p --add-gnu-debuglink=$(ENERGI_DEBUG_NAME)/energid.dbg $(top_builddir)/release/energid$(EXEEXT)
+	$(OBJCOPY) --enable-deterministic-archives -p --add-gnu-debuglink=$(ENERGI_DEBUG_NAME)/energi-qt.dbg $(top_builddir)/release/energi-qt$(EXEEXT)
+	$(OBJCOPY) --enable-deterministic-archives -p --add-gnu-debuglink=$(ENERGI_DEBUG_NAME)/energi-cli.dbg $(top_builddir)/release/energi-cli$(EXEEXT)
 	@test -f $(MAKENSIS) && $(MAKENSIS) -V2 $(top_builddir)/share/setup.nsi || \
 	  echo error: could not build $@
 	@echo built $@
@@ -242,7 +250,7 @@ dist_noinst_SCRIPTS = autogen.sh
 
 EXTRA_DIST = $(top_srcdir)/share/genbuild.sh qa/pull-tester/rpc-tests.py qa/rpc-tests $(DIST_CONTRIB) $(DIST_DOCS) $(WINDOWS_PACKAGING) $(OSX_PACKAGING) $(BIN_CHECKS)
 
-CLEANFILES = $(OSX_DMG) $(BITCOIN_WIN_INSTALLER)
+CLEANFILES = $(ENERGI_LINUX_TAR) $(ENERGI_OSX_DMG) $(BITCOIN_WIN_INSTALLER) $(ENERGI_DEBUG_TAR)
 
 # This file is problematic for out-of-tree builds if it exists.
 DISTCLEANFILES = qa/pull-tester/tests_config.pyc
