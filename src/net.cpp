@@ -2589,6 +2589,8 @@ void CConnman::Interrupt()
 
 void CConnman::Stop()
 {
+    if (threadStakeMint.joinable())
+        threadStakeMint.join();
     if (threadMessageHandler.joinable())
         threadMessageHandler.join();
     if (threadOpenMasternodeConnections.joinable())
@@ -2601,8 +2603,6 @@ void CConnman::Stop()
         threadDNSAddressSeed.join();
     if (threadSocketHandler.joinable())
         threadSocketHandler.join();
-    if (threadStakeMint.joinable())
-        threadStakeMint.join();
 
     // As this is exceptional functionality such dummy approach
     // is acceptable.
