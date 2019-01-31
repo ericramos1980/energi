@@ -759,6 +759,7 @@ if config.dmg is not None:
 
     if config.dmg != "":
         dmg_name = config.dmg
+        dmg_name = dmg_name.replace('.dmg', '')
     else:
         spl = app_bundle_name.split(" ")
         dmg_name = spl[0] + "".join(p.capitalize() for p in spl[1:])

@@ -35,7 +35,6 @@ space := $(empty) $(empty)
 
 OSX_APP=Energi-Qt.app
 OSX_VOLNAME = $(subst $(space),-,$(PACKAGE_NAME))
-OSX_DMG = $(OSX_VOLNAME).dmg
 OSX_BACKGROUND_IMAGE=background.tiff
 #OSX_BACKGROUND_IMAGE_DPIS=36 72
 #OSX_DSSTORE_GEN=$(top_srcdir)/contrib/macdeploy/custom_dsstore.py
@@ -143,10 +142,10 @@ osx_volname:
 	echo $(OSX_VOLNAME) >$@
 
 if BUILD_DARWIN
-$(OSX_DMG): $(OSX_APP_BUILT) $(OSX_PACKAGING)
-	$(PYTHON) $(OSX_DEPLOY_SCRIPT) $(OSX_APP) -add-qt-tr $(OSX_QT_TRANSLATIONS) -translations-dir=$(QT_TRANSLATION_DIR) -dmg -fancy $(OSX_FANCY_PLIST) -verbose 2 -volname $(OSX_VOLNAME)
+$(ENERGI_OSX_DMG): $(OSX_APP_BUILT) $(OSX_PACKAGING)
+	$(PYTHON) $(OSX_DEPLOY_SCRIPT) $(OSX_APP) -add-qt-tr $(OSX_QT_TRANSLATIONS) -translations-dir=$(QT_TRANSLATION_DIR) -dmg $(ENERGI_OSX_DMG) -fancy $(OSX_FANCY_PLIST) -verbose 2 -volname $(OSX_VOLNAME)
 
-deploydir: $(OSX_DMG)
+deploydir: $(ENERGI_OSX_DMG)
 else
 APP_DIST_DIR=$(top_builddir)/dist
 APP_DIST_EXTRAS=$(APP_DIST_DIR)/.background/$(OSX_BACKGROUND_IMAGE) $(APP_DIST_DIR)/.DS_Store $(APP_DIST_DIR)/Applications
@@ -157,7 +156,7 @@ $(APP_DIST_DIR)/Applications:
 
 $(APP_DIST_EXTRAS): $(APP_DIST_DIR)/$(OSX_APP)/Contents/MacOS/Energi-Qt
 
-$(OSX_DMG): $(APP_DIST_EXTRAS)
+$(ENERGI_OSX_DMG): $(APP_DIST_EXTRAS)
 	$(GENISOIMAGE) -no-cache-inodes -D -l -probe -V "$(OSX_VOLNAME)" -no-pad -r -dir-mode 0755 -apple -o $@ dist
 
 $(APP_DIST_DIR)/.background/$(OSX_BACKGROUND_IMAGE): contrib/macdeploy/$(OSX_BACKGROUND_IMAGE)
@@ -177,8 +176,7 @@ deploy: $(ENERGI_LINUX_TAR)
 endif
 if TARGET_DARWIN
 appbundle: $(OSX_APP_BUILT)
-deploy: $(OSX_DMG) split-debug
-	mv -f $(OSX_DMG) $(ENERGI_OSX_DMG)
+deploy: $(ENERGI_OSX_DMG) split-debug
 endif
 if TARGET_WINDOWS
 deploy: $(BITCOIN_WIN_INSTALLER)
