@@ -73,13 +73,18 @@ dist-hook:
 
 split-debug: all-recursive
 	$(MKDIR_P) $(ENERGI_DEBUG_NAME)
+if BUILD_DARWIN
+	$(INSTALL) $(BITCOIND_BIN) $(top_builddir)/$(ENERGI_DEBUG_NAME)/energid-debug
+	$(INSTALL) $(BITCOIN_QT_BIN) $(top_builddir)/$(ENERGI_DEBUG_NAME)/energi-qt-debug
+	$(INSTALL) $(BITCOIN_CLI_BIN) $(top_builddir)/$(ENERGI_DEBUG_NAME)/energid-cli-debug
+else
 	$(OBJCOPY) --enable-deterministic-archives -p --only-keep-debug $(BITCOIND_BIN) $(top_builddir)/$(ENERGI_DEBUG_NAME)/energid.dbg
 	$(OBJCOPY) --enable-deterministic-archives -p --only-keep-debug $(BITCOIN_QT_BIN) $(top_builddir)/$(ENERGI_DEBUG_NAME)/energi-qt.dbg
 	$(OBJCOPY) --enable-deterministic-archives -p --only-keep-debug $(BITCOIN_CLI_BIN) $(top_builddir)/$(ENERGI_DEBUG_NAME)/energi-cli.dbg
 	$(OBJCOPY) --enable-deterministic-archives -p --add-gnu-debuglink=$(ENERGI_DEBUG_NAME)/energid.dbg $(BITCOIND_BIN)
 	$(OBJCOPY) --enable-deterministic-archives -p --add-gnu-debuglink=$(ENERGI_DEBUG_NAME)/energi-qt.dbg $(BITCOIN_QT_BIN)
 	$(OBJCOPY) --enable-deterministic-archives -p --add-gnu-debuglink=$(ENERGI_DEBUG_NAME)/energi-cli.dbg $(BITCOIN_CLI_BIN)
-
+endif
 	tar cJf $(ENERGI_DEBUG_NAME).txz -C $(top_builddir) $(ENERGI_DEBUG_NAME)
 
 $(ENERGI_LINUX_TAR): split-debug
@@ -114,7 +119,7 @@ $(OSX_APP)/Contents/Resources/energi.icns: $(OSX_INSTALLER_ICONS)
 	$(MKDIR_P) $(@D)
 	$(INSTALL_DATA) $< $@
 
-$(OSX_APP)/Contents/MacOS/Energi-Qt: split-debug
+$(OSX_APP)/Contents/MacOS/Energi-Qt: $(BITCOIN_QT_BIN)
 	$(MKDIR_P) $(@D)
 	STRIPPROG="$(STRIP)" $(INSTALL_STRIP_PROGRAM)  $< $@
 
@@ -164,7 +169,7 @@ deploy: $(ENERGI_LINUX_TAR)
 endif
 if TARGET_DARWIN
 appbundle: $(OSX_APP_BUILT)
-deploy: $(OSX_DMG)
+deploy: $(OSX_DMG) split-debug
 	mv -f $(OSX_DMG) $(ENERGI_OSX_DMG)
 endif
 if TARGET_WINDOWS
