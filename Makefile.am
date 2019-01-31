@@ -23,7 +23,15 @@ BITCOIND_BIN=$(top_builddir)/src/$(BITCOIN_DAEMON_NAME)$(EXEEXT)
 BITCOIN_QT_BIN=$(top_builddir)/src/qt/$(BITCOIN_GUI_NAME)$(EXEEXT)
 BITCOIN_CLI_BIN=$(top_builddir)/src/$(BITCOIN_CLI_NAME)$(EXEEXT)
 
-ENERGI_DEBUG_NAME=$(PACKAGE)-$(PACKAGE_VERSION)-$(TARGET_OS)-debug
+if TARGET_DARWIN
+ENERGI_DEBUG_NAME=$(PACKAGE)-$(PACKAGE_VERSION)-macos-debug
+endif
+if TARGET_WINDOWS
+ENERGI_DEBUG_NAME=$(PACKAGE)-$(PACKAGE_VERSION)-win$(WINDOWS_BITS)-debug
+endif
+if TARGET_LINUX
+ENERGI_DEBUG_NAME=$(PACKAGE)-$(PACKAGE_VERSION)-linux-debug
+endif
 ENERGI_DEBUG_TAR=$(ENERGI_DEBUG_NAME).txz
 
 ENERGI_LINUX_TAR=$(PACKAGE)-$(PACKAGE_VERSION)-linux.tar.gz
@@ -74,7 +82,7 @@ dist-hook:
 
 split-debug: all-recursive
 	$(MKDIR_P) $(ENERGI_DEBUG_NAME)
-if BUILD_DARWIN
+if TARGET_DARWIN
 	$(INSTALL) $(BITCOIND_BIN) $(top_builddir)/$(ENERGI_DEBUG_NAME)/energid-debug
 	$(INSTALL) $(BITCOIN_QT_BIN) $(top_builddir)/$(ENERGI_DEBUG_NAME)/energi-qt-debug
 	$(INSTALL) $(BITCOIN_CLI_BIN) $(top_builddir)/$(ENERGI_DEBUG_NAME)/energid-cli-debug
