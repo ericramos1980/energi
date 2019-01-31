@@ -23,15 +23,26 @@ BITCOIND_BIN=$(top_builddir)/src/$(BITCOIN_DAEMON_NAME)$(EXEEXT)
 BITCOIN_QT_BIN=$(top_builddir)/src/qt/$(BITCOIN_GUI_NAME)$(EXEEXT)
 BITCOIN_CLI_BIN=$(top_builddir)/src/$(BITCOIN_CLI_NAME)$(EXEEXT)
 
+if TARGET_DARWIN
+ENERGI_DEBUG_NAME=$(PACKAGE)-$(PACKAGE_VERSION)-macos-debug
+endif
+if TARGET_WINDOWS
+ENERGI_DEBUG_NAME=$(PACKAGE)-$(PACKAGE_VERSION)-win$(WINDOWS_BITS)-debug
+endif
+if TARGET_LINUX
+ENERGI_DEBUG_NAME=$(PACKAGE)-$(PACKAGE_VERSION)-linux-debug
+endif
+ENERGI_DEBUG_TAR=$(ENERGI_DEBUG_NAME).txz
+
 ENERGI_LINUX_TAR=$(PACKAGE)-$(PACKAGE_VERSION)-linux.tar.gz
 BITCOIN_WIN_INSTALLER=$(PACKAGE)-$(PACKAGE_VERSION)-win$(WINDOWS_BITS)-setup$(EXEEXT)
+ENERGI_OSX_DMG=$(PACKAGE)-$(PACKAGE_VERSION)-macos.dmg
 
 empty :=
 space := $(empty) $(empty)
 
 OSX_APP=Energi-Qt.app
 OSX_VOLNAME = $(subst $(space),-,$(PACKAGE_NAME))
-OSX_DMG = $(OSX_VOLNAME).dmg
 OSX_BACKGROUND_IMAGE=background.tiff
 #OSX_BACKGROUND_IMAGE_DPIS=36 72
 #OSX_DSSTORE_GEN=$(top_srcdir)/contrib/macdeploy/custom_dsstore.py
@@ -69,18 +80,40 @@ COVERAGE_INFO = baseline_filtered_combined.info baseline.info \
 dist-hook:
 	-$(GIT) archive --format=tar HEAD -- src/clientversion.cpp | $(AMTAR) -C $(top_distdir) -xf -
 
-$(ENERGI_LINUX_TAR): all-recursive
+split-debug: all-recursive
+	$(MKDIR_P) $(ENERGI_DEBUG_NAME)
+if TARGET_DARWIN
+	$(INSTALL) $(BITCOIND_BIN) $(top_builddir)/$(ENERGI_DEBUG_NAME)/energid-debug
+	$(INSTALL) $(BITCOIN_QT_BIN) $(top_builddir)/$(ENERGI_DEBUG_NAME)/energi-qt-debug
+	$(INSTALL) $(BITCOIN_CLI_BIN) $(top_builddir)/$(ENERGI_DEBUG_NAME)/energid-cli-debug
+else
+	$(OBJCOPY) --enable-deterministic-archives -p --only-keep-debug $(BITCOIND_BIN) $(top_builddir)/$(ENERGI_DEBUG_NAME)/energid.dbg
+	$(OBJCOPY) --enable-deterministic-archives -p --only-keep-debug $(BITCOIN_QT_BIN) $(top_builddir)/$(ENERGI_DEBUG_NAME)/energi-qt.dbg
+	$(OBJCOPY) --enable-deterministic-archives -p --only-keep-debug $(BITCOIN_CLI_BIN) $(top_builddir)/$(ENERGI_DEBUG_NAME)/energi-cli.dbg
+endif
+	tar cJf $(ENERGI_DEBUG_TAR) -C $(top_builddir) $(ENERGI_DEBUG_NAME)
+
+$(ENERGI_LINUX_TAR): split-debug
 	$(MKDIR_P) $(top_builddir)/$(PACKAGE)-$(PACKAGE_VERSION)/bin
 	STRIPPROG="$(STRIP)" $(INSTALL_STRIP_PROGRAM) $(BITCOIND_BIN) $(top_builddir)/$(PACKAGE)-$(PACKAGE_VERSION)/bin
 	STRIPPROG="$(STRIP)" $(INSTALL_STRIP_PROGRAM) $(BITCOIN_QT_BIN) $(top_builddir)/$(PACKAGE)-$(PACKAGE_VERSION)/bin
 	STRIPPROG="$(STRIP)" $(INSTALL_STRIP_PROGRAM) $(BITCOIN_CLI_BIN) $(top_builddir)/$(PACKAGE)-$(PACKAGE_VERSION)/bin
+	$(OBJCOPY) --enable-deterministic-archives -p --add-gnu-debuglink=$(ENERGI_DEBUG_NAME)/energid.dbg $(top_builddir)/$(PACKAGE)-$(PACKAGE_VERSION)/bin/energid
+	$(OBJCOPY) --enable-deterministic-archives -p --add-gnu-debuglink=$(ENERGI_DEBUG_NAME)/energi-qt.dbg $(top_builddir)/$(PACKAGE)-$(PACKAGE_VERSION)/bin/energi-qt
+	$(OBJCOPY) --enable-deterministic-archives -p --add-gnu-debuglink=$(ENERGI_DEBUG_NAME)/energi-cli.dbg $(top_builddir)/$(PACKAGE)-$(PACKAGE_VERSION)/bin/energi-cli
+	$(top_builddir)/contrib/devtools/mini-debug.sh $(BITCOIND_BIN) $(top_builddir)/$(PACKAGE)-$(PACKAGE_VERSION)/bin/energid
+	$(top_builddir)/contrib/devtools/mini-debug.sh $(BITCOIN_QT_BIN) $(top_builddir)/$(PACKAGE)-$(PACKAGE_VERSION)/bin/energi-qt
+	$(top_builddir)/contrib/devtools/mini-debug.sh $(BITCOIN_CLI_BIN) $(top_builddir)/$(PACKAGE)-$(PACKAGE_VERSION)/bin/energi-cli
 	tar czf $(ENERGI_LINUX_TAR) -C $(top_builddir) $(PACKAGE)-$(PACKAGE_VERSION)
 
-$(BITCOIN_WIN_INSTALLER): all-recursive
+$(BITCOIN_WIN_INSTALLER): split-debug
 	$(MKDIR_P) $(top_builddir)/release
 	STRIPPROG="$(STRIP)" $(INSTALL_STRIP_PROGRAM) $(BITCOIND_BIN) $(top_builddir)/release
 	STRIPPROG="$(STRIP)" $(INSTALL_STRIP_PROGRAM) $(BITCOIN_QT_BIN) $(top_builddir)/release
 	STRIPPROG="$(STRIP)" $(INSTALL_STRIP_PROGRAM) $(BITCOIN_CLI_BIN) $(top_builddir)/release
+	$(OBJCOPY) --enable-deterministic-archives -p --add-gnu-debuglink=$(ENERGI_DEBUG_NAME)/energid.dbg $(top_builddir)/release/energid$(EXEEXT)
+	$(OBJCOPY) --enable-deterministic-archives -p --add-gnu-debuglink=$(ENERGI_DEBUG_NAME)/energi-qt.dbg $(top_builddir)/release/energi-qt$(EXEEXT)
+	$(OBJCOPY) --enable-deterministic-archives -p --add-gnu-debuglink=$(ENERGI_DEBUG_NAME)/energi-cli.dbg $(top_builddir)/release/energi-cli$(EXEEXT)
 	@test -f $(MAKENSIS) && $(MAKENSIS) -V2 $(top_builddir)/share/setup.nsi || \
 	  echo error: could not build $@
 	@echo built $@
@@ -117,10 +150,10 @@ osx_volname:
 	echo $(OSX_VOLNAME) >$@
 
 if BUILD_DARWIN
-$(OSX_DMG): $(OSX_APP_BUILT) $(OSX_PACKAGING)
-	$(PYTHON) $(OSX_DEPLOY_SCRIPT) $(OSX_APP) -add-qt-tr $(OSX_QT_TRANSLATIONS) -translations-dir=$(QT_TRANSLATION_DIR) -dmg -fancy $(OSX_FANCY_PLIST) -verbose 2 -volname $(OSX_VOLNAME)
+$(ENERGI_OSX_DMG): $(OSX_APP_BUILT) $(OSX_PACKAGING)
+	$(PYTHON) $(OSX_DEPLOY_SCRIPT) $(OSX_APP) -add-qt-tr $(OSX_QT_TRANSLATIONS) -translations-dir=$(QT_TRANSLATION_DIR) -dmg $(ENERGI_OSX_DMG) -fancy $(OSX_FANCY_PLIST) -verbose 2 -volname $(OSX_VOLNAME)
 
-deploydir: $(OSX_DMG)
+deploydir: $(ENERGI_OSX_DMG)
 else
 APP_DIST_DIR=$(top_builddir)/dist
 APP_DIST_EXTRAS=$(APP_DIST_DIR)/.background/$(OSX_BACKGROUND_IMAGE) $(APP_DIST_DIR)/.DS_Store $(APP_DIST_DIR)/Applications
@@ -131,7 +164,7 @@ $(APP_DIST_DIR)/Applications:
 
 $(APP_DIST_EXTRAS): $(APP_DIST_DIR)/$(OSX_APP)/Contents/MacOS/Energi-Qt
 
-$(OSX_DMG): $(APP_DIST_EXTRAS)
+$(ENERGI_OSX_DMG): $(APP_DIST_EXTRAS)
 	$(GENISOIMAGE) -no-cache-inodes -D -l -probe -V "$(OSX_VOLNAME)" -no-pad -r -dir-mode 0755 -apple -o $@ dist
 
 $(APP_DIST_DIR)/.background/$(OSX_BACKGROUND_IMAGE): contrib/macdeploy/$(OSX_BACKGROUND_IMAGE)
@@ -151,7 +184,7 @@ deploy: $(ENERGI_LINUX_TAR)
 endif
 if TARGET_DARWIN
 appbundle: $(OSX_APP_BUILT)
-deploy: $(OSX_DMG)
+deploy: $(ENERGI_OSX_DMG) split-debug
 endif
 if TARGET_WINDOWS
 deploy: $(BITCOIN_WIN_INSTALLER)
@@ -223,7 +256,7 @@ dist_noinst_SCRIPTS = autogen.sh
 
 EXTRA_DIST = $(top_srcdir)/share/genbuild.sh qa/pull-tester/rpc-tests.py qa/rpc-tests $(DIST_CONTRIB) $(DIST_DOCS) $(WINDOWS_PACKAGING) $(OSX_PACKAGING) $(BIN_CHECKS)
 
-CLEANFILES = $(OSX_DMG) $(BITCOIN_WIN_INSTALLER)
+CLEANFILES = $(ENERGI_LINUX_TAR) $(ENERGI_OSX_DMG) $(BITCOIN_WIN_INSTALLER) $(ENERGI_DEBUG_TAR)
 
 # This file is problematic for out-of-tree builds if it exists.
 DISTCLEANFILES = qa/pull-tester/tests_config.pyc
