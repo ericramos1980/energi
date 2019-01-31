@@ -23,6 +23,7 @@ BITCOIND_BIN=$(top_builddir)/src/$(BITCOIN_DAEMON_NAME)$(EXEEXT)
 BITCOIN_QT_BIN=$(top_builddir)/src/qt/$(BITCOIN_GUI_NAME)$(EXEEXT)
 BITCOIN_CLI_BIN=$(top_builddir)/src/$(BITCOIN_CLI_NAME)$(EXEEXT)
 
+ENERGI_DEBUG_NAME=$(PACKAGE)-$(PACKAGE_VERSION)-$(TARGET_OS)-debug
 ENERGI_LINUX_TAR=$(PACKAGE)-$(PACKAGE_VERSION)-linux.tar.gz
 BITCOIN_WIN_INSTALLER=$(PACKAGE)-$(PACKAGE_VERSION)-win$(WINDOWS_BITS)-setup$(EXEEXT)
 
@@ -69,14 +70,25 @@ COVERAGE_INFO = baseline_filtered_combined.info baseline.info \
 dist-hook:
 	-$(GIT) archive --format=tar HEAD -- src/clientversion.cpp | $(AMTAR) -C $(top_distdir) -xf -
 
-$(ENERGI_LINUX_TAR): all-recursive
+split-debug: all-recursive
+	$(MKDIR_P) $(ENERGI_DEBUG_NAME)
+	$(OBJCOPY) --enable-deterministic-archives -p --only-keep-debug $(BITCOIND_BIN) $(top_builddir)/$(ENERGI_DEBUG_NAME)/energid.dbg
+	$(OBJCOPY) --enable-deterministic-archives -p --only-keep-debug $(BITCOIN_QT_BIN) $(top_builddir)/$(ENERGI_DEBUG_NAME)/energi-qt.dbg
+	$(OBJCOPY) --enable-deterministic-archives -p --only-keep-debug $(BITCOIN_CLI_BIN) $(top_builddir)/$(ENERGI_DEBUG_NAME)/energi-cli.dbg
+	$(OBJCOPY) --enable-deterministic-archives -p --add-gnu-debuglink=$(ENERGI_DEBUG_NAME)/energid.dbg $(BITCOIND_BIN)
+	$(OBJCOPY) --enable-deterministic-archives -p --add-gnu-debuglink=$(ENERGI_DEBUG_NAME)/energi-qt.dbg $(BITCOIN_QT_BIN)
+	$(OBJCOPY) --enable-deterministic-archives -p --add-gnu-debuglink=$(ENERGI_DEBUG_NAME)/energi-cli.dbg $(BITCOIN_CLI_BIN)
+
+	tar cJf $(ENERGI_DEBUG_NAME).txz -C $(top_builddir) $(ENERGI_DEBUG_NAME)
+
+$(ENERGI_LINUX_TAR): split-debug
 	$(MKDIR_P) $(top_builddir)/$(PACKAGE)-$(PACKAGE_VERSION)/bin
 	STRIPPROG="$(STRIP)" $(INSTALL_STRIP_PROGRAM) $(BITCOIND_BIN) $(top_builddir)/$(PACKAGE)-$(PACKAGE_VERSION)/bin
 	STRIPPROG="$(STRIP)" $(INSTALL_STRIP_PROGRAM) $(BITCOIN_QT_BIN) $(top_builddir)/$(PACKAGE)-$(PACKAGE_VERSION)/bin
 	STRIPPROG="$(STRIP)" $(INSTALL_STRIP_PROGRAM) $(BITCOIN_CLI_BIN) $(top_builddir)/$(PACKAGE)-$(PACKAGE_VERSION)/bin
 	tar czf $(ENERGI_LINUX_TAR) -C $(top_builddir) $(PACKAGE)-$(PACKAGE_VERSION)
 
-$(BITCOIN_WIN_INSTALLER): all-recursive
+$(BITCOIN_WIN_INSTALLER): split-debug
 	$(MKDIR_P) $(top_builddir)/release
 	STRIPPROG="$(STRIP)" $(INSTALL_STRIP_PROGRAM) $(BITCOIND_BIN) $(top_builddir)/release
 	STRIPPROG="$(STRIP)" $(INSTALL_STRIP_PROGRAM) $(BITCOIN_QT_BIN) $(top_builddir)/release
@@ -101,7 +113,7 @@ $(OSX_APP)/Contents/Resources/energi.icns: $(OSX_INSTALLER_ICONS)
 	$(MKDIR_P) $(@D)
 	$(INSTALL_DATA) $< $@
 
-$(OSX_APP)/Contents/MacOS/Energi-Qt: $(BITCOIN_QT_BIN)
+$(OSX_APP)/Contents/MacOS/Energi-Qt: split-debug
 	$(MKDIR_P) $(@D)
 	STRIPPROG="$(STRIP)" $(INSTALL_STRIP_PROGRAM)  $< $@
 
