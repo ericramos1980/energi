@@ -246,6 +246,11 @@ void PrepareShutdown()
     MapPort(false);
     UnregisterValidationInterface(peerLogic.get());
     peerLogic.reset();
+
+    // NOTE: This is very important as a lot of network code uses g_connman directly
+    //       what may lead to sporadic segfaults which can be debugged only under stress load.
+    g_connman->Stop();
+
     g_connman.reset();
 
     // STORE DATA CACHES INTO SERIALIZED DAT FILES
