@@ -125,86 +125,89 @@ std::unique_ptr<CBlockTemplate> BlockAssembler::CreateNewBlock(
         return nullptr;
     pblock = pblocktemplate->block; // pointer for convenience
 
-    //=========================
-    LOCK2(cs_main, mempool.cs);
-    //=========================
-    
-    int64_t nTime1 = GetTimeMicros();
-    auto pindexPrev = chainActive.Tip();
+    int64_t nTime1;
+    CBlockIndex* pindexPrev;
+    int nPackagesSelected = 0;
+    int nDescendantsUpdated = 0;
     bool sign_block = false;
+    CMutableTransaction coinbaseTx;
 
+    // Crete template
+    //---
+    {
+        LOCK2(cs_main, mempool.cs);
 
-    // Common header
-    //--------------
-    pblock->nVersion = ComputeBlockVersion(pindexPrev, chainparams.GetConsensus());
+        nTime1 = GetTimeMicros();
+        pindexPrev = chainActive.Tip();
 
-    // -regtest only: allow overriding block.nVersion with
-    // -blockversion=N to test forking scenarios
-    if (chainparams.MineBlocksOnDemand())
-        pblock->nVersion = GetArg("-blockversion", pblock->nVersion);
-    
-    nHeight = pindexPrev->nHeight + 1;
-    pblock->hashPrevBlock  = pindexPrev->GetBlockHash();
+        // Common header
+        //--------------
+        pblock->nVersion = ComputeBlockVersion(pindexPrev, chainparams.GetConsensus());
 
-    pblock->nBits          = GetNextWorkRequired(pindexPrev, pblock.get(), chainparams.GetConsensus());
-    pblock->nHeight        = nHeight;
-    pblock->hashMix        = uint256();
-    pblock->nNonce         = 0;
-    pblock->nTime          = 0;
-    
-    // Add dummy coinbase tx as first transaction
-    pblock->vtx.emplace_back();
-    pblocktemplate->vTxFees.push_back(-1); // updated at end
-    pblocktemplate->vTxSigOps.push_back(-1); // updated at end
+        // -regtest only: allow overriding block.nVersion with
+        // -blockversion=N to test forking scenarios
+        if (chainparams.MineBlocksOnDemand())
+            pblock->nVersion = GetArg("-blockversion", pblock->nVersion);
 
-    if (pblock->IsProofOfStake()) {
-        // Add coinstake placeholder
+        nHeight = pindexPrev->nHeight + 1;
+        pblock->hashPrevBlock  = pindexPrev->GetBlockHash();
+
+        pblock->nBits          = GetNextWorkRequired(pindexPrev, pblock.get(), chainparams.GetConsensus());
+        pblock->nHeight        = nHeight;
+        pblock->hashMix        = uint256();
+        pblock->nNonce         = 0;
+        pblock->nTime          = 0;
+
+        // Add dummy coinbase tx as first transaction
         pblock->vtx.emplace_back();
         pblocktemplate->vTxFees.push_back(-1); // updated at end
         pblocktemplate->vTxSigOps.push_back(-1); // updated at end
+
+        if (pblock->IsProofOfStake()) {
+            // Add coinstake placeholder
+            pblock->vtx.emplace_back();
+            pblocktemplate->vTxFees.push_back(-1); // updated at end
+            pblocktemplate->vTxSigOps.push_back(-1); // updated at end
+        }
+
+        //---
+        const int64_t nMedianTimePast = pindexPrev->GetMedianTimePast();
+
+        nLockTimeCutoff = (STANDARD_LOCKTIME_VERIFY_FLAGS & LOCKTIME_MEDIAN_TIME_PAST)
+                        ? nMedianTimePast
+                        : pblock->GetBlockTime();
+
+        addPriorityTxs();
+        addPackageTxs(nPackagesSelected, nDescendantsUpdated);
+
+        nLastBlockTx = nBlockTx;
+        nLastBlockSize = nBlockSize;
+        LogPrintf("CreateNewBlock(): ver %x total size %u txs: %u fees: %ld sigops %d\n", pblock->nVersion, nBlockSize, nBlockTx, nFees, nBlockSigOps);
+
+        // Create coinbase transaction.
+        //---
+        coinbaseTx.vin.resize(1);
+        coinbaseTx.vin[0].prevout.SetNull();
+        coinbaseTx.vout.resize(1);
+        coinbaseTx.vout[0].scriptPubKey = scriptPubKeyIn;
+
+        // NOTE: unlike in bitcoin, we need to pass PREVIOUS block height here
+        CAmount blockReward = nFees + GetBlockSubsidy(pindexPrev->nHeight, Params().GetConsensus());
+
+        // Compute regular coinbase transaction.
+        coinbaseTx.vout[0].nValue = blockReward;
+        coinbaseTx.vin[0].scriptSig = CScript() << nHeight << OP_0;
+
+        // Update coinbase transaction with additional info about masternode and governance payments,
+        // get some info back to pass to getblocktemplate
+        FillBlockPayments(coinbaseTx, nHeight, blockReward, pblock->txoutBackbone, pblock->txoutMasternode, pblock->voutSuperblock);
+        // LogPrintf("CreateNewBlock -- nBlockHeight %d blockReward %lld txoutMasternode %s coinbaseTx %s",
+        //             nHeight, blockReward, pblock->txoutMasternode.ToString(), coinbaseTx.ToString());
+
+        // Ensure correct time relative to the median
+        UpdateTime(pblock.get(), chainparams.GetConsensus(), pindexPrev);
     }
 
-    //---
-    const int64_t nMedianTimePast = pindexPrev->GetMedianTimePast();
-
-    nLockTimeCutoff = (STANDARD_LOCKTIME_VERIFY_FLAGS & LOCKTIME_MEDIAN_TIME_PAST)
-                       ? nMedianTimePast
-                       : pblock->GetBlockTime();
-
-    addPriorityTxs();
-
-    int nPackagesSelected = 0;
-    int nDescendantsUpdated = 0;
-    addPackageTxs(nPackagesSelected, nDescendantsUpdated);
-
-    nLastBlockTx = nBlockTx;
-    nLastBlockSize = nBlockSize;
-    LogPrintf("CreateNewBlock(): ver %x total size %u txs: %u fees: %ld sigops %d\n", pblock->nVersion, nBlockSize, nBlockTx, nFees, nBlockSigOps);
-
-    // Create coinbase transaction.
-    //---
-    CMutableTransaction coinbaseTx;
-    coinbaseTx.vin.resize(1);
-    coinbaseTx.vin[0].prevout.SetNull();
-    coinbaseTx.vout.resize(1);
-    coinbaseTx.vout[0].scriptPubKey = scriptPubKeyIn;
-
-    // NOTE: unlike in bitcoin, we need to pass PREVIOUS block height here
-    CAmount blockReward = nFees + GetBlockSubsidy(pindexPrev->nHeight, Params().GetConsensus());
-
-    // Compute regular coinbase transaction.
-    coinbaseTx.vout[0].nValue = blockReward;
-    coinbaseTx.vin[0].scriptSig = CScript() << nHeight << OP_0;
-
-    // Update coinbase transaction with additional info about masternode and governance payments,
-    // get some info back to pass to getblocktemplate
-    FillBlockPayments(coinbaseTx, nHeight, blockReward, pblock->txoutBackbone, pblock->txoutMasternode, pblock->voutSuperblock);
-    // LogPrintf("CreateNewBlock -- nBlockHeight %d blockReward %lld txoutMasternode %s coinbaseTx %s",
-    //             nHeight, blockReward, pblock->txoutMasternode.ToString(), coinbaseTx.ToString());
-
-    // Ensure correct time relative to the median
-    UpdateTime(pblock.get(), chainparams.GetConsensus(), pindexPrev);
-    
     // PIVX PoS mining code
     //---
     if (pblock->IsProofOfStake()) {
@@ -245,9 +248,15 @@ std::unique_ptr<CBlockTemplate> BlockAssembler::CreateNewBlock(
 
     // Validate
     //---
-    CValidationState state;
-    if (!TestBlockValidity(state, chainparams, *pblock, pindexPrev, false, false)) {
-        error("%s: TestBlockValidity failed: %s", __func__, FormatStateMessage(state));
+    {
+        LOCK(cs_main);
+        CValidationState state;
+
+        if (pindexPrev != chainActive.Tip()) {
+            LogPrint("miner", "%s: the network has already found another block", __func__);
+        } else if (!TestBlockValidity(state, chainparams, *pblock, pindexPrev, false, false)) {
+            error("%s: TestBlockValidity failed: %s", __func__, FormatStateMessage(state));
+        }
     }
 
     int64_t nTime2 = GetTimeMicros();

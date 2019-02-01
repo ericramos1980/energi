@@ -2589,6 +2589,8 @@ void CConnman::Interrupt()
 
 void CConnman::Stop()
 {
+    Interrupt();
+
     if (threadStakeMint.joinable())
         threadStakeMint.join();
     if (threadMessageHandler.joinable())
@@ -2654,7 +2656,6 @@ void CConnman::DeleteNode(CNode* pnode)
 
 CConnman::~CConnman()
 {
-    Interrupt();
     Stop();
 }
 

@@ -28,6 +28,7 @@
 #include "ui_interface.h"
 #include "utilmoneystr.h"
 #include "masternode.h"
+#include "init.h"
 
 #include "governance.h"
 #include "instantx.h"
@@ -3953,6 +3954,10 @@ bool CWallet::CreateCoinStake(const CKeyStore& keystore, CBlock &curr_block, CMu
     LogPrint("stake", "%s : found %u possible stake inputs\n", __func__, setStakeCoins.size());
 
     for (auto iter = setStakeCoins.rbegin(); iter != setStakeCoins.rend(); ++iter) {
+        if (ShutdownRequested()) {
+            break;
+        }
+
         CBlockIndex* pcoin_index = NULL;
         auto pWalletTxIn = std::get<1>(*iter);
 
