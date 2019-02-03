@@ -44,6 +44,7 @@ Minor changes:
 * CHANGED: updated checkpoints & minwork
 * CHANGED: "Sync Headers" to "Initial sync" messages
 * CHANGED: revised DoS protection for PoS
+* CHANGED: removed excessive heavy PoW/PoS validation on some block reads
 * FIXED: PoS-enabled chain startup
 * FIXED: ExecuteSpork() to be called on local node
 * FIXED: active PoS detection on startup & ignore of invalid spork override

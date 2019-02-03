@@ -1263,9 +1263,14 @@ bool ReadBlockFromDisk(CBlock& block, const CDiskBlockPos& pos, const Consensus:
 
     CValidationState state;
 
-    if (check && !CheckProof(state, block, consensusParams)) {
-        return error("ReadBlockFromDisk: Errors in block proof at %s (%s)",
-                     pos.ToString(), state.GetRejectReason().c_str());
+    if (check) {
+        // Since PoS, check without mutex lock may lead to a deadlock
+        AssertLockHeld(cs_main);
+
+        if (!CheckProof(state, block, consensusParams)) {
+            return error("ReadBlockFromDisk: Errors in block proof at %s (%s)",
+                        pos.ToString(), state.GetRejectReason().c_str());
+        }
     }
 
     return true;
@@ -2540,7 +2545,7 @@ bool static DisconnectTip(CValidationState& state, const CChainParams& chainpara
     assert(pindexDelete);
     // Read block from disk.
     CBlock block;
-    if (!ReadBlockFromDisk(block, pindexDelete, chainparams.GetConsensus()))
+    if (!ReadBlockFromDisk(block, pindexDelete, chainparams.GetConsensus(), false))
         return AbortNode(state, "Failed to read block");
     // Apply the block atomically to the chain state.
     int64_t nStart = GetTimeMicros();
@@ -2730,7 +2735,7 @@ bool static ConnectTip(CValidationState& state, const CChainParams& chainparams,
     if (!pblock) {
         std::shared_ptr<CBlock> pblockNew = std::make_shared<CBlock>();
         connectTrace.blocksConnected.emplace_back(pindexNew, pblockNew);
-        if (!ReadBlockFromDisk(*pblockNew, pindexNew, chainparams.GetConsensus()))
+        if (!ReadBlockFromDisk(*pblockNew, pindexNew, chainparams.GetConsensus(), false))
             return AbortNode(state, "Failed to read block");
     } else {
         connectTrace.blocksConnected.emplace_back(pindexNew, pblock);
