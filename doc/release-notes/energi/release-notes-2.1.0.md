@@ -31,6 +31,7 @@ Major changes:
 
 * CHANGED: adjusted PoS consensus logic
 * CHANGED: testnet reset to block 46999
+* CHANGED: to use HD wallet by default
 * FIXED: to ignore best header from invalid ancestor on startup
   - Common Bitcoin/Dash issue
 * FIXED: reindex with invalid or PoS blocks in chain
