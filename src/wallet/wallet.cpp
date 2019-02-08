@@ -5607,11 +5607,12 @@ int CMerkleTx::GetDepthInMainChain(const CBlockIndex* &pindexRet, bool enableIX)
             else {
                 pindexRet = pindex;
                 nResult = ((nIndex == -1) ? (-1) : 1) * (chainActive.Height() - pindex->nHeight + 1);
-
-                if (nResult == 0 && !mempool.exists(GetHash()))
-                    return -1; // Not in chain, not in mempool
             }
         }
+    }
+
+    if ((nResult == 0) && !mempool.exists(GetHash())) {
+        return -1; // Not in chain, not in mempool
     }
 
     if(enableIX && nResult < 6 && instantsend.IsLockedInstantSendTransaction(GetHash()))

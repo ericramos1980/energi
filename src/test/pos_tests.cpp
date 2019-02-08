@@ -18,6 +18,8 @@
 
 #include <boost/test/unit_test.hpp>
 
+constexpr auto TEST_FIRST_POS_BLOCK = 103U;
+
 struct PoSTestSetup : TestChain100Setup {
     CWallet wallet;
     int64_t mock_time{0};
@@ -42,6 +44,8 @@ struct PoSTestSetup : TestChain100Setup {
         CScript scriptPubKey = CScript() <<  ToByteVector(coinbaseKey.GetPubKey()) << OP_CHECKSIG;
 
         pwalletMain = &wallet;
+        RegisterValidationInterface(pwalletMain);
+
         pwalletMain->AddKeyPubKey(coinbaseKey, coinbaseKey.GetPubKey());
         pwalletMain->ScanForWalletTransactions(chainActive.Genesis(), true);
         pwalletMain->ReacceptWalletTransactions();
@@ -53,8 +57,8 @@ struct PoSTestSetup : TestChain100Setup {
 
         BOOST_CHECK(sporkManager.SetSporkAddress(spork_address.ToString()));
         BOOST_CHECK(sporkManager.SetPrivKey(CBitcoinSecret(coinbaseKey).ToString()));
-        BOOST_CHECK(sporkManager.UpdateSpork(SPORK_15_FIRST_POS_BLOCK, 103, *connman));
-        BOOST_CHECK_EQUAL(nFirstPoSBlock, 103U);
+        BOOST_CHECK(sporkManager.UpdateSpork(SPORK_15_FIRST_POS_BLOCK, TEST_FIRST_POS_BLOCK, *connman));
+        BOOST_CHECK_EQUAL(nFirstPoSBlock, TEST_FIRST_POS_BLOCK);
         //int last_pow_height;
 
         mock_time = chainActive.Tip()->GetBlockTimeMax() + 5;
@@ -80,6 +84,7 @@ struct PoSTestSetup : TestChain100Setup {
     }
 
     ~PoSTestSetup() {
+        UnregisterValidationInterface(pwalletMain);
         pwalletMain = nullptr;
         nFirstPoSBlock = 999999;
         BOOST_CHECK(sporkManager.UpdateSpork(SPORK_15_FIRST_POS_BLOCK, 999999ULL, *connman));
@@ -94,7 +99,7 @@ BOOST_AUTO_TEST_CASE(PoS_transition_test)
     //---
     auto value_bak = sporkManager.GetSporkValue(SPORK_15_FIRST_POS_BLOCK);
     BOOST_CHECK(sporkManager.UpdateSpork(SPORK_15_FIRST_POS_BLOCK, 999999ULL, *connman));
-    BOOST_CHECK_EQUAL(nFirstPoSBlock, 103U);
+    BOOST_CHECK_EQUAL(nFirstPoSBlock, TEST_FIRST_POS_BLOCK);
 
     {
         auto blk = CreateAndProcessBlock(CMutableTransactionList(), CScript());
@@ -527,6 +532,38 @@ BOOST_AUTO_TEST_CASE(PoS_header_double_spent) {
         headers.push_back(blk);
         BOOST_CHECK(!ProcessNewBlockHeaders(headers, state, params, NULL));
         BOOST_CHECK_EQUAL(state.GetRejectReason(), "bad-header-double-spent");
+    }
+}
+
+
+BOOST_AUTO_TEST_CASE(PoS_abandon_stake) {
+    auto params = Params();
+    //auto consensus = params.GetConsensus();
+
+    UpdateMockTime();
+
+    // Lock all outputs
+    std::vector<COutput> vCoins;
+    pwalletMain->AvailableCoins(vCoins);
+
+    for (auto& c : vCoins) {
+        pwalletMain->LockCoin(COutPoint(c.tx->GetHash(), c.i));
+    }
+
+    pwalletMain->AvailableCoins(vCoins);
+    BOOST_CHECK(vCoins.empty());
+
+    {
+        CValidationState state;
+        InvalidateBlock(state, params, chainActive.Tip());
+        BOOST_CHECK(state.IsValid());
+    }
+
+    pwalletMain->AvailableCoins(vCoins);
+    BOOST_CHECK_EQUAL(vCoins.size(), 1U);
+
+    if (!vCoins.empty()) {
+        CreateAndProcessBlock(CMutableTransactionList(), CScript());
     }
 }
 
