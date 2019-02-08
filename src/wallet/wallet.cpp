@@ -1134,7 +1134,7 @@ bool CWallet::AddToWallet(const CWalletTx& wtxIn, bool fFlushOnClose)
             fUpdated = true;
         }
         // If no longer abandoned, update
-        if (wtxIn.hashBlock.IsNull() && wtx.isAbandoned())
+        if (!wtxIn.hashBlock.IsNull() && wtx.isAbandoned())
         {
             wtx.hashBlock = wtxIn.hashBlock;
             fUpdated = true;
@@ -1946,7 +1946,7 @@ void CWallet::ReacceptWalletTransactions()
 
         int nDepth = wtx.GetDepthInMainChain();
 
-        if (!wtx.IsCoinBase() && (nDepth == 0 && !wtx.isAbandoned())) {
+        if ((nDepth == 0) && wtx.IsTransmittable()) {
             mapSorted.insert(std::make_pair(wtx.nOrderPos, &wtx));
         }
     }
@@ -1965,7 +1965,7 @@ void CWallet::ReacceptWalletTransactions()
 bool CWalletTx::RelayWalletTransaction(CConnman* connman, const std::string& strCommand)
 {
     assert(pwallet->GetBroadcastTransactions());
-    if (!IsCoinBase() && !isAbandoned() && GetDepthInMainChain() == 0)
+    if ((GetDepthInMainChain() == 0) && IsTransmittable())
     {
         CValidationState state;
         /* GetDepthInMainChain already catches known conflicts. */
