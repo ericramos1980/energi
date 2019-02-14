@@ -432,6 +432,10 @@ public:
             ( 383040, uint256S("0x9d662c1e343b626f43b431ffdda02378b47d4dc34967d73102330650a493ad3c"))
             ( 383300, uint256S("0xbc4db5c524f4ebda508874f2ddc039e5492345a3b4330168eb67acca8c8b791b"))
             ( 400000, uint256S("0x2d70c456952952df17b5fd1bb0dec6c6a91fb999c617941ea5585ebd91e0b89d"))
+
+            // Blacklist
+            ,
+            {}
      };
 
         chainTxData = ChainTxData{
@@ -607,6 +611,10 @@ public:
             (  47000, uint256S("0x83c326375f94cfa64dfd9f6250259f3bff8e744d8f8a0c53546abe205f6faa45"))
             (  47170, uint256S("0xb7ac4454f458096ab3510e408d6c8c7cb2214ecbda019a3019482922f8c083e2"))
             (  57000, uint256S("0x9b5e54cd8b8634127bee5f57038a77d887947a11934427fea28ae38d74502508"))
+
+            // Blacklist
+            ,
+            {}
         };
 
         chainTxData = ChainTxData{
@@ -898,6 +906,10 @@ public:
             boost::assign::map_list_of
             (      0, uint256S("0x000008ca1832a4baf228eb1553c03d3a2c8e02399550dd6ea8d65cec3ef23d2e"))
             (      1, devnetGenesis.GetHash())
+
+            // Blacklist
+            ,
+            {}
         };
 
         chainTxData = ChainTxData{
@@ -1025,7 +1037,11 @@ public:
 
         checkpointData = (CCheckpointData){
             boost::assign::map_list_of
-            ( 0, uint256S("0x378abe3d42888769177494063edd42e6c3925e938ff8f73c71a6b6ad5b293ea7")),
+            ( 0, uint256S("0x378abe3d42888769177494063edd42e6c3925e938ff8f73c71a6b6ad5b293ea7"))
+
+            // Blacklist
+            ,
+            {}
         };
 
         chainTxData = ChainTxData{

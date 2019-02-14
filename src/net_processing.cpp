@@ -1025,6 +1025,12 @@ bool static AlreadyHave(const CInv& inv) EXCLUSIVE_LOCKS_REQUIRED(cs_main)
             LOCK(cs_main);
             return mapSporkCheckpoints.count(inv.hash);
         }
+
+    case MSG_BLACKLIST:
+        {
+            LOCK(cs_main);
+            return mapSporkBlacklist.count(inv.hash);
+        }
     }
 
     // Don't know what it is, just say we already got one
@@ -1334,6 +1340,16 @@ void static ProcessGetData(CNode* pfrom, const Consensus::Params& consensusParam
 
                     if(mapSporkCheckpoints.count(inv.hash)) {
                         connman.PushMessage(pfrom, msgMaker.Make(NetMsgType::CHECKPOINT, mapSporkCheckpoints[inv.hash]));
+                        push = true;
+                    }
+                }
+
+
+                if (!push && inv.type == MSG_BLACKLIST) {
+                    LOCK(cs_main);
+
+                    if(mapSporkBlacklist.count(inv.hash)) {
+                        connman.PushMessage(pfrom, msgMaker.Make(NetMsgType::BLACKLIST, mapSporkBlacklist[inv.hash]));
                         push = true;
                     }
                 }
