@@ -2030,6 +2030,12 @@ bool AppInitMain(boost::thread_group& threadGroup, CScheduler& scheduler)
         if(!flatdb4.Load(netfulfilledman)) {
             return InitError(_("Failed to load fulfilled requests cache from") + "\n" + (pathDB / strDBName).string());
         }
+
+        if (GetBoolArg("-forcemnsync", false)) {
+            while (!masternodeSync.IsSynced()) {
+                masternodeSync.SwitchToNextAsset(*g_connman);
+            }
+        }
     }
 
 

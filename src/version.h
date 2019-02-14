@@ -12,7 +12,7 @@
  */
 
 
-static const int PROTOCOL_VERSION = 70211;
+static const int PROTOCOL_VERSION = 70212;
 
 //! initial proto version, to be increased after version/verack negotiation
 static const int INIT_PROTO_VERSION = 209;
@@ -50,5 +50,8 @@ static const int PROOF_OF_STAKE_VERSION = 70211;
 
 //! Dynamic spork checkpoint protocol version
 static const int SPORK_CHECKPOINT_VERSION = 70211;
+
+//! Dynamic spork blacklist protocol version
+static const int SPORK_BLACKLIST_VERSION = 70212;
 
 #endif // BITCOIN_VERSION_H

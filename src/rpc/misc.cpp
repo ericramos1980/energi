@@ -32,6 +32,8 @@
 
 #include <univalue.h>
 
+extern void ScriptPubKeyToJSON(const CScript& scriptPubKey, UniValue& out, bool fIncludeHex);
+
 /**
  * @note Do not add or change anything in the information returned by this
  * method. `getinfo` exists for backwards-compatibility only. It combines
@@ -260,13 +262,30 @@ UniValue spork(const JSONRPCRequest& request)
             }
 
             return ret;
+        } else if(strCommand == "blacklist"){
+            UniValue ret(UniValue::VARR);
+            auto curr_time = GetAdjustedTime();
+
+            for (auto& item : sporkManager.GetActiveBlacklists()) {
+                auto& bl = item.second;
+
+                UniValue ret_item(UniValue::VOBJ);
+                ScriptPubKeyToJSON(bl.scriptPubKey, ret_item, true);
+                ret_item.push_back(Pair("since", int64_t(bl.nTimeSince)));
+                ret_item.push_back(Pair("expires_in", int64_t(bl.nTimeSigned + CSporkBlacklist::MAX_AGE) - curr_time));
+                ret.push_back(ret_item);
+            }
+
+            return ret;
         }
     }
 
     bool show_help = request.fHelp || request.params.size() < 2;
 
     if (!show_help) {
-        auto req_params = (request.params[0].get_str() == "checkpoint") ? 3U : 2U;
+        auto req_params = 2U;
+        req_params = (request.params[0].get_str() == "checkpoint") ? 3U : req_params;
+        req_params = (request.params[0].get_str() == "blacklist") ? 3U : req_params;
         show_help = (request.params.size() != req_params);
     }
 
@@ -297,6 +316,15 @@ UniValue spork(const JSONRPCRequest& request)
             "  }.\n"
             "  ...\n"
             "]\n"
+            "For 'blacklist':\n"
+            "[\n"
+            "  {\n"
+            "    \"script\" : \"hash\",         (string) the UTXO script\n"
+            "    \"since\" : seconds,           (number) blacklisting since\n"
+            "    \"expires_in\" : seconds,      (number) the checkpoint expires in seconds\n"
+            "  }.\n"
+            "  ...\n"
+            "]\n"
             "\nExamples:\n"
             + HelpExampleCli("spork", "show")
             + HelpExampleRpc("spork", "\"show\""));
@@ -318,10 +346,44 @@ UniValue spork(const JSONRPCRequest& request)
                 "1. \"height\"     (number, required) The block height \n"
                 "2. \"hash\"       (string, required) The block hash of valid chain\n"
                 "\nResult:\n"
-                "  result               (string) \"success\" if spork value was updated or this help otherwise\n"
+                "  result          (string) \"success\" if spork value was updated or this help otherwise\n"
                 "\nExamples:\n"
-                + HelpExampleCli("spork", "SPORK_2_INSTANTSEND_ENABLED 4070908800")
-                + HelpExampleRpc("spork", "\"SPORK_2_INSTANTSEND_ENABLED\", 4070908800"));
+                + HelpExampleCli("spork", "checkpoint 1234 0123..abcd")
+                + HelpExampleRpc("spork", "\"checkpoint\", 1234, \"0123..abcd\""));
+        }
+    } else if (request.params[0].get_str() == "blacklist") {
+        if (!g_connman) {
+            throw JSONRPCError(RPC_CLIENT_P2P_DISABLED, "Error: Peer-to-peer functionality missing or disabled");
+        }
+
+        auto since = request.params[1].get_int64();
+        CScript script;
+
+        auto raw_dst = request.params[2].get_str();
+        auto addr = CBitcoinAddress(raw_dst);
+
+        if (addr.IsValid()) {
+            script = GetScriptForDestination(addr.Get());
+        } else {
+            auto raw_script = ParseHex(raw_dst);
+            // NOTE: another explicit c-tor will act as stream write!
+            script = CScript(raw_script.begin(), raw_script.end());
+        }
+
+        if(sporkManager.UpdateBlacklist(script, since, *g_connman)){
+            return "success";
+        } else {
+            throw std::runtime_error(
+                "spork blacklist \"script\" since\n"
+                "\nUpdate the value of the specific spork blacklist. Requires \"-sporkkey\" to be set to sign the message.\n"
+                "\nArguments:\n"
+                "1. since                  (number, required) The time in seconds.\n"
+                "2. \"script_or_address\"  (hexstring or address, required) The UTXO script in hex or address.\n"
+                "\nResult:\n"
+                "  result          (string) \"success\" if spork value was updated or this help otherwise\n"
+                "\nExamples:\n"
+                + HelpExampleCli("spork", "blacklist 0123..abcd 1234567890")
+                + HelpExampleRpc("spork", "\"blacklist\", \"0123..abcd\", 1234567890"));
         }
     } else {
         // advanced mode, update spork values

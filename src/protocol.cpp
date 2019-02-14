@@ -71,6 +71,7 @@ const char *MNGOVERNANCEOBJECT="govobj";
 const char *MNGOVERNANCEOBJECTVOTE="govobjvote";
 const char *MNVERIFY="mnv";
 const char *CHECKPOINT="chkp";
+const char *BLACKLIST="bll";
 };
 
 static const char* ppszTypeName[] =
@@ -99,6 +100,7 @@ static const char* ppszTypeName[] =
     NetMsgType::MNVERIFY,
     "compact block", // Should never occur
     NetMsgType::CHECKPOINT,
+    NetMsgType::BLACKLIST,
 };
 
 /** All known message types. Keep this in the same order as the list of
@@ -157,6 +159,7 @@ const static std::string allNetMessageTypes[] = {
     NetMsgType::MNGOVERNANCEOBJECTVOTE,
     NetMsgType::MNVERIFY,
     NetMsgType::CHECKPOINT,
+    NetMsgType::BLACKLIST,
 };
 const static std::vector<std::string> allNetMessageTypesVec(allNetMessageTypes, allNetMessageTypes+ARRAYLEN(allNetMessageTypes));
 

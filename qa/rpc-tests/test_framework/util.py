@@ -217,6 +217,8 @@ def initialize_datadir(dirname, n):
         f.write("staking=0\n")
         f.write("sporkaddr=tCri6YknwQ4wnUQGxqDxSb6hdMaU7rPR3z\n")
         f.write("sporkkey=cP6fF1kWCPWWWDjKpFzkCPJL6rUWVhErc2uBxBMivLv7fRRDcDBK\n")
+        f.write("usehd=0\n")
+        f.write("forcemnsync=1\n")
     return datadir
 
 def rpc_auth_pair(n):

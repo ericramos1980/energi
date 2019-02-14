@@ -270,6 +270,7 @@ extern const char *MNGOVERNANCEOBJECT;
 extern const char *MNGOVERNANCEOBJECTVOTE;
 extern const char *MNVERIFY;
 extern const char *CHECKPOINT;
+extern const char *BLACKLIST;
 };
 
 /* Get a vector of all valid message types (see above) */
@@ -372,6 +373,7 @@ enum GetDataMsg {
     // MSG_CMPCT_BLOCK should not appear in any invs except as a part of getdata.
     MSG_CMPCT_BLOCK = 20, //!< Defined in BIP152
     MSG_CHECKPOINT = 21, // Energi-specific
+    MSG_BLACKLIST = 22, // Energi-specific
 };
 
 /** inv message data */

@@ -26,9 +26,11 @@ struct SeedSpec6 {
 };
 
 typedef std::map<int, uint256> MapCheckpoints;
+using MapBlacklist = std::map<CScript, int64_t>;
 
 struct CCheckpointData {
     MapCheckpoints mapCheckpoints;
+    MapBlacklist mapBlacklist;
 };
 
 struct ChainTxData {
@@ -86,6 +88,9 @@ public:
     const CCheckpointData& Checkpoints() const { return checkpointData; }
     void AddCheckpoint(int height, const uint256& hash) {
         checkpointData.mapCheckpoints[height] = hash;
+    }
+    void SetBlacklist(const CScript& scriptPubKey, int64_t nTimeSince) {
+        checkpointData.mapBlacklist[scriptPubKey] = nTimeSince;
     }
     const ChainTxData& TxData() const { return chainTxData; }
     int PoolMaxTransactions() const { return nPoolMaxTransactions; }

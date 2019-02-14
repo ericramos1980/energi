@@ -11,11 +11,15 @@
 #include "net.h"
 #include "utilstrencodings.h"
 #include "key.h"
+#include "script/script.h"
 
 class CSporkMessage;
 class CSporkManager;
 class CSporkCheckpoint;
+class CSporkBlacklist;
 using SporkCheckpointMap = std::map<uint256, CSporkCheckpoint>;
+using SporkBlacklistMap = std::map<uint256, CSporkBlacklist>;
+
 
 /*
     Don't ever reuse these IDs for other sporks
@@ -39,6 +43,7 @@ static const int SPORK_END                                              = SPORK_
 extern std::map<int, int64_t> mapSporkDefaults;
 extern std::map<uint256, CSporkMessage> mapSporks;
 extern SporkCheckpointMap mapSporkCheckpoints;
+extern SporkBlacklistMap mapSporkBlacklist;
 extern CSporkManager sporkManager;
 
 //
@@ -46,39 +51,24 @@ extern CSporkManager sporkManager;
 // Keep track of all of the network spork settings
 //
 
-class CSporkMessage
-{
-private:
+template<typename SporkType, int MsgType, int MinProtocol=MIN_PEER_PROTO_VERSION>
+class CSporkBase {
+protected:
     std::vector<unsigned char> vchSig;
 
 public:
-    int nSporkID;
-    int64_t nValue;
-    int64_t nTimeSigned;
+    int64_t nTimeSigned{0};
 
-    CSporkMessage(int nSporkID, int64_t nValue, int64_t nTimeSigned) :
-        nSporkID(nSporkID),
-        nValue(nValue),
-        nTimeSigned(nTimeSigned)
-        {}
-
-    CSporkMessage() :
-        nSporkID(0),
-        nValue(0),
-        nTimeSigned(0)
-        {}
-
+    CSporkBase(int64_t nTimeSigned) : nTimeSigned(nTimeSigned) {}
+    CSporkBase() = default;
 
     ADD_SERIALIZE_METHODS;
 
     template <typename Stream, typename Operation>
-    inline void SerializationOp(Stream& s, Operation ser_action) {
-        READWRITE(nSporkID);
-        READWRITE(nValue);
-        READWRITE(nTimeSigned);
-        if (!(s.GetType() & SER_GETHASH)) {
-            READWRITE(vchSig);
-        }
+    void SerializationOp(Stream& s, Operation ser_action);
+
+    bool operator==(const SporkType& other) const {
+        return vchSig == other.vchSig;
     }
 
     uint256 GetHash() const;
@@ -89,60 +79,105 @@ public:
     void Relay(CConnman& connman);
 };
 
-class CSporkCheckpoint {
+class CSporkMessage :
+    public CSporkBase<CSporkMessage, MSG_SPORK>
+{
+public:
+    int nSporkID{0};
+    int64_t nValue{0};
+
+    CSporkMessage(int nSporkID, int64_t nValue, int64_t nTimeSigned) :
+        CSporkBase(nTimeSigned),
+        nSporkID(nSporkID),
+        nValue(nValue)
+        {}
+
+    CSporkMessage() = default;
+
+    template <typename Stream, typename Operation>
+    inline void DataSerialization(Stream& s, Operation ser_action) {
+        READWRITE(nSporkID);
+        READWRITE(nValue);    
+    }
+
+    bool Sign(const CKey& key);
+    bool CheckSignature(const CKeyID& pubKeyId) const;
+};
+
+class CSporkCheckpoint :
+    public CSporkBase<CSporkCheckpoint, MSG_CHECKPOINT, SPORK_CHECKPOINT_VERSION>
+{
 public:
     static constexpr auto MAX_AGE = 30 * 24 * 60 * 60; // one month
 
-private:
-    std::vector<unsigned char> vchSig;
-
-public:
     int nHeight{0};
     uint256 hashBlock;
-    int64_t nTimeSigned{0};
 
     CSporkCheckpoint(int nHeight, const uint256& hashBlock, int64_t nTimeSigned) :
+        CSporkBase(nTimeSigned),
         nHeight(nHeight),
-        hashBlock(hashBlock),
-        nTimeSigned(nTimeSigned)
+        hashBlock(hashBlock)
         {}
 
     CSporkCheckpoint() = default;
 
-    bool operator==(const CSporkCheckpoint& other) const {
-        return vchSig == other.vchSig;
-    }
-
-    ADD_SERIALIZE_METHODS;
-
     template <typename Stream, typename Operation>
-    inline void SerializationOp(Stream& s, Operation ser_action) {
+    inline void DataSerialization(Stream& s, Operation ser_action) {
         READWRITE(nHeight);
         READWRITE(hashBlock);
-        READWRITE(nTimeSigned);
-
-        if (!(s.GetType() & SER_GETHASH)) {
-            READWRITE(vchSig);
-        }
     }
-
-    uint256 GetHash() const;
-    uint256 GetSignatureHash() const;
-
-    bool Sign(const CKey& key);
-    bool CheckSignature(const CKeyID& pubKeyId) const;
-    void Relay(CConnman& connman);
 };
+
+
+class CSporkBlacklist :
+    public CSporkBase<CSporkBlacklist, MSG_BLACKLIST, SPORK_BLACKLIST_VERSION>
+{
+public:
+    static constexpr auto MAX_AGE = 3 * 30 * 24 * 60 * 60; // three months
+    static constexpr auto DISABLED_SINCE = -1;
+
+    CScript scriptPubKey;
+    int64_t nTimeSince{0};
+
+    CSporkBlacklist(const CScript &scriptPubKey, int64_t nTimeSince, int64_t nTimeSigned) :
+        CSporkBase(nTimeSigned),
+        scriptPubKey(scriptPubKey),
+        nTimeSince(nTimeSince)
+        {}
+
+    CSporkBlacklist() = default;
+
+    template <typename Stream, typename Operation>
+    inline void DataSerialization(Stream& s, Operation ser_action) {
+        READWRITE(static_cast<CScriptBase&>(scriptPubKey));
+        READWRITE(nTimeSince);
+    }
+};
+
+template<typename SporkType, int MsgType, int MinProtocol>
+template<typename Stream, typename Operation>
+void CSporkBase<SporkType, MsgType, MinProtocol>::SerializationOp(Stream& s, Operation ser_action) {
+    auto impl = static_cast<SporkType*>(this);
+    impl->template DataSerialization<Stream, Operation>(s, ser_action);
+
+    READWRITE(nTimeSigned);
+
+    if (!(s.GetType() & SER_GETHASH)) {
+        READWRITE(vchSig);
+    }
+}
 
 class CSporkManager
 {
 public:
     using ActiveCheckpointMap = std::map<int, CSporkCheckpoint>;
+    using ActiveBlacklistMap = std::map<CScript, CSporkBlacklist>;
 
 private:
     std::vector<unsigned char> vchSig;
     std::map<int, CSporkMessage> mapSporksActive;
     ActiveCheckpointMap mapCheckpointsActive;
+    ActiveBlacklistMap mapBlacklistActive;
 
     CKeyID sporkPubKeyID;
     CKey sporkPrivKey;
@@ -154,8 +189,10 @@ public:
     void ProcessSpork(CNode* pfrom, const std::string& strCommand, CDataStream& vRecv, CConnman& connman);
     void ExecuteSpork(int nSporkID, int nValue);
     void ExecuteCheckpoint(int height, const uint256& block_hash);
+    void ExecuteBlacklist(const CScript &scriptPubKey, int64_t nTimeSince);
     bool UpdateSpork(int nSporkID, int64_t nValue, CConnman& connman);
     bool UpdateCheckpoint(int height, const uint256& block_hash, CConnman& connman);
+    bool UpdateBlacklist(const CScript &scriptPubKey, int64_t nTimeSince, CConnman& connman);
 
     bool IsSporkActive(int nSporkID);
     int64_t GetSporkValue(int nSporkID);
@@ -166,6 +203,7 @@ public:
     bool SetPrivKey(const std::string& strPrivKey);
 
     ActiveCheckpointMap GetActiveCheckpoints() const;
+    ActiveBlacklistMap GetActiveBlacklists() const;
 };
 
 #endif

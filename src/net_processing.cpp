@@ -1025,6 +1025,12 @@ bool static AlreadyHave(const CInv& inv) EXCLUSIVE_LOCKS_REQUIRED(cs_main)
             LOCK(cs_main);
             return mapSporkCheckpoints.count(inv.hash);
         }
+
+    case MSG_BLACKLIST:
+        {
+            LOCK(cs_main);
+            return mapSporkBlacklist.count(inv.hash);
+        }
     }
 
     // Don't know what it is, just say we already got one
@@ -1334,6 +1340,16 @@ void static ProcessGetData(CNode* pfrom, const Consensus::Params& consensusParam
 
                     if(mapSporkCheckpoints.count(inv.hash)) {
                         connman.PushMessage(pfrom, msgMaker.Make(NetMsgType::CHECKPOINT, mapSporkCheckpoints[inv.hash]));
+                        push = true;
+                    }
+                }
+
+
+                if (!push && inv.type == MSG_BLACKLIST) {
+                    LOCK(cs_main);
+
+                    if(mapSporkBlacklist.count(inv.hash)) {
+                        connman.PushMessage(pfrom, msgMaker.Make(NetMsgType::BLACKLIST, mapSporkBlacklist[inv.hash]));
                         push = true;
                     }
                 }
@@ -1965,6 +1981,12 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
             return true;
         }
 
+        // Prevent PoS ban during recovery of local chainsplit
+        if(!masternodeSync.IsSynced()) {
+            LogPrint("net", "Ignoring getheaders from peer=%d because node is not synced\n", pfrom->id);
+            return true;
+        }
+
         CNodeState *nodestate = State(pfrom->GetId());
         const CBlockIndex* pindex = NULL;
         if (locator.IsNull())
@@ -2289,7 +2311,9 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
                     LOCK(cs_main);
                     Misbehaving(pfrom->GetId(), nDoS);
                 }
-                LogPrintf("Peer %d sent us invalid header via cmpctblock\n", pfrom->id);
+
+                LogPrintf("Peer %d sent us invalid header via cmpctblock: %s\n",
+                          pfrom->id, state.GetRejectReason().c_str());
                 return true;
             }
             if (state.IsTransientError()) {
@@ -2630,7 +2654,10 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
                     LOCK(cs_main);
                     Misbehaving(pfrom->GetId(), nDoS);
                 }
-                return error("invalid header received: %s", state.GetRejectReason().c_str());
+
+                LogPrintf("Peer %d sent us invalid header: %s\n",
+                          pfrom->id, state.GetRejectReason().c_str());
+                return false;
             }
             if (state.IsTransientError()) {
                 LogPrint("net", "peer %d sent us header which we are unable to process yet \n", pfrom->id);

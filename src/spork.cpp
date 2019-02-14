@@ -33,6 +33,7 @@ std::map<int, int64_t> mapSporkDefaults = {
     {SPORK_16_MASTERNODE_MIN_PROTOCOL,       MIN_PEER_PROTO_VERSION }, // Actual
 };
 SporkCheckpointMap mapSporkCheckpoints GUARDED_BY(cs_main);
+SporkBlacklistMap mapSporkBlacklist GUARDED_BY(cs_main);
 
 void CSporkManager::ProcessSpork(CNode* pfrom, const std::string& strCommand, CDataStream& vRecv, CConnman& connman)
 {
@@ -118,6 +119,38 @@ void CSporkManager::ProcessSpork(CNode* pfrom, const std::string& strCommand, CD
                 ++iter;
             }
         }
+
+        // Dynamic blacklists are closely related to sporks functionality
+        if (pfrom->nVersion >= SPORK_BLACKLIST_VERSION) {
+            LOCK(cs_main);
+
+            auto min_time = GetAdjustedTime() - CSporkBlacklist::MAX_AGE;
+
+            for (auto iter = mapSporkBlacklist.begin(); iter != mapSporkBlacklist.end();) {
+                auto& bl = iter->second;
+
+                // Avoid polluting network with old checkpoints
+                if (bl.nTimeSigned < min_time) {
+                    // Cleanup active as side-effect
+                    auto active_iter = mapBlacklistActive.find(bl.scriptPubKey);
+
+                    if ((active_iter != mapBlacklistActive.end()) &&
+                        (active_iter->second == bl)
+                    ) {
+                        mapBlacklistActive.erase(active_iter);
+                    }
+
+                    auto todel = iter++;
+                    mapSporkBlacklist.erase(todel);
+                    continue;
+                }
+
+                connman.PushMessage(
+                    pfrom,
+                    CNetMsgMaker(pfrom->GetSendVersion()).Make(NetMsgType::BLACKLIST, bl));
+                ++iter;
+            }
+        }
     } else if (strCommand == NetMsgType::CHECKPOINT) {
 
         CSporkCheckpoint checkpoint;
@@ -147,7 +180,7 @@ void CSporkManager::ProcessSpork(CNode* pfrom, const std::string& strCommand, CD
             }
 
             if(!checkpoint.CheckSignature(sporkPubKeyID)) {
-                LogPrintf("CSporkManager::ProcessSpork -- ERROR: invalid signature\n");
+                LogPrintf("CSporkManager::ProcessSpork checkpoint -- ERROR: invalid signature\n");
                 Misbehaving(pfrom->GetId(), 100);
                 return;
             }
@@ -158,6 +191,49 @@ void CSporkManager::ProcessSpork(CNode* pfrom, const std::string& strCommand, CD
         }
 
         checkpoint.Relay(connman);
+    } else if (strCommand == NetMsgType::BLACKLIST) {
+
+        CSporkBlacklist blacklist;
+        vRecv >> blacklist;
+
+        {
+            auto scriptPubKey = blacklist.scriptPubKey;
+            auto hash = blacklist.GetHash();
+
+            LOCK(cs_main);
+
+            pfrom->setAskFor.erase(hash);
+
+            std::string strLogMsg = strprintf("DYNBLACKLIST -- hash: %s script: %d since: %s peer=%d",
+                                              hash.ToString(),
+                                              HexStr(scriptPubKey).c_str(),
+                                              blacklist.nTimeSince, pfrom->id);
+
+            auto iter = mapBlacklistActive.find(scriptPubKey);
+
+            if(iter != mapBlacklistActive.end()) {
+                if (iter->second.nTimeSigned >= blacklist.nTimeSigned) {
+                    LogPrint("spork", "%s seen\n", strLogMsg);
+                    return;
+                } else {
+                    LogPrintf("%s updated\n", strLogMsg);
+                }
+            } else {
+                LogPrintf("%s new\n", strLogMsg);
+            }
+
+            if(!blacklist.CheckSignature(sporkPubKeyID)) {
+                LogPrintf("CSporkManager::ProcessSpork blacklist -- ERROR: invalid signature\n");
+                Misbehaving(pfrom->GetId(), 100);
+                return;
+            }
+
+            mapSporkBlacklist[hash] = blacklist;
+            mapBlacklistActive[scriptPubKey] = blacklist;
+            ExecuteBlacklist(scriptPubKey, blacklist.nTimeSince);
+        }
+
+        blacklist.Relay(connman);
     }
 }
 
@@ -241,6 +317,38 @@ bool CSporkManager::UpdateCheckpoint(int height, const uint256& block_hash, CCon
             mapSporkCheckpoints[checkpoint.GetHash()] = checkpoint;
             mapCheckpointsActive[height] = checkpoint;
             ExecuteCheckpoint(height, block_hash);
+        }
+
+        return true;
+    }
+
+    return false;
+}
+
+void CSporkManager::ExecuteBlacklist(const CScript &scriptPubKey, int64_t nTimeSince)
+{
+    LOCK(cs_main);
+
+    LogPrintf("Adding dynamic blacklist for %s since %lld\n",
+              HexStr(scriptPubKey).c_str(), nTimeSince);
+
+    auto& chainparams = Params();
+    Params(chainparams.NetworkIDString()).SetBlacklist(scriptPubKey, nTimeSince);
+    ProcessScriptBlacklist(scriptPubKey, nTimeSince);
+}
+
+bool CSporkManager::UpdateBlacklist(const CScript &scriptPubKey, int64_t nTimeSince, CConnman& connman)
+{
+    auto blacklist = CSporkBlacklist(scriptPubKey, nTimeSince, GetAdjustedTime());
+
+    if(blacklist.Sign(sporkPrivKey)) {
+        blacklist.Relay(connman);
+
+        {
+            LOCK(cs_main);
+            mapSporkBlacklist[blacklist.GetHash()] = blacklist;
+            mapBlacklistActive[scriptPubKey] = blacklist;
+            ExecuteBlacklist(scriptPubKey, nTimeSince);
         }
 
         return true;
@@ -360,16 +468,53 @@ CSporkManager::ActiveCheckpointMap CSporkManager::GetActiveCheckpoints() const {
     return ret;
 }
 
-uint256 CSporkMessage::GetHash() const
+CSporkManager::ActiveBlacklistMap CSporkManager::GetActiveBlacklists() const {
+    LOCK(cs_main);
+    auto ret = mapBlacklistActive;
+    return ret;
+}
+
+//---
+
+template<typename SporkType, int MsgType, int MinProtocol>
+uint256 CSporkBase<SporkType, MsgType, MinProtocol>::GetHash() const
 {
     return SerializeHash(*this);
 }
 
-uint256 CSporkMessage::GetSignatureHash() const
+template<typename SporkType, int MsgType, int MinProtocol>
+uint256 CSporkBase<SporkType, MsgType, MinProtocol>::GetSignatureHash() const
 {
     return GetHash();
 }
 
+template<typename SporkType, int MsgType, int MinProtocol>
+bool CSporkBase<SporkType, MsgType, MinProtocol>::Sign(const CKey& key)
+{
+    if (!key.IsValid()) {
+        LogPrintf("CSporkBase::Sign -- signing key is not valid\n");
+        return false;
+    }
+
+    CKeyID pubKeyId = key.GetPubKey().GetID();
+    std::string strError = "";
+
+    uint256 hash = GetSignatureHash();
+
+    if(!CHashSigner::SignHash(hash, key, vchSig)) {
+        LogPrintf("CSporkBase::Sign -- SignHash() failed\n");
+        return false;
+    }
+
+    if (!CHashSigner::VerifyHash(hash, pubKeyId, vchSig, strError)) {
+        LogPrintf("CSporkBase::Sign -- VerifyHash() failed, error: %s\n", strError);
+        return false;
+    }
+
+    return true;
+}
+
+// Backward compatibility support
 bool CSporkMessage::Sign(const CKey& key)
 {
     if (!key.IsValid()) {
@@ -409,6 +554,25 @@ bool CSporkMessage::Sign(const CKey& key)
     return true;
 }
 
+
+template<typename SporkType, int MsgType, int MinProtocol>
+bool CSporkBase<SporkType, MsgType, MinProtocol>::CheckSignature(const CKeyID& pubKeyId) const
+{
+    std::string strError = "";
+
+    uint256 hash = GetSignatureHash();
+
+    if (!CHashSigner::VerifyHash(hash, pubKeyId, vchSig, strError)) {
+        // Note: unlike for many other messages when SPORK_6_NEW_SIGS is ON sporks with sigs in old format
+        // and newer timestamps should not be accepted, so if we failed here - that's it
+        LogPrintf("CSporkBase::CheckSignature -- VerifyHash() failed, error: %s\n", strError);
+        return false;
+    }
+
+    return true;
+}
+
+
 bool CSporkMessage::CheckSignature(const CKeyID& pubKeyId) const
 {
     std::string strError = "";
@@ -442,64 +606,11 @@ bool CSporkMessage::CheckSignature(const CKeyID& pubKeyId) const
     return true;
 }
 
-void CSporkMessage::Relay(CConnman& connman)
+template<typename SporkType, int MsgType, int MinProtocol>
+void CSporkBase<SporkType, MsgType, MinProtocol>::Relay(CConnman& connman)
 {
-    CInv inv(MSG_SPORK, GetHash());
-    connman.RelayInv(inv);
+    CInv inv(MsgType, GetHash());
+    connman.RelayInv(inv, MinProtocol);
 }
 
 
-uint256 CSporkCheckpoint::GetHash() const
-{
-    return SerializeHash(*this);
-}
-
-uint256 CSporkCheckpoint::GetSignatureHash() const
-{
-    return GetHash();
-}
-
-bool CSporkCheckpoint::Sign(const CKey& key)
-{
-    if (!key.IsValid()) {
-        LogPrintf("CSporkCheckpoint::Sign -- signing key is not valid\n");
-        return false;
-    }
-
-    CKeyID pubKeyId = key.GetPubKey().GetID();
-    std::string strError = "";
-
-    uint256 hash = GetSignatureHash();
-
-    if(!CHashSigner::SignHash(hash, key, vchSig)) {
-        LogPrintf("CSporkCheckpoint::Sign -- SignHash() failed\n");
-        return false;
-    }
-
-    if (!CHashSigner::VerifyHash(hash, pubKeyId, vchSig, strError)) {
-        LogPrintf("CSporkCheckpoint::Sign -- VerifyHash() failed, error: %s\n", strError);
-        return false;
-    }
-
-    return true;
-}
-
-bool CSporkCheckpoint::CheckSignature(const CKeyID& pubKeyId) const
-{
-    std::string strError;
-
-    uint256 hash = GetSignatureHash();
-
-    if (!CHashSigner::VerifyHash(hash, pubKeyId, vchSig, strError)) {
-        LogPrintf("CSporkCheckpoint::CheckSignature -- VerifyHash() failed, error: %s\n", strError);
-        return false;
-    }
-
-    return true;
-}
-
-void CSporkCheckpoint::Relay(CConnman& connman)
-{
-    CInv inv(MSG_CHECKPOINT, GetHash());
-    connman.RelayInv(inv, SPORK_CHECKPOINT_VERSION);
-}
