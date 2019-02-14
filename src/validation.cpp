@@ -1544,7 +1544,7 @@ bool CheckTxInputs(const CTransaction& tx, CValidationState& state, const CCoins
 }
 }// namespace Consensus
 
-bool CheckInputs(const CTransaction& tx, CValidationState &state, const CCoinsViewCache &inputs, bool fScriptChecks, unsigned int flags, bool cacheStore, std::vector<CScriptCheck> *pvChecks)
+bool CheckInputs(const CTransaction& tx, CValidationState &state, const CCoinsViewCache &inputs, bool fScriptChecks, unsigned int flags, bool cacheStore, std::vector<CScriptCheck> *pvChecks, int64_t block_time)
 {
     if (!tx.IsCoinBase())
     {
@@ -1564,6 +1564,8 @@ bool CheckInputs(const CTransaction& tx, CValidationState &state, const CCoinsVi
         // Of course, if an assumed valid block is invalid due to false scriptSigs
         // this optimization would allow an invalid chain to be accepted.
         if (fScriptChecks) {
+            auto blacklisted = Params().Checkpoints().mapBlacklist;
+
             for (unsigned int i = 0; i < tx.vin.size(); i++) {
                 const COutPoint &prevout = tx.vin[i].prevout;
                 const Coin& coin = inputs.AccessCoin(prevout);
@@ -1576,6 +1578,22 @@ bool CheckInputs(const CTransaction& tx, CValidationState &state, const CCoinsVi
                 // spent being checked as a part of CScriptCheck.
                 const CScript& scriptPubKey = coin.out.scriptPubKey;
                 const CAmount amount = coin.out.nValue;
+
+                if (fCheckpointsEnabled) {
+                    auto blit = blacklisted.find(scriptPubKey);
+                    auto tx_time = block_time ? block_time : GetAdjustedTime();
+
+                    if ((blit != blacklisted.end()) &&
+                        (tx_time >= blit->second)
+                    ) {
+                        // NOTE: that's a bit of a hack, but it perhaps the least problematic
+                        //       way to cleanup blacklisted scripts from mempool which
+                        //       did not pass timestamp check at blacklisting time.
+                        mempool.CleanupBlacklisted(scriptPubKey, inputs);
+
+                        return state.Invalid(false, REJECT_CONFLICT, "blacklisted-input");
+                    }
+                }
 
                 // Verify signature
                 CScriptCheck check(scriptPubKey, amount, tx, i, flags, cacheStore);
@@ -2217,7 +2235,7 @@ static bool ConnectBlock(const CBlock& block, CValidationState& state, CBlockInd
 
             std::vector<CScriptCheck> vChecks;
             bool fCacheResults = fJustCheck; /* Don't cache results if we're actually connecting blocks (still consult the cache, though) */
-            if (!CheckInputs(tx, state, view, fScriptChecks, flags, fCacheResults, nScriptCheckThreads ? &vChecks : NULL))
+            if (!CheckInputs(tx, state, view, fScriptChecks, flags, fCacheResults, nScriptCheckThreads ? &vChecks : NULL, block.GetBlockTime()))
                 return error("ConnectBlock(): CheckInputs on %s failed with %s",
                     tx.GetHash().ToString(), FormatStateMessage(state));
             control.Add(vChecks);
@@ -5048,6 +5066,17 @@ bool IsThottledStakeInput(const COutPoint &out) {
 
     return (iter != mapStakeInputSeen.end()) &&
            ((iter->second + STAKE_INPUT_THROTTLE_PERIOD) > GetAdjustedTime());
+}
+
+/** Process script blacklist upon activation */
+void ProcessScriptBlacklist(const CScript& scriptPubKey, int64_t nTimeSince)
+{
+    if (!fCheckpointsEnabled || (nTimeSince > GetAdjustedTime())) {
+        return;
+    }
+
+    LOCK(cs_main);
+    mempool.CleanupBlacklisted(scriptPubKey, pcoinsTip);
 }
 
 //! Guess how far we are in the verification process at the given block index

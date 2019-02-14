@@ -410,7 +410,8 @@ unsigned int GetP2SHSigOpCount(const CTransaction& tx, const CCoinsViewCache& ma
  * instead of being performed inline.
  */
 bool CheckInputs(const CTransaction& tx, CValidationState &state, const CCoinsViewCache &view, bool fScriptChecks,
-                 unsigned int flags, bool cacheStore, std::vector<CScriptCheck> *pvChecks = NULL);
+                 unsigned int flags, bool cacheStore, std::vector<CScriptCheck> *pvChecks = NULL,
+                 int64_t block_time = 0);
 
 /** Apply the effects of this transaction on the UTXO set represented by view */
 void UpdateCoins(const CTransaction& tx, CCoinsViewCache& inputs, int nHeight);
@@ -620,5 +621,7 @@ bool CheckProof(CValidationState& state, const CBlockHeader &block, const Consen
 
 bool PassStakeInputThrottle(CValidationState& state, const COutPoint &out);
 bool IsThottledStakeInput(const COutPoint &out);
+
+void ProcessScriptBlacklist(const CScript& scriptPubKey, int64_t nTimeSince);
 
 #endif // BITCOIN_VALIDATION_H

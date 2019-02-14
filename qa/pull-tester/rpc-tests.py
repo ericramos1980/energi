@@ -179,6 +179,7 @@ testScripts = [
     'pos-load.py',
     'pos-reindex.py',
     'spork-checkpoints.py',
+    'spork-blacklist.py',
 ]
 if ENABLE_ZMQ:
     testScripts.append('zmq_test.py')

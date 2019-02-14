@@ -1178,6 +1178,28 @@ int CTxMemPool::Expire(int64_t time) {
     return stage.size();
 }
 
+int CTxMemPool::CleanupBlacklisted(const CScript& scriptPubKey, const CCoinsViewCache &view) {
+    LOCK(cs);
+
+    setEntries stage;
+
+    for (auto it = mapTx.begin(); it != mapTx.end(); ++it) {
+        for (auto &vin : it->GetTx().vin) {
+            auto &coin = view.AccessCoin(vin.prevout);
+            auto &prevout = coin.out;
+
+            if (prevout.scriptPubKey == scriptPubKey) {
+                LogPrintf("Found blacklisted tx in mempool: %s",
+                          it->GetTx().GetHash().ToString().c_str());
+                CalculateDescendants(it, stage);
+            }
+        }
+    }
+
+    RemoveStaged(stage, false, MemPoolRemovalReason::CONFLICT);
+    return stage.size();
+}
+
 bool CTxMemPool::addUnchecked(const uint256&hash, const CTxMemPoolEntry &entry, bool validFeeEstimate)
 {
     LOCK(cs);

@@ -32,6 +32,8 @@
 
 #include <univalue.h>
 
+extern void ScriptPubKeyToJSON(const CScript& scriptPubKey, UniValue& out, bool fIncludeHex);
+
 /**
  * @note Do not add or change anything in the information returned by this
  * method. `getinfo` exists for backwards-compatibility only. It combines
@@ -268,7 +270,7 @@ UniValue spork(const JSONRPCRequest& request)
                 auto& bl = item.second;
 
                 UniValue ret_item(UniValue::VOBJ);
-                ret_item.push_back(Pair("script", HexStr(bl.scriptPubKey)));
+                ScriptPubKeyToJSON(bl.scriptPubKey, ret_item, true);
                 ret_item.push_back(Pair("since", int64_t(bl.nTimeSince)));
                 ret_item.push_back(Pair("expires_in", int64_t(bl.nTimeSigned + CSporkBlacklist::MAX_AGE) - curr_time));
                 ret.push_back(ret_item);
@@ -355,7 +357,18 @@ UniValue spork(const JSONRPCRequest& request)
         }
 
         auto since = request.params[1].get_int64();
-        auto script = CScript(ParseHex(request.params[2].get_str()));
+        CScript script;
+
+        auto raw_dst = request.params[2].get_str();
+        auto addr = CBitcoinAddress(raw_dst);
+
+        if (addr.IsValid()) {
+            script = GetScriptForDestination(addr.Get());
+        } else {
+            auto raw_script = ParseHex(raw_dst);
+            // NOTE: another explicit c-tor will act as stream write!
+            script = CScript(raw_script.begin(), raw_script.end());
+        }
 
         if(sporkManager.UpdateBlacklist(script, since, *g_connman)){
             return "success";
@@ -364,8 +377,8 @@ UniValue spork(const JSONRPCRequest& request)
                 "spork blacklist \"script\" since\n"
                 "\nUpdate the value of the specific spork blacklist. Requires \"-sporkkey\" to be set to sign the message.\n"
                 "\nArguments:\n"
-                "1. since          (number, required) The time in seconds.\n"
-                "2. \"script\"     (hexstring, required) The UTXO script in hex.\n"
+                "1. since                  (number, required) The time in seconds.\n"
+                "2. \"script_or_address\"  (hexstring or address, required) The UTXO script in hex or address.\n"
                 "\nResult:\n"
                 "  result          (string) \"success\" if spork value was updated or this help otherwise\n"
                 "\nExamples:\n"

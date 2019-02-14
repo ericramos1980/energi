@@ -334,6 +334,7 @@ void CSporkManager::ExecuteBlacklist(const CScript &scriptPubKey, int64_t nTimeS
 
     auto& chainparams = Params();
     Params(chainparams.NetworkIDString()).SetBlacklist(scriptPubKey, nTimeSince);
+    ProcessScriptBlacklist(scriptPubKey, nTimeSince);
 }
 
 bool CSporkManager::UpdateBlacklist(const CScript &scriptPubKey, int64_t nTimeSince, CConnman& connman)

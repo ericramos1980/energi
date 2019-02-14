@@ -71,7 +71,7 @@ const char *MNGOVERNANCEOBJECT="govobj";
 const char *MNGOVERNANCEOBJECTVOTE="govobjvote";
 const char *MNVERIFY="mnv";
 const char *CHECKPOINT="chkp";
-const char *BLACKLIST="black";
+const char *BLACKLIST="bll";
 };
 
 static const char* ppszTypeName[] =
