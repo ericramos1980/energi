@@ -1981,6 +1981,12 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
             return true;
         }
 
+        // Prevent PoS ban during recovery of local chainsplit
+        if(!masternodeSync.IsSynced()) {
+            LogPrint("net", "Ignoring getheaders from peer=%d because node is not synced\n", pfrom->id);
+            return true;
+        }
+
         CNodeState *nodestate = State(pfrom->GetId());
         const CBlockIndex* pindex = NULL;
         if (locator.IsNull())
