@@ -13,6 +13,7 @@
 #include "consensus/consensus.h"
 #include "consensus/validation.h"
 #include "miner.h"
+#include "masternode-sync.h"
 
 #include "test/test_energi.h"
 
@@ -425,12 +426,42 @@ BOOST_AUTO_TEST_CASE(PoS_old_fork) {
 
     // old fork
     {
-        blk.hashMerkleRoot = uint256();
+        mock_time = chainActive.Tip()->GetMedianTimePast() + MIN_POS_TIP_AGE_FOR_OLD_FORK - 1;
+        SetMockTime(mock_time);
+
+        // 1. OK - not synced
+        blk.hashMerkleRoot = uint256S("1");
+        BOOST_CHECK(coinbaseKey.SignCompact(blk.GetHash(), blk.posBlockSig));
+        masternodeSync.Reset();
+
+        {
+            CValidationState state;
+            std::deque<CBlockHeader> headers;
+            headers.push_back(blk);
+            BOOST_CHECK(ProcessNewBlockHeaders(headers, state, params, NULL));
+            BOOST_CHECK_EQUAL(state.GetRejectReason(), "");
+
+            // Just repeat
+            BOOST_CHECK(ProcessNewBlockHeaders(headers, state, params, NULL));
+            BOOST_CHECK_EQUAL(state.GetRejectReason(), "");
+        }
+
+        // Reset stake seen status
+        {
+            SetMockTime(mock_time + STAKE_INPUT_THROTTLE_PERIOD + 1);
+            CValidationState state;
+            PassStakeInputThrottle(state, COutPoint());
+            SetMockTime(mock_time);
+        }
+
+        // 2. Fail when synced
+        blk.hashMerkleRoot = uint256S("2");
         BOOST_CHECK(coinbaseKey.SignCompact(blk.GetHash(), blk.posBlockSig));
 
-        mock_time = chainActive.Tip()->GetMedianTimePast() + MIN_POS_TIP_AGE_FOR_OLD_FORK - 1;
+        for (auto i = 7; i > 0; --i) {
+            masternodeSync.SwitchToNextAsset(*connman);
+        }
 
-        // Fail first
         {
             CValidationState state;
             std::deque<CBlockHeader> headers;
@@ -443,10 +474,18 @@ BOOST_AUTO_TEST_CASE(PoS_old_fork) {
             BOOST_CHECK_EQUAL(state.GetRejectReason(), "too-old-pos-fork");
         }
 
+        // Reset stake seen status
+        {
+            SetMockTime(mock_time + (STAKE_INPUT_THROTTLE_PERIOD + 1) * 2);
+            CValidationState state;
+            PassStakeInputThrottle(state, COutPoint());
+            SetMockTime(mock_time);
+        }
+
+        // 3. OK - when after threshold
         mock_time += 1;
         SetMockTime(mock_time);
 
-        // OK
         {
             CValidationState state;
             std::deque<CBlockHeader> headers;
@@ -458,6 +497,8 @@ BOOST_AUTO_TEST_CASE(PoS_old_fork) {
             BOOST_CHECK(ProcessNewBlockHeaders(headers, state, params, NULL));
             BOOST_CHECK_EQUAL(state.GetRejectReason(), "");
         }
+
+        masternodeSync.Reset();
     }
 }
 
