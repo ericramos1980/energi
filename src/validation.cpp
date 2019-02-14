@@ -5014,7 +5014,7 @@ bool PassStakeInputThrottle(CValidationState& state, const COutPoint &out) {
     auto now = GetAdjustedTime();
 
     //---
-    if ((last_cleanup + STAKE_INPUT_THROTTLE_PERIOD) > now) {
+    if ((last_cleanup + STAKE_INPUT_THROTTLE_PERIOD) < now) {
         for (auto iter = mapStakeInputSeen.begin(); iter != mapStakeInputSeen.end();) {
             auto curr = iter++;
 
