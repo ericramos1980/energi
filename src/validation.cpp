@@ -3675,8 +3675,10 @@ static bool AcceptBlockHeader(const CBlockHeader& block, CValidationState& state
                 ((chainActive.Tip()->GetMedianTimePast() + MIN_POS_TIP_AGE_FOR_OLD_FORK) > now) &&
                 masternodeSync.IsSynced()
             ) {
-                return state.DoS(100, false, REJECT_INVALID, "too-old-pos-fork",
-                                false, "PoS fork too far in the past");
+                // NOTE: avoid triggering DoS as large fork is kind of natural situation
+                //       but allows clients to recover without being banned.
+                return state.Invalid(false, REJECT_INVALID, "too-old-pos-fork",
+                                     "PoS fork too far in the past");
             }
         }
     }

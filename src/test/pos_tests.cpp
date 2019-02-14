@@ -458,7 +458,7 @@ BOOST_AUTO_TEST_CASE(PoS_old_fork) {
         blk.hashMerkleRoot = uint256S("2");
         BOOST_CHECK(coinbaseKey.SignCompact(blk.GetHash(), blk.posBlockSig));
 
-        for (auto i = 7; i > 0; --i) {
+        while (!masternodeSync.IsSynced()) {
             masternodeSync.SwitchToNextAsset(*connman);
         }
 
@@ -468,9 +468,9 @@ BOOST_AUTO_TEST_CASE(PoS_old_fork) {
             headers.push_back(blk);
             BOOST_CHECK(!ProcessNewBlockHeaders(headers, state, params, NULL));
 
-            int dos = 0;
+            int dos = -1;
             BOOST_CHECK(state.IsInvalid(dos));
-            BOOST_CHECK_EQUAL(dos, 100);
+            BOOST_CHECK_EQUAL(dos, 0);
             BOOST_CHECK_EQUAL(state.GetRejectReason(), "too-old-pos-fork");
         }
 

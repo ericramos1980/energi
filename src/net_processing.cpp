@@ -2311,7 +2311,9 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
                     LOCK(cs_main);
                     Misbehaving(pfrom->GetId(), nDoS);
                 }
-                LogPrintf("Peer %d sent us invalid header via cmpctblock\n", pfrom->id);
+
+                LogPrintf("Peer %d sent us invalid header via cmpctblock: %s\n",
+                          pfrom->id, state.GetRejectReason().c_str());
                 return true;
             }
             if (state.IsTransientError()) {
@@ -2652,7 +2654,10 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
                     LOCK(cs_main);
                     Misbehaving(pfrom->GetId(), nDoS);
                 }
-                return error("invalid header received: %s", state.GetRejectReason().c_str());
+
+                LogPrintf("Peer %d sent us invalid header: %s\n",
+                          pfrom->id, state.GetRejectReason().c_str());
+                return false;
             }
             if (state.IsTransientError()) {
                 LogPrint("net", "peer %d sent us header which we are unable to process yet \n", pfrom->id);
