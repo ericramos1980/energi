@@ -1,6 +1,8 @@
 Energi Core version 2.1.0 Release Notes
 =======================================
 
+**THIS IS MANDATORY UPGRADE!**
+
 Energi Core version 2.1.0 is now available from:
 
   https://energi.world/downloads
