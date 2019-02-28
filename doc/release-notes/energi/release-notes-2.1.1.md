@@ -27,6 +27,10 @@ your operation system:
 v2.1.1 changelog
 ----------------
 
+Major:
+
+* CHANGED: to ignore pre-2.1.0 nodes
+
 Minor changes:
 
 * CHANGED: removed -litemode
