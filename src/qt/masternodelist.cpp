@@ -341,6 +341,10 @@ void MasternodeList::on_filterLineEdit_textChanged(const QString &strFilterIn)
 
 void MasternodeList::on_startButton_clicked()
 {
+    if(!CheckStartAllowed()) {
+        return;
+    }
+
     std::string strAlias;
     {
         LOCK(cs_mymnlist);
@@ -379,6 +383,10 @@ void MasternodeList::on_startButton_clicked()
 
 void MasternodeList::on_startAllButton_clicked()
 {
+    if(!CheckStartAllowed()) {
+        return;
+    }
+
     // Display message box
     QMessageBox::StandardButton retval = QMessageBox::question(this, tr("Confirm all masternodes start"),
         tr("Are you sure you want to start ALL masternodes?"),
@@ -401,12 +409,19 @@ void MasternodeList::on_startAllButton_clicked()
     StartAll();
 }
 
-void MasternodeList::on_startMissingButton_clicked()
-{
-
+bool MasternodeList::CheckStartAllowed() {
     if(!masternodeSync.IsMasternodeListSynced()) {
         QMessageBox::critical(this, tr("Command is not available right now"),
             tr("You can't use this command until masternode list is synced"));
+        return false;
+    }
+
+    return true;
+}
+
+void MasternodeList::on_startMissingButton_clicked()
+{
+    if(!CheckStartAllowed()) {
         return;
     }
 

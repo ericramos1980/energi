@@ -42,6 +42,7 @@ public:
     void ShowQRCode(std::string strAlias);
     void StartAlias(std::string strAlias);
     void StartAll(std::string strCommand = "start-all");
+    bool CheckStartAllowed();
 
 private:
     QMenu *contextMenu;

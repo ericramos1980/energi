@@ -30,3 +30,5 @@ v2.1.1 changelog
 Minor changes:
 
 * CHANGED: removed -litemode
+* CHANGED: to ignore MN cache on desktop wallet startup
+    - Workaround for known issue due to start/stop sequences

@@ -1994,7 +1994,11 @@ bool AppInitMain(boost::thread_group& threadGroup, CScheduler& scheduler)
 
     // LOAD SERIALIZED DAT FILES INTO DATA CACHES FOR INTERNAL USE
 
-    if (!fLiteMode) {
+    // As there is a known issue with MN cache becoming invalid if shutdown is too short
+    // to invalidate the cache and too long to miss MN pings.
+    //
+    // That does not apply to regular energid use cases, but is quite common for desktop usage.
+    if (!fLiteMode && !uiInterface.isRealUI()) {
         boost::filesystem::path pathDB = GetDataDir();
         std::string strDBName;
 
