@@ -3212,8 +3212,7 @@ bool CWallet::SelectStakeCoins(StakeCandidates& setCoins, CAmount nTargetAmount)
 bool CWallet::MintableCoins()
 {
     CAmount nBalance = GetBalance();
-    if (IsArgSet("-reservebalance") && !ParseMoney(GetArg("-reservebalance", ""), nReserveBalance))
-        return error("MintableCoins() : invalid reserve balance amount");
+
     if (nBalance <= nReserveBalance)
         return false;
 
@@ -3925,9 +3924,6 @@ bool CWallet::CreateCoinStake(const CKeyStore& keystore, CBlock &curr_block, CMu
 {
     // Choose coins to use
     CAmount nBalance = GetBalance();
-
-    if (IsArgSet("-reservebalance") && !ParseMoney(GetArg("-reservebalance", ""), nReserveBalance))
-        return error("CreateCoinStake : invalid reserve balance amount");
 
     if (nBalance <= nReserveBalance)
         return error("CreateCoinStake : balance is less than required to reserve");
