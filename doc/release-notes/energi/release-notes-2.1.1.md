@@ -38,3 +38,4 @@ Minor changes:
 * CHANGED: to ignore MN cache on desktop wallet startup
     - Workaround for known issue due to start/stop sequences
 * FIXED: reservebalance to override -reservebalance switch
+* FIXED: reverted regression causing Unicode paths to fail on Windows
