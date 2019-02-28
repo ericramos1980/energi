@@ -166,6 +166,7 @@ static const CRPCConvertParam vRPCConvertParams[] =
     { "echojson", 9, "arg9" },
     { "reservebalance", 0, "reserve" },
     { "reservebalance", 1, "amount" },
+    { "liststakeinputs", 0, "obeyreserve" },
 };
 
 class CRPCConvertTable

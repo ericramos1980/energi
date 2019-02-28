@@ -27,9 +27,10 @@ your operation system:
 v2.1.1 changelog
 ----------------
 
-Major:
+Major changes:
 
 * CHANGED: to ignore pre-2.1.0 nodes
+* NEW: liststakeinputs RPC command
 
 Minor changes:
 

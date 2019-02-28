@@ -2838,6 +2838,60 @@ UniValue setbip69enabled(const JSONRPCRequest& request)
     return NullUniValue;
 }
 
+
+UniValue liststakeinputs(const JSONRPCRequest& request)
+{
+    if (!EnsureWalletIsAvailable(request.fHelp))
+        return NullUniValue;
+
+    if (request.fHelp || request.params.size() > 1)
+        throw std::runtime_error(
+            "liststakeinputs [obeyreserve]\n"
+            "\nReturns array of potential stake inputs.\n"
+            "\nArguments:\n"
+            "1. obeyreserve    (boolean, optional, default=false) Obey -reservebalance option\n"
+            "\nResult:\n"
+            "[                             (array of json object)\n"
+            "  {\n"
+            "    \"txid\" : \"txid\",        (string) the transaction id \n"
+            "    \"vout\" : n,               (numeric) the vout value\n"
+            "    \"amount\" : x.xxx          (numeric) the transaction output amount in " + CURRENCY_UNIT + "\n"
+            "  }\n"
+            "  ,...\n"
+            "]\n"
+
+            "\nExamples:\n"
+            + HelpExampleCli("liststakeinputs", "")
+            + HelpExampleRpc("liststakeinputs", "true")
+        );
+
+    UniValue results(UniValue::VARR);
+    assert(pwalletMain != NULL);
+    LOCK2(cs_main, pwalletMain->cs_wallet);
+
+    auto max_amount = std::numeric_limits<CAmount>::max();
+
+    if (!request.params.empty() && request.params[0].get_bool()) {
+        max_amount = pwalletMain->GetBalance() - nReserveBalance;
+    }
+
+    CWallet::StakeCandidates stakesInputs;
+    pwalletMain->SelectStakeCoins(stakesInputs, max_amount);
+
+    for (auto &si : stakesInputs) {
+        auto tx = std::get<1>(si);
+        auto out_i = std::get<2>(si);
+
+        UniValue entry(UniValue::VOBJ);
+        entry.push_back(Pair("txid", tx->GetHash().GetHex()));
+        entry.push_back(Pair("vout", int64_t(out_i)));
+        entry.push_back(Pair("amount", ValueFromAmount(tx->tx->vout[out_i].nValue)));
+        results.push_back(entry);
+    }
+
+    return results;
+}
+
 extern UniValue dumpprivkey(const JSONRPCRequest& request); // in rpcdump.cpp
 extern UniValue importprivkey(const JSONRPCRequest& request);
 extern UniValue importaddress(const JSONRPCRequest& request);
@@ -2906,6 +2960,7 @@ static const CRPCCommand commands[] =
     { "wallet",             "instantsendtoaddress",     &instantsendtoaddress,     false,  {"address","amount","comment","comment_to","subtractfeefromamount"} },
     { "wallet",             "dumphdinfo",               &dumphdinfo,               true,   {} },
     { "wallet",             "importelectrumwallet",     &importelectrumwallet,     true,   {"filename", "index"} },
+    { "wallet",             "liststakeinputs",          &liststakeinputs,          false,  {"obeyreserve"} },
 
     { "hidden",             "setbip69enabled",          &setbip69enabled,          true,   {} },
 };
