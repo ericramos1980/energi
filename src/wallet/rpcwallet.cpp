@@ -2849,7 +2849,7 @@ UniValue liststakeinputs(const JSONRPCRequest& request)
             "liststakeinputs [obeyreserve]\n"
             "\nReturns array of potential stake inputs.\n"
             "\nArguments:\n"
-            "1. obeyreserve    (boolean, optional, default=false) Obey -reservebalance option\n"
+            "1. obeyreserve    (boolean, optional, default true) Obey -reservebalance option\n"
             "\nResult:\n"
             "[                             (array of json object)\n"
             "  {\n"
@@ -2871,7 +2871,7 @@ UniValue liststakeinputs(const JSONRPCRequest& request)
 
     auto max_amount = std::numeric_limits<CAmount>::max();
 
-    if (!request.params.empty() && request.params[0].get_bool()) {
+    if (request.params.empty() || !request.params[0].get_bool()) {
         max_amount = pwalletMain->GetBalance() - nReserveBalance;
     }
 
