@@ -37,5 +37,6 @@ Minor changes:
 * CHANGED: removed -litemode
 * CHANGED: to ignore MN cache on desktop wallet startup
     - Workaround for known issue due to start/stop sequences
+* CHANGED: updated spork defaults
 * FIXED: reservebalance to override -reservebalance switch
 * FIXED: reverted regression causing Unicode paths to fail on Windows

@@ -23,13 +23,13 @@ std::map<int, int64_t> mapSporkDefaults = {
     {SPORK_2_INSTANTSEND_ENABLED,            0},             // ON
     {SPORK_3_INSTANTSEND_BLOCK_FILTERING,    0},             // ON
     {SPORK_5_INSTANTSEND_MAX_VALUE,          1000},          // 1000 NRG
-    {SPORK_6_NEW_SIGS,                       4070908800ULL}, // OFF
+    {SPORK_6_NEW_SIGS,                       1551207600ULL}, // ON @mainnet
     {SPORK_8_MASTERNODE_PAYMENT_ENFORCEMENT, 1541375412ULL}, // ON
     {SPORK_9_SUPERBLOCKS_ENABLED,            0},             // ON
-    {SPORK_10_MASTERNODE_PAY_UPDATED_NODES,  4070908800ULL}, // OFF
+    {SPORK_10_MASTERNODE_PAY_UPDATED_NODES,  1551200400ULL}, // ON @mainnet
     {SPORK_12_RECONSIDER_BLOCKS,             0},             // 0 BLOCKS
     {SPORK_14_REQUIRE_SENTINEL_FLAG,         1545415606ULL}, // ON
-    {SPORK_15_FIRST_POS_BLOCK,               999999ULL},     // OFF
+    {SPORK_15_FIRST_POS_BLOCK,               437600ULL},     // ON @mainnet
     {SPORK_16_MASTERNODE_MIN_PROTOCOL,       MIN_PEER_PROTO_VERSION }, // Actual
 };
 SporkCheckpointMap mapSporkCheckpoints GUARDED_BY(cs_main);
