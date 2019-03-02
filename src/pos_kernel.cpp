@@ -225,7 +225,7 @@ bool ComputeNextStakeModifier(const CBlockIndex* pindexPrev, uint64_t& nStakeMod
             // write the entropy bit of the selected block
             nStakeModifierNew |= (((uint64_t)pindex->GetStakeEntropyBit()) << nRound);
         } else {
-            LogPrintf("WARN: unable to select candidate block for stake modifier at round %d - left zero\n", nRound);
+            LogPrint("stake", "WARN: unable to select candidate block for stake modifier at round %d - left zero\n", nRound);
             break;
         }
 
@@ -344,21 +344,23 @@ bool CheckStakeKernelHash(unsigned int nBits, const CBlockIndex &blockFrom, cons
 
     // search
     //-------------------
-    unsigned int nTryTime = 0;
-    bool is_late = nTimeTx > (chainActive.Tip()->GetBlockTime() + Params().GetConsensus().nPowTargetSpacing);
+    //auto target_time = (chainActive.Tip()->GetBlockTime() + Params().GetConsensus().nPowTargetSpacing);
+    auto min_time = nTimeTx;
+    auto max_time = std::min<int64_t>(
+            min_time + nHashDrift,
+            GetAdjustedTime() + MAX_POS_BLOCK_AHEAD_TIME);
 
-    for (auto i = 0U; i < nHashDrift; ++i)
+    for (auto try_time = min_time; try_time < max_time; ++try_time)
     {
         //hash this iteration
-        nTryTime = is_late ? (nTimeTx + i) : (nTimeTx + nHashDrift - i);
-        hashProofOfStake = stakeHash(nTryTime, ss, prevout.n, prevout.hash, nTimeBlockFrom);
+        hashProofOfStake = stakeHash(try_time, ss, prevout.n, prevout.hash, nTimeBlockFrom);
 
         // if stake hash does not meet the target then continue to next iteration
         if (UintToArith256(hashProofOfStake) >= bnTarget) {
             continue;
         }
 
-        nTimeTx = nTryTime;
+        nTimeTx = try_time;
 
         if (fDebug || fPrintProofOfStake) {
             LogPrintf("CheckStakeKernelHash() : using modifier %llx at height=%d timestamp=%s for block from height=%d timestamp=%s\n",
@@ -370,7 +372,7 @@ bool CheckStakeKernelHash(unsigned int nBits, const CBlockIndex &blockFrom, cons
             LogPrintf("CheckStakeKernelHash() : pass protocol=%s modifier=%s nTimeBlockFrom=%u prevoutHash=%s nTimeTxPrev=%u nPrevout=%u nTimeTx=%u hashProof=%s\n",
                 "0.3",
                 boost::lexical_cast<std::string>(nStakeModifier).c_str(),
-                nTimeBlockFrom, prevout.hash.ToString().c_str(), nTimeBlockFrom, prevout.n, nTryTime,
+                nTimeBlockFrom, prevout.hash.ToString().c_str(), nTimeBlockFrom, prevout.n, try_time,
                 hashProofOfStake.ToString().c_str());
         }
         return true;

@@ -18,6 +18,7 @@
 #include "validation.h"
 #include "net.h"
 #include "policy/policy.h"
+#include "pos_kernel.h"
 #include "pow.h"
 #include "primitives/transaction.h"
 #include "script/standard.h"
@@ -113,7 +114,7 @@ void BlockAssembler::resetBlock()
 }
 
 std::unique_ptr<CBlockTemplate> BlockAssembler::CreateNewBlock(
-        const CScript& scriptPubKeyIn, CWallet* pwallet)
+        const CScript& scriptPubKeyIn, CWallet* pwallet, int64_t block_time)
 {
     int64_t nTimeStart = GetTimeMicros();
 
@@ -156,7 +157,7 @@ std::unique_ptr<CBlockTemplate> BlockAssembler::CreateNewBlock(
         pblock->nHeight        = nHeight;
         pblock->hashMix        = uint256();
         pblock->nNonce         = 0;
-        pblock->nTime          = 0;
+        pblock->nTime          = block_time;
 
         // Add dummy coinbase tx as first transaction
         pblock->vtx.emplace_back();
@@ -254,7 +255,9 @@ std::unique_ptr<CBlockTemplate> BlockAssembler::CreateNewBlock(
 
         if (pindexPrev != chainActive.Tip()) {
             LogPrint("miner", "%s: the network has already found another block", __func__);
-        } else if (!TestBlockValidity(state, chainparams, *pblock, pindexPrev, false, false)) {
+        }
+
+        if (!TestBlockValidity(state, chainparams, *pblock, pindexPrev, false, false)) {
             error("%s: TestBlockValidity failed: %s", __func__, FormatStateMessage(state));
         }
     }
@@ -673,6 +676,7 @@ void PoSMiner(CWallet* pwallet, CThreadInterrupt &interrupt)
     bool fMintableCoins = false;
     int nMintableLastCheck = 0;
     int last_height = -1;
+    int64_t start_block_time = 0;
 
     while (!interrupt) {
         if ((GetTime() - nMintableLastCheck > 60))
@@ -716,7 +720,7 @@ void PoSMiner(CWallet* pwallet, CThreadInterrupt &interrupt)
             continue;
         }
 
-        if (last_height == chainActive.Tip()->nHeight)
+        if (last_height == chainActive.Height())
         {
             if (GetTime() - std::max(pwallet->nHashInterval, (unsigned int)1) < nLastCoinStakeSearchTime)
             {
@@ -724,14 +728,15 @@ void PoSMiner(CWallet* pwallet, CThreadInterrupt &interrupt)
                 continue;
             }
         } else {
-            last_height = chainActive.Tip()->nHeight;
+            last_height = chainActive.Height();
+            start_block_time = 0;
         }
 
         //
         // Create new block
         //
-        auto pblocktemplate = ba.CreateNewBlock(coinbaseScript, pwallet);
         nLastCoinStakeSearchTime = GetAdjustedTime();
+        auto pblocktemplate = ba.CreateNewBlock(coinbaseScript, pwallet, start_block_time);
 
         if (!pblocktemplate.get())
             continue;
@@ -741,6 +746,12 @@ void PoSMiner(CWallet* pwallet, CThreadInterrupt &interrupt)
         CValidationState state;
 
         if (!CheckProof(state, *pblock, Params().GetConsensus())) {
+            // Mimics limit in pos_kernel.cpp
+            start_block_time = std::min<int64_t>(
+                pblock->nTime + pwallet->nHashDrift,
+                nLastCoinStakeSearchTime + MAX_POS_BLOCK_AHEAD_TIME
+            );
+
             continue;
         }
 

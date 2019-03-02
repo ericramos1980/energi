@@ -771,7 +771,7 @@ public:
         nMasterKeyMaxID = 0;
 
         // Stake Settings
-        nHashDrift = 30;
+        nHashDrift = GetArg("-poshashdrift", 30);
         nStakeSplitThreshold = MAX_MONEY / COIN;
         nHashInterval = 10;
         nStakeSetUpdateTime = 300; // 5 minutes

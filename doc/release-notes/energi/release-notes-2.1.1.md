@@ -30,6 +30,7 @@ v2.1.1 changelog
 Major changes:
 
 * CHANGED: to ignore pre-2.1.0 nodes
+* CHANGED: PoS mining to be even more eco-friendly
 * NEW: liststakeinputs RPC command
 
 Minor changes:

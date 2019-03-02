@@ -128,6 +128,10 @@ namespace {
             if (pa->nChainWork > pb->nChainWork) return false;
             if (pa->nChainWork < pb->nChainWork) return true;
 
+            // ... then by smaller block time => more difficult chain
+            if (pa->nTime < pb->nTime) return false;
+            if (pa->nTime > pb->nTime) return true;
+
             // ... then by earliest time received, ...
             if (pa->nSequenceId < pb->nSequenceId) return false;
             if (pa->nSequenceId > pb->nSequenceId) return true;
@@ -3565,7 +3569,7 @@ bool ContextualCheckBlockHeader(const CBlockHeader& block, CValidationState& sta
 
     // Check timestamp
     // 3 minute future drift for PoS
-    if (block.GetBlockTime() > nAdjustedTime + (block.IsProofOfStake() ? 180 : 7200))
+    if (block.GetBlockTime() > nAdjustedTime + (block.IsProofOfStake() ? MAX_POS_BLOCK_AHEAD_TIME : 7200))
         return state.Invalid(false, REJECT_INVALID, "time-too-new", "block timestamp too far in the future");
 
     // check for version 2, 3 and 4 upgrades
@@ -3874,7 +3878,8 @@ bool TestBlockValidity(CValidationState& state, const CChainParams& chainparams,
         return error("%s: Consensus::CheckBlock: %s", __func__, FormatStateMessage(state));
     if (!ContextualCheckBlock(block, state, chainparams.GetConsensus(), pindexPrev, fCheckProof))
         return error("%s: Consensus::ContextualCheckBlock: %s", __func__, FormatStateMessage(state));
-    if (!ConnectBlock(block, state, &indexDummy, viewNew, chainparams, true))
+    if ((pindexPrev == chainActive.Tip()) &&
+        !ConnectBlock(block, state, &indexDummy, viewNew, chainparams, true))
         return error("%s: Consensus::ConnectBlock: %s", __func__, FormatStateMessage(state));
     assert(state.IsValid());
 
