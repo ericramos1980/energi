@@ -36,8 +36,12 @@ typedef std::set<std::pair<const CWalletTx*,unsigned int> > CoinSet;
 
 BOOST_FIXTURE_TEST_SUITE(wallet_tests, WalletTestingSetup)
 
-static const CWallet wallet;
 static std::vector<COutput> vCoins;
+
+static const CWallet& get_wallet() {
+    static const CWallet wallet;
+    return wallet;
+}
 
 static void add_coin(const CAmount& nValue, int nAge = 6*24, bool fIsFromMe = false, int nInput=0)
 {
@@ -51,7 +55,7 @@ static void add_coin(const CAmount& nValue, int nAge = 6*24, bool fIsFromMe = fa
         // so stop vin being empty, and cache a non-zero Debit to fake out IsFromMe()
         tx.vin.resize(1);
     }
-    std::unique_ptr<CWalletTx> wtx(new CWalletTx(&wallet, MakeTransactionRef(std::move(tx))));
+    std::unique_ptr<CWalletTx> wtx(new CWalletTx(&get_wallet(), MakeTransactionRef(std::move(tx))));
     if (fIsFromMe)
     {
         wtx->fDebitCached = true;
@@ -79,6 +83,7 @@ BOOST_AUTO_TEST_CASE(coin_selection_tests)
     CoinSet setCoinsRet, setCoinsRet2;
     CAmount nValueRet;
 
+    auto& wallet = get_wallet();
     LOCK(wallet.cs_wallet);
 
     // test multiple times to allow for differences in the shuffle order
@@ -346,6 +351,7 @@ BOOST_AUTO_TEST_CASE(ApproximateBestSubset)
     CoinSet setCoinsRet;
     CAmount nValueRet;
 
+    auto& wallet = get_wallet();
     LOCK(wallet.cs_wallet);
 
     empty_wallet();
