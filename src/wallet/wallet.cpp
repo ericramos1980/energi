@@ -3154,7 +3154,7 @@ bool CWallet::SelectStakeCoins(StakeCandidates& setCoins, CAmount nTargetAmount)
 {
     std::vector<COutput> vCoins;
     AvailableCoins(vCoins, true);
-    auto curr_time = GetTime();
+    auto curr_time = GetTime() + nStakeSetUpdateTime;
     auto min_age = Params().MinStakeAge();
 
     for (const COutput& out : vCoins) {
