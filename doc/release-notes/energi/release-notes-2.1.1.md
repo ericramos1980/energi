@@ -31,6 +31,8 @@ Major changes:
 
 * CHANGED: to ignore pre-2.1.0 nodes
 * CHANGED: PoS mining to be even more eco-friendly
+* CHANGED: miner to compensate block times in the future
+* FIXED: to select stake input candidates with cache time
 * NEW: liststakeinputs RPC command
 
 Minor changes:
