@@ -67,7 +67,13 @@ public:
 int64_t UpdateTime(CBlockHeader* pblock, const Consensus::Params& consensusParams, const CBlockIndex* pindexPrev)
 {
     int64_t nOldTime = pblock->nTime;
-    int64_t nNewTime = std::max(pindexPrev->GetMedianTimePast()+1, GetAdjustedTime());
+    auto nNewTime = pindexPrev->GetMedianTimePast()+1;
+    auto now = GetAdjustedTime();
+
+    // Compensate, if block times go in the future
+    if (pindexPrev->GetBlockTime() < now) {
+        nNewTime = std::max(nNewTime, now);
+    }
 
     if (nOldTime < nNewTime)
         pblock->nTime = nNewTime;
@@ -749,7 +755,7 @@ void PoSMiner(CWallet* pwallet, CThreadInterrupt &interrupt)
             // Mimics limit in pos_kernel.cpp
             start_block_time = std::min<int64_t>(
                 pblock->nTime + pwallet->nHashDrift,
-                nLastCoinStakeSearchTime + MAX_POS_BLOCK_AHEAD_TIME
+                nLastCoinStakeSearchTime + MAX_POS_BLOCK_AHEAD_TIME - MAX_POS_BLOCK_AHEAD_SAFETY_MARGIN
             );
 
             continue;

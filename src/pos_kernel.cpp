@@ -148,7 +148,7 @@ static bool SelectBlockFromCandidates(
         }
     }
 
-    LogPrint("debug", "%s: selection hash=%s\n", __func__, hashBest.ToString().c_str());
+    LogPrint("stake", "%s: selection hash=%s\n", __func__, hashBest.ToString().c_str());
 
     return fSelected;
 }
@@ -286,7 +286,14 @@ bool CheckStakeKernelHash(unsigned int nBits, const CBlockIndex &blockFrom, cons
         return error("CheckStakeKernelHash() : nTime violation");
 
     if (nTimeBlockFrom + min_age > nTimeTx) // Min age requirement
-        return error("CheckStakeKernelHash() : min age violation - nTimeBlockFrom=%d nStakeMinAge=%d nTimeTx=%d", nTimeBlockFrom, min_age, nTimeTx);
+    {
+        // During generation, some stakes may be not year ready
+        if (fCheck) {
+            error("%s : min age violation - nTimeBlockFrom=%d nStakeMinAge=%d nTimeTx=%d",
+                  __func__, nTimeBlockFrom, min_age, nTimeTx);
+        }
+        return false;
+    }
 
     //grab difficulty
     arith_uint256 bnTargetPerCoinDay;
@@ -344,11 +351,12 @@ bool CheckStakeKernelHash(unsigned int nBits, const CBlockIndex &blockFrom, cons
 
     // search
     //-------------------
-    //auto target_time = (chainActive.Tip()->GetBlockTime() + Params().GetConsensus().nPowTargetSpacing);
     auto min_time = nTimeTx;
     auto max_time = std::min<int64_t>(
             min_time + nHashDrift,
-            GetAdjustedTime() + MAX_POS_BLOCK_AHEAD_TIME);
+            GetAdjustedTime() + MAX_POS_BLOCK_AHEAD_TIME - MAX_POS_BLOCK_AHEAD_SAFETY_MARGIN);
+    LogPrint("stake", "%s: looking for solution in range %lld .. %lld (%lld) \n",
+             __func__, min_time, max_time, (max_time - min_time));
 
     for (auto try_time = min_time; try_time < max_time; ++try_time)
     {
