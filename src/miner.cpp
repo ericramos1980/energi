@@ -685,6 +685,8 @@ void PoSMiner(CWallet* pwallet, CThreadInterrupt &interrupt)
     int64_t start_block_time = 0;
 
     while (!interrupt) {
+        auto hash_interval = std::max(pwallet->nHashInterval, (unsigned int)1);
+
         if ((GetTime() - nMintableLastCheck > 60))
         {
             nMintableLastCheck = GetTime();
@@ -701,7 +703,7 @@ void PoSMiner(CWallet* pwallet, CThreadInterrupt &interrupt)
             }
 
             if (!IsPoSEnforcedHeight(pindexPrev->nHeight + 1) && !pindexPrev->IsProofOfStake()) {
-                interrupt.sleep_for(std::chrono::seconds(10));
+                interrupt.sleep_for(std::chrono::seconds(hash_interval));
                 LogPrint("stake", "%s : PoS is not enabled at height %d \n",
                          __func__, (pindexPrev->nHeight + 1) );
                 continue;
@@ -715,7 +717,7 @@ void PoSMiner(CWallet* pwallet, CThreadInterrupt &interrupt)
             (g_connman->GetNodeCount(CConnman::CONNECTIONS_ALL) == 0)
         ) {
             nLastCoinStakeSearchTime = 0;
-            interrupt.sleep_for(std::chrono::seconds(10));
+            interrupt.sleep_for(std::chrono::seconds(hash_interval));
             LogPrint("stake", "%s : not ready to mine locked=%d coins=%d reserve=%d mnsync=%d peers=%d\n",
                      __func__,
                      int(pwallet->IsLocked(true)),
@@ -728,9 +730,9 @@ void PoSMiner(CWallet* pwallet, CThreadInterrupt &interrupt)
 
         if (last_height == chainActive.Height())
         {
-            if (GetTime() - std::max(pwallet->nHashInterval, (unsigned int)1) < nLastCoinStakeSearchTime)
+            if ((GetTime() - hash_interval) < nLastCoinStakeSearchTime)
             {
-                interrupt.sleep_for(std::chrono::seconds(5));
+                interrupt.sleep_for(std::chrono::seconds(hash_interval));
                 continue;
             }
         } else {

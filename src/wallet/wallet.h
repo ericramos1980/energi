@@ -773,7 +773,7 @@ public:
         // Stake Settings
         nHashDrift = GetArg("-poshashdrift", 30);
         nStakeSplitThreshold = MAX_MONEY / COIN;
-        nHashInterval = 10;
+        nHashInterval = GetArg("-poshashinterval", 10);
         nStakeSetUpdateTime = 300; // 5 minutes
         setStakeCoins.clear();
         nLastStakeSetUpdate = 0;
