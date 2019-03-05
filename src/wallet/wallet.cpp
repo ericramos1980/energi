@@ -3944,7 +3944,8 @@ bool CWallet::CreateCoinStake(const CKeyStore& keystore, CBlock &curr_block, CMu
 
     LogPrint("stake", "%s : found %u possible stake inputs\n", __func__, setStakeCoins.size());
 
-    for (auto iter = setStakeCoins.rbegin(); iter != setStakeCoins.rend(); ++iter) {
+    // NOTE: go from smaller amounts to bigger to increase chance, unlike it was before
+    for (auto iter = setStakeCoins.begin(); iter != setStakeCoins.end(); ++iter) {
         if (ShutdownRequested()) {
             break;
         }
