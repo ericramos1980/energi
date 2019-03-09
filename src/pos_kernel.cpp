@@ -19,7 +19,7 @@
 
 using namespace std;
 
-
+// NOTE: This should be > 10 minutes
 // MODIFIER_INTERVAL: time to elapse before new modifier is computed
 static constexpr unsigned int MODIFIER_INTERVAL = 60;
 
@@ -311,7 +311,8 @@ bool CheckStakeKernelHash(unsigned int nBits, const CBlockIndex &blockFrom, cons
     //grab stake modifier
     //-------------------
     uint64_t nRequiredStakeModifier = 0;
-    
+
+    // NOTE: this must be calculated based on previous-to-tip, but not previous-to-stake block!
     if (!ComputeNextStakeModifier(&blockFrom, nRequiredStakeModifier)) {
         LogPrintf("CheckStakeKernelHash(): failed to get kernel stake modifier \n");
         return false;

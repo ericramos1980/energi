@@ -70,10 +70,11 @@ int64_t UpdateTime(CBlockHeader* pblock, const Consensus::Params& consensusParam
     auto nNewTime = pindexPrev->GetMedianTimePast()+1;
     auto now = GetAdjustedTime();
 
+    // NOTE: This requires consensus change for proper average block time enforcement.
     // Compensate, if block times go in the future
-    if (pindexPrev->GetBlockTime() < now) {
+    //if (pindexPrev->GetBlockTime() < now) {
         nNewTime = std::max(nNewTime, now);
-    }
+    //}
 
     if (nOldTime < nNewTime)
         pblock->nTime = nNewTime;

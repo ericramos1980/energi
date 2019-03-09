@@ -128,9 +128,14 @@ namespace {
             if (pa->nChainWork > pb->nChainWork) return false;
             if (pa->nChainWork < pb->nChainWork) return true;
 
+#if 0
+            // NOTE: this requires difficulty calculation update in consensus to avoid abuse.
+            //       So, restored to v2.1.0 approach used on core nodes.
+
             // ... then by smaller block time => more difficult chain
             if (pa->nTime < pb->nTime) return false;
             if (pa->nTime > pb->nTime) return true;
+#endif
 
             // ... then by earliest time received, ...
             if (pa->nSequenceId < pb->nSequenceId) return false;
