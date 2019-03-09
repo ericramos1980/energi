@@ -30,3 +30,4 @@ v2.1.2 changelog
 Minor changes:
 
 * CHANGED: updated PoS miner strategy to better target average block time
+* CHANGED: not to produce notification of Stake transaction
