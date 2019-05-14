@@ -653,7 +653,6 @@ UniValue dumpprivkey(const JSONRPCRequest& request)
     if (request.fHelp || request.params.size() != 2 || !RPCCheckAuthCode(request.params[1]))
         throw std::runtime_error(
             "dumpprivkey \"address\" \"one_time_code\"\n"
-            + RPCGetAuthCodeHelp() +
             "\nReveals the private key corresponding to 'energiaddress'.\n"
             "Then the importprivkey can be used with this output\n"
             "\nArguments:\n"
@@ -665,6 +664,7 @@ UniValue dumpprivkey(const JSONRPCRequest& request)
             + HelpExampleCli("dumpprivkey", "\"myaddress\", \"one_time_code\"")
             + HelpExampleCli("importprivkey", "\"mykey\"")
             + HelpExampleRpc("dumpprivkey", "\"myaddress\", \"one_time_code\"")
+            + RPCGetAuthCodeHelp()
         );
 
     LOCK2(cs_main, pwalletMain->cs_wallet);
@@ -692,7 +692,6 @@ UniValue dumphdinfo(const JSONRPCRequest& request)
     if (request.fHelp || request.params.size() != 1 || !RPCCheckAuthCode(request.params[0]))
         throw std::runtime_error(
             "dumphdinfo \"one_time_code\"\n"
-            + RPCGetAuthCodeHelp() +
             "Returns an object containing sensitive private info about this HD wallet.\n"
             "\nArguments:\n"
             "1. \"one_time_code\"   (string, required) The security code from the previous invocation\n"
@@ -705,6 +704,7 @@ UniValue dumphdinfo(const JSONRPCRequest& request)
             "\nExamples:\n"
             + HelpExampleCli("dumphdinfo", "\"one_time_code\"")
             + HelpExampleRpc("dumphdinfo", "\"one_time_code\"")
+            + RPCGetAuthCodeHelp()
         );
 
     LOCK(pwalletMain->cs_wallet);
@@ -738,7 +738,6 @@ UniValue dumpwallet(const JSONRPCRequest& request)
     if (request.fHelp || request.params.size() != 2 || !RPCCheckAuthCode(request.params[1]))
         throw std::runtime_error(
             "dumpwallet \"filename\" \"one_time_code\"\n"
-            + RPCGetAuthCodeHelp() +
             "\nDumps all wallet keys in a human-readable format.\n"
             "\nArguments:\n"
             "1. \"filename\"    (string, required) The filename\n"
@@ -746,6 +745,7 @@ UniValue dumpwallet(const JSONRPCRequest& request)
             "\nExamples:\n"
             + HelpExampleCli("dumpwallet", "\"test\", \"one_time_code\"")
             + HelpExampleRpc("dumpwallet", "\"test\", \"one_time_code\"")
+            + RPCGetAuthCodeHelp()
         );
 
     LOCK2(cs_main, pwalletMain->cs_wallet);

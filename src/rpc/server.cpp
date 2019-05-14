@@ -552,6 +552,13 @@ void RPCRunLater(const std::string& name, boost::function<void(void)> func, int6
 constexpr auto RPC_AUTH_CODE_LEN = 6;
 static std::string g_RPCAuthCode;
 
+#define SCAM_ALERT_TEXT \
+    "If someone asked you to run this command, chances are they want to steal your coins. " \
+    "Energi team members will NEVER ask you for this.\n" \
+    "Please email support@energi.team and let us know if someone is impersonating " \
+    "Energi staff and asking you for the result of this command.\n" \
+    "Non-English -> http://nrg.click/translate"
+
 bool RPCCheckAuthCode(const UniValue& value)
 {
     LOCK(cs_rpcWarmup);
@@ -587,19 +594,15 @@ std::string RPCGetAuthCodeHelp()
 
     return
         "\n"
-        "WARNING: This info contains your private keys.\n"
+        "WARNING! Anyone given the result or generated files will have control over your NRG funds.\n"
         "!!!\n"
         "DO NOT GIVE THIS INFORMATION TO ANYONE FOR ANY REASON OR YOU WILL LOSE YOUR COINS\n"
         "!!!\n"
-        "Scammers often ask for the results of this command.\n"
-        "\n"
-        "If anyone asks you for the results then please contact us immediately:\n"
-        "- Discord: https://discordapp.com/invite/sCtgNC3\n"
-        "- Telegram: https://t.me/energicrypto\n"
-        "- Email: contact@energi.team\n"
         "\n"
         "ONE TIME SECURITY CODE: " + g_RPCAuthCode + "\n"
-        "\n";
+        "\n"
+        + _(SCAM_ALERT_TEXT) +
+        "\n\n";
 }
 
 CRPCTable tableRPC;
