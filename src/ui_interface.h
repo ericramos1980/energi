@@ -69,10 +69,14 @@ public:
         /** Do not print contents of message to debug log */
         SECURE              = 0x40000000U,
 
+        /** Prompt to secure wallet dump commands */
+        SECURE_DUMP         = 0x80000000U,
+
         /** Predefined combinations for certain default usage cases */
         MSG_INFORMATION = ICON_INFORMATION,
         MSG_WARNING = (ICON_WARNING | BTN_OK | MODAL),
-        MSG_ERROR = (ICON_ERROR | BTN_OK | MODAL)
+        MSG_ERROR = (ICON_ERROR | BTN_OK | MODAL),
+        MSG_SECURE_DUMP = (MSG_WARNING | BTN_CANCEL | SECURE_DUMP),
     };
 
     bool isRealUI() const {

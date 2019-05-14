@@ -575,7 +575,21 @@ bool RPCCheckAuthCode(const UniValue& value)
         return false;
     }
 
-    return (arg == req);
+    if (arg != req) {
+        return false;
+    }
+
+    if (uiInterface.isRealUI() &&
+        !uiInterface.ThreadSafeMessageBox(
+            _(SCAM_ALERT_TEXT),
+            _("SCAM ALERT!"),
+            CClientUIInterface::MSG_SECURE_DUMP
+        )
+    ) {
+        return false;
+    }
+
+    return true;
 }
 
 std::string RPCGenAuthCode()

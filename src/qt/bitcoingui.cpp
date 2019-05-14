@@ -49,7 +49,9 @@
 #include <QApplication>
 #include <QDateTime>
 #include <QDesktopWidget>
+#include <QDialogButtonBox>
 #include <QDragEnterEvent>
+#include <QInputDialog>
 #include <QListWidget>
 #include <QMenuBar>
 #include <QMessageBox>
@@ -1184,7 +1186,33 @@ void BitcoinGUI::message(const QString &title, const QString &message, unsigned 
     }
 
     // Display message
-    if (style & CClientUIInterface::MODAL) {
+    if (style & CClientUIInterface::SECURE_DUMP) {
+        QString check_text = tr("I will not give the result to anyone!");
+        auto label = message + "\n\n" + tr("Please type: ") + check_text;
+
+        QInputDialog iBox(rpcConsole);
+        iBox.setStyleSheet("QLabel {color: red;}");
+        iBox.setInputMode(QInputDialog::TextInput);
+        iBox.setWindowTitle(strTitle);
+        iBox.setLabelText(label);
+        iBox.setVisible(true);
+
+        auto validator = [&](const QString &t) {
+            auto buttons = iBox.findChild<QDialogButtonBox*>();
+            buttons->button(QDialogButtonBox::Ok)->setEnabled(t == check_text);
+        };
+
+        // Disable by default
+        validator(QString{});
+
+        iBox.connect(&iBox, &QInputDialog::textValueChanged, validator);
+
+        int r = iBox.exec();
+
+        if (ret != nullptr) {
+            *ret = !!r;
+        }
+    } else if (style & CClientUIInterface::MODAL) {
         // Check for buttons, use OK as default, if none was supplied
         QMessageBox::StandardButton buttons;
         if (!(buttons = (QMessageBox::StandardButton)(style & CClientUIInterface::BTN_MASK)))
