@@ -23,6 +23,8 @@
 #include "util.h"
 #include "utilstrencodings.h"
 #include "hash.h"
+#include "script/standard.h"
+#include "base58.h"
 
 #include <stdint.h>
 
@@ -1115,6 +1117,171 @@ UniValue gettxoutsetinfo(const JSONRPCRequest& request)
     return ret;
 }
 
+//! For every entry in CCoinsViewDB
+template <typename F>
+static bool foreachUtxo(CCoinsViewDB* db, F&& f) {
+    std::unique_ptr<CCoinsViewCursor> pcursor(db->Cursor());
+    assert(pcursor);
+    if (!pcursor->Valid()) {
+        return false;
+    }
+
+    for (; pcursor->Valid(); pcursor->Next()) {
+        COutPoint key;
+        Coin coin;
+        if (pcursor->GetKey(key) && pcursor->GetValue(coin)) {
+            f(key, coin);
+        } else {
+            LogPrintf("Unable to read UTXO \n");
+            throw std::runtime_error{"Unable to read UTXO"};
+        }
+    }
+    return true;
+}
+
+//! helper function which packs UTXO into JSON in ETH-Energi format
+static UniValue utxoToJson(txnouttype destType, const CTxDestination& dest, CAmount amount) {
+    UniValue utxo(UniValue::VOBJ);
+    utxo.push_back(Pair("owner", CBitcoinAddress(dest).ToString()));
+    utxo.push_back(Pair("amount", amount)); // it's easier to parse in Sats, in ETH-Energi
+    utxo.push_back(Pair("type", GetTxnOutputType(destType)));
+    return utxo;
+};
+
+UniValue gettxoutsnapshot(const JSONRPCRequest& request)
+{
+    if (request.fHelp || request.params.size() < 1 || request.params.size() > 3)
+        throw std::runtime_error(
+            "gettxoutsnapshot\n"
+            "\nReturns current unspent transaction outputs set.\n"
+            "Note this call will take some time. This call disconnects and re-connects blocks until ETH migration snapshot block.\n"
+            "This call will load UTXOs into memory, so memory must be large enough.\n"
+            "\nArguments:\n"
+            "1. blockhash              (string) Block hash to create snapshot for.\n"
+            "2. hashonly               (boolean, optional, default=true) If false, return the whole UTXOs set at snaphsot block. If true, return only hash.  \n"
+            "3. maxdepth                (numeric, optional, default=4320) Return error, if migration snapshot block is more than *maxdepth* blocks deep.  \n"
+            "\nResult:\n"
+            "[\n"
+            "{\n"
+            "  \"owner\": \"address\", (string) energi address\n"
+            "  \"amount\": n,          (numeric) Output amount in Satoshi\n"
+            "  \"type\": \"hash\",     (string) type of the address. Only P2PKH outputs are shown.\n"
+            "}\n"
+            "]\n"
+            "\nExamples:\n"
+            + HelpExampleCli("gettxoutsnapshot", "")
+            + HelpExampleCli("gettxoutsnapshot", "true")
+        );
+
+    const auto migrationBlockHash = uint256S(request.params[0].get_str());
+    const auto bIndexIter = mapBlockIndex.find(migrationBlockHash);
+
+    if (bIndexIter == mapBlockIndex.end()) {
+        throw JSONRPCError(RPC_INTERNAL_ERROR, "Unknown block");
+    }
+
+    if (!chainActive.Contains(bIndexIter->second)) {
+        throw JSONRPCError(RPC_INTERNAL_ERROR, "The block is not in the active chain!");
+    }
+
+    const int migrationBlockHeight = bIndexIter->second->nHeight;
+
+    const bool hashOnly = request.params.size() > 1 ? request.params[1].get_bool() : true;
+    const int maxDeep = request.params.size() > 2 ? request.params[2].get_int() : 4320;
+
+    std::map<CScript, CAmount> merging{};
+    {
+        LOCK(cs_main);
+
+        { // disconnect blocks until Migration snapshot block
+            if (chainActive.Height() < migrationBlockHeight)
+                throw JSONRPCError(RPC_INTERNAL_ERROR, strprintf("Migration snapshot block has height=%d, current best block has height=%d", migrationBlockHeight, chainActive.Height()));
+            if (chainActive[migrationBlockHeight]->GetBlockHash() != migrationBlockHash)
+                throw JSONRPCError(RPC_INTERNAL_ERROR, strprintf("Could not find migration snapshot block (%s)", migrationBlockHash.GetHex()));
+
+            const int blocksToDisconnect = chainActive.Height() - migrationBlockHeight;
+
+            if (blocksToDisconnect > maxDeep)
+                throw JSONRPCError(RPC_INTERNAL_ERROR, strprintf("Migration snapshot block is more than %d blocks deep. Specify maxdepth>=%d", maxDeep, blocksToDisconnect));
+
+            if (!DisconnectBlocks(blocksToDisconnect))
+                throw JSONRPCError(RPC_INTERNAL_ERROR, "DisconnectBlocks: Can't disconnect blocks until migration snapshot block");
+        }
+
+        { // insert every UTXO fron CoinDB into the merging map
+            assert(pcoinsdbview != nullptr);
+
+            FlushStateToDisk();
+            foreachUtxo(pcoinsdbview, [&](const COutPoint&, const Coin &coin) {
+                merging[coin.out.scriptPubKey] += coin.out.nValue;
+            });
+        }
+
+        { // re-connect blocks back
+            CValidationState state;
+            if (!ActivateBestChain(state, Params()))
+                throw JSONRPCError(RPC_INTERNAL_ERROR, "ActivateBestChain: Can't re-connect blocks after migration snapshot block");
+        }
+    }
+
+    UniValue res(UniValue::VOBJ);
+    {
+        sph_keccak256_context ctx;
+        { // init hashing context
+            sph_keccak256_init(&ctx);
+
+            const std::string salt = strprintf("BTC-Energi snapshot hash at block 0x%s", migrationBlockHash.GetHex());
+            sph_keccak256(&ctx, salt.data(), salt.size());
+        }
+
+        UniValue utxosJson(UniValue::VARR);
+        for (const auto& m : merging) {
+            const CAmount amount = m.second;
+            const CScript& scriptPubKey = m.first;
+
+            std::vector<CTxDestination> addressRet;
+            txnouttype destType;
+            int nRequiredRet_dummy;
+            ExtractDestinations(scriptPubKey, destType, addressRet, nRequiredRet_dummy);
+
+            if (addressRet.empty() || destType != txnouttype::TX_PUBKEYHASH)
+                continue; // we migrate only P2PKH
+
+            const std::string destTypeStr{GetTxnOutputType(destType)};
+            const CKeyID p2pkh = boost::get<CKeyID>(addressRet[0]);
+
+            { // hash UTXO. Do it with sha3 keccak256, as a more secure hash than sha2
+                std::vector<unsigned char> vch;
+                CVectorWriter ss(SER_GETHASH, PROTOCOL_VERSION, vch, 0);
+
+                // write buffers directly, not via serializing - so it's simpler to reproduce the hash in ETH
+                ss.write(destTypeStr.data(), destTypeStr.size());
+                ss.write(reinterpret_cast<const char*>(p2pkh.begin()), p2pkh.size());
+                ss << static_cast<uint64_t>(amount); // little-endian byte order
+
+                sph_keccak256(&ctx, vch.data(), vch.size());
+            }
+
+            if (!hashOnly) // insert utxos from merging map into JSON
+                utxosJson.push_back(utxoToJson(destType, addressRet[0], amount));
+        }
+
+        if (!hashOnly)
+            res.push_back(Pair("snapshot_utxos", utxosJson));
+
+        { // finalize hashing context
+            std::vector<unsigned char> snapshotHashVch(32);
+            sph_keccak256_close(&ctx, snapshotHashVch.data());
+
+            std::reverse(snapshotHashVch.begin(), snapshotHashVch.end()); // uint256 stores data in reversed order
+
+            res.push_back(Pair("snapshot_hash", uint256{snapshotHashVch}.GetHex()));
+        }
+    }
+
+    return res;
+}
+
 UniValue gettxout(const JSONRPCRequest& request)
 {
     if (request.fHelp || request.params.size() < 2 || request.params.size() > 3)
@@ -1674,6 +1841,7 @@ static const CRPCCommand commands[] =
     { "blockchain",         "getrawmempool",          &getrawmempool,          true,  {"verbose"} },
     { "blockchain",         "gettxout",               &gettxout,               true,  {"txid","n","include_mempool"} },
     { "blockchain",         "gettxoutsetinfo",        &gettxoutsetinfo,        true,  {} },
+    { "blockchain",         "gettxoutsnapshot",       &gettxoutsnapshot,       true,  {"blockhash", "hashonly", "maxdepth"} },
     { "blockchain",         "pruneblockchain",        &pruneblockchain,        true,  {"height"} },
     { "blockchain",         "verifychain",            &verifychain,            true,  {"checklevel","nblocks"} },
 
