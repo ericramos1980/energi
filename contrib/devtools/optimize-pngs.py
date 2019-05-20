@@ -31,8 +31,9 @@ basePath = subprocess.check_output([git, 'rev-parse', '--show-toplevel']).decode
 totalSaveBytes = 0
 noHashChange = True
 
+inputArray = folders if len(sys.argv) < 2 else [sys.argv[1]]
 outputArray = []
-for folder in folders:
+for folder in inputArray:
     absFolder=os.path.join(basePath, folder)
     for file in os.listdir(absFolder):
         extension = os.path.splitext(file)[1]
