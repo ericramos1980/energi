@@ -1,7 +1,7 @@
 Energi Core version 2.2.0 Release Notes
 =======================================
 
-This is NOT mandatory upgrade. Energi Core v2.1.x releases remain
+This is NOT a mandatory upgrade. Energi Core v2.1.x releases remain
 acceptable for production use.
 
 Energi Core version 2.2.0 is now available from:
@@ -40,4 +40,4 @@ Minor changes:
 
 * CHANGED: updated dump* family of command scam warning wording
 * CHANGED: update Energi logo & other graphics
-* FIXED: weird verify blocks progress under some conditions
+* FIXED: weird block verification progress under some conditions
