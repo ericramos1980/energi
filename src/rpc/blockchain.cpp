@@ -1150,15 +1150,16 @@ static UniValue utxoToJson(txnouttype destType, const CTxDestination& dest, CAmo
 
 UniValue gettxoutsnapshot(const JSONRPCRequest& request)
 {
-    if (request.fHelp || request.params.size() > 2)
+    if (request.fHelp || request.params.size() < 1 || request.params.size() > 3)
         throw std::runtime_error(
             "gettxoutsnapshot\n"
             "\nReturns current unspent transaction outputs set.\n"
             "Note this call will take some time. This call disconnects and re-connects blocks until ETH migration snapshot block.\n"
             "This call will load UTXOs into memory, so memory must be large enough.\n"
             "\nArguments:\n"
-            "1. hashonly               (boolean, optional, default=true) If false, return the whole UTXOs set at snaphsot block. If true, return only hash.  \n"
-            "2. maxdeep                (numeric, optional, default=4320) Return error, if migration snapshot block is more than *maxdeep* blocks deep.  \n"
+            "1. blockhash              (string) Block hash to create snapshot for.\n"
+            "2. hashonly               (boolean, optional, default=true) If false, return the whole UTXOs set at snaphsot block. If true, return only hash.  \n"
+            "3. maxdepth                (numeric, optional, default=4320) Return error, if migration snapshot block is more than *maxdepth* blocks deep.  \n"
             "\nResult:\n"
             "[\n"
             "{\n"
@@ -1172,12 +1173,21 @@ UniValue gettxoutsnapshot(const JSONRPCRequest& request)
             + HelpExampleCli("gettxoutsnapshot", "true")
         );
 
-    // @todo @migration Specify an actual ETH migration block
-    const uint256 migrationBlockHash = uint256S("0x4baa6a0a6401178550d6c4d78561ba65eec55edd86f7ebba24fdfea53bad9c49");
-    const int migrationBlockHeight = 448757;
+    const auto migrationBlockHash = uint256S(request.params[0].get_str());
+    const auto bIndexIter = mapBlockIndex.find(migrationBlockHash);
 
-    const bool hashOnly = request.params.size() > 0 ? request.params[0].get_bool() : true;
-    const int maxDeep = request.params.size() > 1 ? request.params[1].get_int() : 4320;
+    if (bIndexIter == mapBlockIndex.end()) {
+        throw JSONRPCError(RPC_INTERNAL_ERROR, "Unknown block");
+    }
+
+    if (!chainActive.Contains(bIndexIter->second)) {
+        throw JSONRPCError(RPC_INTERNAL_ERROR, "The block is not in the active chain!");
+    }
+
+    const int migrationBlockHeight = bIndexIter->second->nHeight;
+
+    const bool hashOnly = request.params.size() > 1 ? request.params[1].get_bool() : true;
+    const int maxDeep = request.params.size() > 2 ? request.params[2].get_int() : 4320;
 
     std::map<CScript, CAmount> merging{};
     {
@@ -1192,7 +1202,7 @@ UniValue gettxoutsnapshot(const JSONRPCRequest& request)
             const int blocksToDisconnect = chainActive.Height() - migrationBlockHeight;
 
             if (blocksToDisconnect > maxDeep)
-                throw JSONRPCError(RPC_INTERNAL_ERROR, strprintf("Migration snapshot block is more than %d blocks deep. Specify maxdeep>=%d", maxDeep, blocksToDisconnect));
+                throw JSONRPCError(RPC_INTERNAL_ERROR, strprintf("Migration snapshot block is more than %d blocks deep. Specify maxdepth>=%d", maxDeep, blocksToDisconnect));
 
             if (!DisconnectBlocks(blocksToDisconnect))
                 throw JSONRPCError(RPC_INTERNAL_ERROR, "DisconnectBlocks: Can't disconnect blocks until migration snapshot block");
@@ -1831,7 +1841,7 @@ static const CRPCCommand commands[] =
     { "blockchain",         "getrawmempool",          &getrawmempool,          true,  {"verbose"} },
     { "blockchain",         "gettxout",               &gettxout,               true,  {"txid","n","include_mempool"} },
     { "blockchain",         "gettxoutsetinfo",        &gettxoutsetinfo,        true,  {} },
-    { "blockchain",         "gettxoutsnapshot",       &gettxoutsnapshot,       true,  {"hashonly", "maxdeep"} },
+    { "blockchain",         "gettxoutsnapshot",       &gettxoutsnapshot,       true,  {"blockhash", "hashonly", "maxdepth"} },
     { "blockchain",         "pruneblockchain",        &pruneblockchain,        true,  {"height"} },
     { "blockchain",         "verifychain",            &verifychain,            true,  {"checklevel","nblocks"} },
 
