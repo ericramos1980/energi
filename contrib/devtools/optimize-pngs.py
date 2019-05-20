@@ -27,7 +27,7 @@ def content_hash(filename):
 pngcrush = 'pngcrush'
 git = 'git'
 folders = ["src/qt/res/movies", "src/qt/res/icons", "src/qt/res/icons/crownium", "src/qt/res/icons/drkblue", "src/qt/res/icons/light", "src/qt/res/icons/trad", "src/qt/res/images", "src/qt/res/images/crownium", "src/qt/res/images/drkblue", "src/qt/res/images/light", "src/qt/res/images/trad", "share/pixmaps"]
-basePath = subprocess.check_output([git, 'rev-parse', '--show-toplevel']).rstrip('\n')
+basePath = subprocess.check_output([git, 'rev-parse', '--show-toplevel']).decode('utf-8').rstrip('\n')
 totalSaveBytes = 0
 noHashChange = True
 
@@ -46,13 +46,14 @@ for folder in folders:
             try:
                 pngCrushOutput = subprocess.check_output(
                         [pngcrush, "-brute", "-ow", "-rem", "gAMA", "-rem", "cHRM", "-rem", "iCCP", "-rem", "sRGB", "-rem", "alla", "-rem", "text", file_path],
-                        stderr=subprocess.STDOUT).rstrip('\n')
-            except:
+                        stderr=subprocess.STDOUT).decode('utf-8').rstrip('\n')
+            except Exception as e:
                 print("pngcrush is not installed, aborting...")
+                print(e)
                 sys.exit(0)
         
             #verify
-            if "Not a PNG file" in subprocess.check_output([pngcrush, "-n", "-v", file_path], stderr=subprocess.STDOUT):
+            if "Not a PNG file" in subprocess.check_output([pngcrush, "-n", "-v", file_path], stderr=subprocess.STDOUT).decode('utf-8'):
                 print("PNG file "+file+" is corrupted after crushing, check out pngcursh version")
                 sys.exit(1)
             
