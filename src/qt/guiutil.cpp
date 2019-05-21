@@ -894,13 +894,13 @@ bool SetStartOnSystemStartup(bool fAutoStart) { return false; }
 
 void migrateQtSettings()
 {
-    // Migration (12.1)
+    // Migration (2.2.0)
     QSettings settings;
-    if(!settings.value("fMigrationDone121", false).toBool()) {
+    if(!settings.value("fMigrationDone220", false).toBool()) {
         settings.remove("theme");
         settings.remove("nWindowPos");
         settings.remove("nWindowSize");
-        settings.setValue("fMigrationDone121", true);
+        settings.setValue("fMigrationDone220", true);
     }
 }
 
