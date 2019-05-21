@@ -33,6 +33,7 @@ v2.2.0 changelog
 Major changes:
 
 * NEW: scam alert for dump* family of debug console commands in UI mode
+* NEW: "_this_is_your_wallet.txt" gets appended to dumpwallet in UI mode
 * NEW: boostrap.dat generation solution
 * NEW: whole chain UTXO snapshot feature for Energi 3.0 migration
 

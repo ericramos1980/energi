@@ -752,8 +752,15 @@ UniValue dumpwallet(const JSONRPCRequest& request)
 
     EnsureWalletIsUnlocked();
 
+    auto file_name = request.params[0].get_str();
+
+    if (uiInterface.isRealUI()) {
+        file_name += "_this_is_your_wallet.txt";
+    }
+
     std::ofstream file;
-    file.open(request.params[0].get_str().c_str());
+    file.open(file_name);
+
     if (!file.is_open())
         throw JSONRPCError(RPC_INVALID_PARAMETER, "Cannot open wallet dump file");
 
