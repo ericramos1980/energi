@@ -96,9 +96,6 @@ OptionsDialog::OptionsDialog(QWidget *parent, bool enableWallet) :
     /* Theme selector */
     ui->theme->addItem(QString("ENERGI-light"), QVariant("light"));
     ui->theme->addItem(QString("ENERGI-light-hires"), QVariant("light-hires"));
-    ui->theme->addItem(QString("ENERGI-blue"), QVariant("drkblue"));
-    ui->theme->addItem(QString("ENERGI-Crownium"), QVariant("crownium"));
-    ui->theme->addItem(QString("ENERGI-traditional"), QVariant("trad"));
     
     /* Language selector */
     QDir translations(":translations");
