@@ -32,6 +32,7 @@ v2.2.1 changelog
 
 Major changes:
 
+* CHANGED: updated blockchain checkpoints
 * FIXED: regression with -checklevel=3+ in v2.2.0
 
 Minor changes:
