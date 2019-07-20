@@ -62,7 +62,7 @@ WalletModel::WalletModel(const PlatformStyle *platformStyle, CWallet *_wallet, O
     // This timer will be fired repeatedly to update the balance
     pollTimer = new QTimer(this);
     connect(pollTimer, SIGNAL(timeout()), this, SLOT(pollBalanceChanged()));
-    pollTimer->start(MODEL_UPDATE_DELAY);
+    pollTimer->setSingleShot(true);
 
     subscribeToCoreSignals();
 }
@@ -196,6 +196,9 @@ void WalletModel::updateTransaction()
 {
     // Balance and number of transactions might have changed
     fForceCheckBalanceChanged = true;
+
+    // Cancels & restarts on rapid changes
+    pollTimer->start(MODEL_UPDATE_DELAY);
 }
 
 void WalletModel::updateAddressBook(const QString &address, const QString &label,
