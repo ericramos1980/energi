@@ -29,6 +29,8 @@
 
 #include <boost/foreach.hpp>
 
+static const size_t TX_USABILITY_THRESHOLD = 100000;
+
 // Amount column is right-aligned it contains numbers
 static int column_alignments[] = {
         Qt::AlignLeft|Qt::AlignVCenter, /* status */
@@ -280,6 +282,10 @@ void TransactionTableModel::updateTransaction(const QString &hash, int status, b
 
 void TransactionTableModel::updateConfirmations()
 {
+    if (priv->size() > TX_USABILITY_THRESHOLD) {
+        return;
+    }
+
     priv->updateCachedStatus();
 
     // Blocks came in since last poll.
