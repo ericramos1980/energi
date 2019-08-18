@@ -60,9 +60,11 @@ public:
         mode = MODE_ERROR;
         return false;
     }
-    bool TransientError(const std::string& strRejectReasonIn) {
-        if (mode == MODE_VALID)
+    bool TransientError(const std::string& strRejectReasonIn, const std::string &strDebugMessageIn=std::string{}) {
+        if (mode == MODE_VALID) {
             strRejectReason = strRejectReasonIn;
+            strDebugMessage = strDebugMessageIn;
+        }
         mode = MODE_TRANSIENT_ERROR;
         return false;
     }

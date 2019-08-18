@@ -3566,14 +3566,13 @@ bool ContextualCheckBlockHeader(const CBlockHeader& block, CValidationState& sta
 
     if (block.GetBlockTime() >= bt13_since) {
         if (block.GetBlockTime() > (nAdjustedTime + MAX_POS_BLOCK_AHEAD_TIME_V13)) {
-            return state.Invalid(
-                false, REJECT_INVALID,
+            return state.TransientError(
                 "time-too-new", "block timestamp too far in the future v1.3");
         }
 
         if (pindexPrev && block.GetBlockTime() <= pindexPrev->GetBlockTime()) {
-            return state.Invalid(
-                false, REJECT_INVALID,
+            // NOTE: Even though the requirement is hard, we do not want network splits.
+            return state.TransientError(
                 "time-too-old", "block's timestamp is not after the parent");
         }
     }
