@@ -635,6 +635,7 @@ public:
             (  74741, uint256S("0xead94a1aa85edc4318c0e1947dd88fa64935c86be540c5810023d8f0b86dadac"))
             (  86000, uint256S("0x75951ec8094fc01ab2be643eb48cc10638690470b8550d7dd8bf849eaafff7bc"))
             ( 285000, uint256S("0x41b6a89e456562d1b9ad17532bfb724491b5fea0a8fc255cf8e585adecc8de3f"))
+            ( 463500, uint256S("0x5993b69fc21046198cb6b43ec1c696a3dcb3213bc60e80ac09a52aa1626afb8f"))
 
             // Blacklist
             ,
@@ -642,10 +643,10 @@ public:
         };
 
         chainTxData = ChainTxData{
-            1558475661,     // * UNIX timestamp of last checkpoint block
-            526294,         // * total number of transactions between genesis and last checkpoint
+            1566140759,     // * UNIX timestamp of last checkpoint block
+            884015,         // * total number of transactions between genesis and last checkpoint
                             //   (the tx=... number in the SetBestChain debug.log lines)
-            0.073           // * estimated number of transactions per second after that timestamp
+            0.039           // * estimated number of transactions per second after that timestamp
         };
 
     }
