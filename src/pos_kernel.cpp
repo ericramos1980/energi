@@ -16,6 +16,7 @@
 #include "timedata.h"
 #include "util.h"
 #include "consensus/validation.h"
+#include "spork.h"
 
 using namespace std;
 
@@ -353,9 +354,14 @@ bool CheckStakeKernelHash(unsigned int nBits, const CBlockIndex &blockFrom, cons
     // search
     //-------------------
     auto min_time = nTimeTx;
-    auto max_time = std::min<int64_t>(
-            min_time + nHashDrift,
-            GetAdjustedTime() + MAX_POS_BLOCK_AHEAD_TIME - MAX_POS_BLOCK_AHEAD_SAFETY_MARGIN);
+    auto max_time = GetAdjustedTime() + std::min<int64_t>(
+            nHashDrift,
+            MAX_POS_BLOCK_AHEAD_TIME - MAX_POS_BLOCK_AHEAD_SAFETY_MARGIN);
+
+    if (sporkManager.IsSporkActive(SPORK_17_BLOCK_TIME)) {
+        max_time = GetAdjustedTime() + 1;
+    }
+
     LogPrint("stake", "%s: looking for solution in range %lld .. %lld (%lld) \n",
              __func__, min_time, max_time, (max_time - min_time));
 
