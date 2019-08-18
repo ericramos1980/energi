@@ -53,6 +53,9 @@ UniValue privatesend(const JSONRPCRequest& request)
         throw JSONRPCError(RPC_INTERNAL_ERROR, "Client-side mixing is not supported on masternodes");
 
     if(request.params[0].get_str() == "start") {
+        throw JSONRPCError(RPC_WALLET_UNLOCK_NEEDED,
+                           "Error: Private send is disabled in preparation for Gen 3 migration.");
+
         {
             LOCK(pwalletMain->cs_wallet);
             if (pwalletMain->IsLocked(true))

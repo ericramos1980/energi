@@ -612,6 +612,11 @@ void OverviewPage::togglePrivateSend(){
         settings.setValue("hasMixed", "hasMixed");
     }
     if(!privateSendClient.fEnablePrivateSend){
+        QMessageBox::warning(this, tr("PrivateSend"),
+            tr("PrivateSend is disabled in preparation for Gen 3 migration."),
+            QMessageBox::Ok, QMessageBox::Ok);
+        return;
+
         const CAmount nMinAmount = CPrivateSend::GetSmallestDenomination() + CPrivateSend::GetMaxCollateralAmount();
         if(currentBalance < nMinAmount){
             QString strMinAmount(BitcoinUnits::formatWithUnit(nDisplayUnit, nMinAmount));
