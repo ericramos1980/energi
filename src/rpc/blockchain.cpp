@@ -1234,7 +1234,9 @@ UniValue gettxoutsnapshot(const JSONRPCRequest& request)
             sph_keccak256(&ctx, salt.data(), salt.size());
         }
 
+        auto blacklisted = Params().Checkpoints().mapBlacklist;
         UniValue utxosJson(UniValue::VARR);
+        UniValue blacklistJson(UniValue::VARR);
         for (const auto& m : merging) {
             const CAmount amount = m.second;
             const CScript& scriptPubKey = m.first;
@@ -1244,8 +1246,8 @@ UniValue gettxoutsnapshot(const JSONRPCRequest& request)
             int nRequiredRet_dummy;
             ExtractDestinations(scriptPubKey, destType, addressRet, nRequiredRet_dummy);
 
-            if (addressRet.empty() || destType != txnouttype::TX_PUBKEYHASH)
-                continue; // we migrate only P2PKH
+            if (addressRet.size() != 1)
+                continue;
 
             const std::string destTypeStr{GetTxnOutputType(destType)};
             const CKeyID p2pkh = boost::get<CKeyID>(addressRet[0]);
@@ -1262,12 +1264,24 @@ UniValue gettxoutsnapshot(const JSONRPCRequest& request)
                 sph_keccak256(&ctx, vch.data(), vch.size());
             }
 
-            if (!hashOnly) // insert utxos from merging map into JSON
+            if (!hashOnly) {
                 utxosJson.push_back(utxoToJson(destType, addressRet[0], amount));
+
+                // Blacklist non-P2PKH scripts by default
+                if ( (destType != txnouttype::TX_PUBKEYHASH) ||
+                     (blacklisted.find(scriptPubKey) != blacklisted.end())
+                ) {
+                    UniValue ret(UniValue::VSTR);
+                    ret = CBitcoinAddress(addressRet[0]).ToString();
+                    blacklistJson.push_back(ret);
+                }
+            }
         }
 
-        if (!hashOnly)
+        if (!hashOnly) {
             res.push_back(Pair("snapshot_utxos", utxosJson));
+            res.push_back(Pair("snapshot_blacklist", blacklistJson));
+        }
 
         { // finalize hashing context
             std::vector<unsigned char> snapshotHashVch(32);
