@@ -3566,6 +3566,23 @@ bool ContextualCheckBlockHeader(const CBlockHeader& block, CValidationState& sta
         return state.DoS(100, false, REJECT_INVALID, "bad-diffbits", false, strprintf("incorrect proof of work at %d", nHeight));
     }
 
+    // POS v1.3 - block time enforcement
+    auto bt13_since = sporkManager.GetSporkValue(SPORK_17_BLOCK_TIME);
+
+    if (block.GetBlockTime() >= bt13_since) {
+        if (block.GetBlockTime() > (nAdjustedTime + MAX_POS_BLOCK_AHEAD_TIME_V13)) {
+            return state.Invalid(
+                false, REJECT_INVALID,
+                "time-too-new", "block timestamp too far in the future v1.3");
+        }
+
+        if (pindexPrev && block.GetBlockTime() <= pindexPrev->GetBlockTime()) {
+            return state.Invalid(
+                false, REJECT_INVALID,
+                "time-too-old", "block's timestamp is not after the parent");
+        }
+    }
+
     // Check timestamp against prev
     if (block.GetBlockTime() <= pindexPrev->GetMedianTimePast()) {
         LogPrintf("Block time = %d , GetMedianTimePast = %d \n", block.GetBlockTime(), pindexPrev->GetMedianTimePast());
