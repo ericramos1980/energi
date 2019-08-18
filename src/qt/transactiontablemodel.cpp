@@ -282,7 +282,7 @@ void TransactionTableModel::updateTransaction(const QString &hash, int status, b
 
 void TransactionTableModel::updateConfirmations()
 {
-    if (priv->size() > TX_USABILITY_THRESHOLD) {
+    if (size_t(priv->size()) > TX_USABILITY_THRESHOLD) {
         return;
     }
 
