@@ -337,6 +337,13 @@ public:
         consensus.vDeployments[Consensus::DEPLOYMENT_BIP147].nWindowSize = 4032;
         consensus.vDeployments[Consensus::DEPLOYMENT_BIP147].nThreshold = 3226; // 80% of 4032
 
+        // Deployment of SPORK17
+        consensus.vDeployments[Consensus::DEPLOYMENT_SPORK17].bit = 3;
+        consensus.vDeployments[Consensus::DEPLOYMENT_SPORK17].nStartTime = 1566129600; // Aug 18th, 2019
+        consensus.vDeployments[Consensus::DEPLOYMENT_SPORK17].nTimeout = 1577793600; // Dec 31st, 2019
+        consensus.vDeployments[Consensus::DEPLOYMENT_SPORK17].nWindowSize = 100;
+        consensus.vDeployments[Consensus::DEPLOYMENT_SPORK17].nThreshold = 75; // 50% of 100
+
         // The best chain should have at least this much work.
         consensus.nMinimumChainWork = uint256S("0x000000000000000000000000000000000000000000000000a16073f8a2399fb3");
 
@@ -533,6 +540,13 @@ public:
         consensus.vDeployments[Consensus::DEPLOYMENT_BIP147].nTimeout = 1549328400; // Feb 5th, 2019
         consensus.vDeployments[Consensus::DEPLOYMENT_BIP147].nWindowSize = 100;
         consensus.vDeployments[Consensus::DEPLOYMENT_BIP147].nThreshold = 50; // 50% of 100
+
+        // Deployment of SPORK17
+        consensus.vDeployments[Consensus::DEPLOYMENT_SPORK17].bit = 3;
+        consensus.vDeployments[Consensus::DEPLOYMENT_SPORK17].nStartTime = 1566129600; // Aug 18th, 2019
+        consensus.vDeployments[Consensus::DEPLOYMENT_SPORK17].nTimeout = 1577793600; // Dec 31st, 2019
+        consensus.vDeployments[Consensus::DEPLOYMENT_SPORK17].nWindowSize = 100;
+        consensus.vDeployments[Consensus::DEPLOYMENT_SPORK17].nThreshold = 75; // 50% of 100
 
         // The best chain should have at least this much work.
         consensus.nMinimumChainWork = uint256S("0x000000000000000000000000000000000000000000000000115b76bfc4ece2bb");
@@ -857,6 +871,13 @@ public:
         consensus.vDeployments[Consensus::DEPLOYMENT_BIP147].nWindowSize = 100;
         consensus.vDeployments[Consensus::DEPLOYMENT_BIP147].nThreshold = 50; // 50% of 100
 
+        // Deployment of SPORK17
+        consensus.vDeployments[Consensus::DEPLOYMENT_SPORK17].bit = 3;
+        consensus.vDeployments[Consensus::DEPLOYMENT_SPORK17].nStartTime = 1566129600; // Aug 18th, 2019
+        consensus.vDeployments[Consensus::DEPLOYMENT_SPORK17].nTimeout = 1577793600; // Dec 31st, 2019
+        consensus.vDeployments[Consensus::DEPLOYMENT_SPORK17].nWindowSize = 100;
+        consensus.vDeployments[Consensus::DEPLOYMENT_SPORK17].nThreshold = 75; // 50% of 100
+
         // The best chain should have at least this much work.
         consensus.nMinimumChainWork = uint256S("0x000000000000000000000000000000000000000000000000000000000000000");
 
@@ -999,6 +1020,9 @@ public:
         consensus.vDeployments[Consensus::DEPLOYMENT_BIP147].bit = 2;
         consensus.vDeployments[Consensus::DEPLOYMENT_BIP147].nStartTime = 0;
         consensus.vDeployments[Consensus::DEPLOYMENT_BIP147].nTimeout = 999999999999ULL;
+        consensus.vDeployments[Consensus::DEPLOYMENT_SPORK17].bit = 3;
+        consensus.vDeployments[Consensus::DEPLOYMENT_SPORK17].nStartTime = 0;
+        consensus.vDeployments[Consensus::DEPLOYMENT_SPORK17].nTimeout = 999999999999ULL;
 
         // The best chain should have at least this much work.
         consensus.nMinimumChainWork = uint256S("0x00");
