@@ -36,7 +36,9 @@ int64_t GetTimeOffset()
 
 int64_t GetAdjustedTime()
 {
-    return GetTime() + GetTimeOffset();
+    // #1770 - do not trust PoS network
+    return GetTime();
+    //return GetTime() + GetTimeOffset();
 }
 
 static int64_t abs64(int64_t n)
@@ -48,6 +50,9 @@ static int64_t abs64(int64_t n)
 
 void AddTimeData(const CNetAddr& ip, int64_t nOffsetSample)
 {
+    // #1770 - do not trust PoS network
+    return;
+
     LOCK(cs_nTimeOffset);
     // Ignore duplicates
     static std::set<CNetAddr> setKnown;

@@ -128,14 +128,9 @@ namespace {
             if (pa->nChainWork > pb->nChainWork) return false;
             if (pa->nChainWork < pb->nChainWork) return true;
 
-#if 0
-            // NOTE: this requires difficulty calculation update in consensus to avoid abuse.
-            //       So, restored to v2.1.0 approach used on core nodes.
-
             // ... then by smaller block time => more difficult chain
             if (pa->nTime < pb->nTime) return false;
             if (pa->nTime > pb->nTime) return true;
-#endif
 
             // ... then by earliest time received, ...
             if (pa->nSequenceId < pb->nSequenceId) return false;
@@ -3564,6 +3559,23 @@ bool ContextualCheckBlockHeader(const CBlockHeader& block, CValidationState& sta
     if (block.nBits != GetNextWorkRequired(pindexPrev, &block, consensusParams))
     {
         return state.DoS(100, false, REJECT_INVALID, "bad-diffbits", false, strprintf("incorrect proof of work at %d", nHeight));
+    }
+
+    // POS v1.3 - block time enforcement
+    auto bt13_since = sporkManager.GetSporkValue(SPORK_17_BLOCK_TIME);
+
+    if (block.GetBlockTime() >= bt13_since) {
+        if (block.GetBlockTime() > (nAdjustedTime + MAX_POS_BLOCK_AHEAD_TIME_V13)) {
+            return state.Invalid(
+                false, REJECT_INVALID,
+                "time-too-new", "block timestamp too far in the future v1.3");
+        }
+
+        if (pindexPrev && block.GetBlockTime() <= pindexPrev->GetBlockTime()) {
+            return state.Invalid(
+                false, REJECT_INVALID,
+                "time-too-old", "block's timestamp is not after the parent");
+        }
     }
 
     // Check timestamp against prev

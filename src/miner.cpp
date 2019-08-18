@@ -68,13 +68,14 @@ int64_t UpdateTime(CBlockHeader* pblock, const Consensus::Params& consensusParam
 {
     int64_t nOldTime = pblock->nTime;
     auto nNewTime = pindexPrev->GetMedianTimePast()+1;
+    auto nPrevTime = pindexPrev->GetBlockTime();
     auto now = GetAdjustedTime();
 
-    // NOTE: This requires consensus change for proper average block time enforcement.
-    // Compensate, if block times go in the future
-    //if (pindexPrev->GetBlockTime() < now) {
+    if ((nPrevTime < now) || sporkManager.IsSporkActive(SPORK_17_BLOCK_TIME)) {
+        nNewTime = std::max(nNewTime, nPrevTime+1);
+    } else {
         nNewTime = std::max(nNewTime, now);
-    //}
+    }
 
     if (nOldTime < nNewTime)
         pblock->nTime = nNewTime;
@@ -744,7 +745,7 @@ void PoSMiner(CWallet* pwallet, CThreadInterrupt &interrupt)
         //
         // Create new block
         //
-        nLastCoinStakeSearchTime = GetAdjustedTime();
+        nLastCoinStakeSearchTime = GetTime();
         auto pblocktemplate = ba.CreateNewBlock(coinbaseScript, pwallet, start_block_time);
 
         if (!pblocktemplate.get())
@@ -755,6 +756,11 @@ void PoSMiner(CWallet* pwallet, CThreadInterrupt &interrupt)
         CValidationState state;
 
         if (!CheckProof(state, *pblock, Params().GetConsensus())) {
+            if (sporkManager.IsSporkActive(SPORK_17_BLOCK_TIME)) {
+                start_block_time = GetAdjustedTime() + 1;
+                continue;
+            }
+
             // Mimics limit in pos_kernel.cpp
             start_block_time = std::min<int64_t>(
                 pblock->nTime + pwallet->nHashDrift,
@@ -784,5 +790,5 @@ void PoSMiner(CWallet* pwallet, CThreadInterrupt &interrupt)
 }
 
 bool IsStakingActive() {
-    return (GetAdjustedTime() - nLastCoinStakeSearchTime) < 60;
+    return (GetTime() - nLastCoinStakeSearchTime) < 60;
 }
