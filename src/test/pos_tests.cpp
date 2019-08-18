@@ -421,7 +421,7 @@ BOOST_AUTO_TEST_CASE(PoS_old_fork) {
     SetMockTime(mock_time);
 
     for (auto i = 0; i < CBlockIndex::nMedianTimeSpan; ++i) {
-        CreateAndProcessBlock(CMutableTransactionList(), CScript());
+        CreateAndProcessBlock(CMutableTransactionList(), CScript(), mock_time);
     }
 
     // old fork

@@ -116,11 +116,14 @@ TestChain100Setup::TestChain100Setup() : TestingSetup(CBaseChainParams::REGTEST)
 // scriptPubKey, and try to add it to the current chain.
 //
 CBlock
-TestChain100Setup::CreateAndProcessBlock(const std::vector<CMutableTransaction>& txns, const CScript& scriptPubKey)
+TestChain100Setup::CreateAndProcessBlock(
+    const std::vector<CMutableTransaction>& txns,
+    const CScript& scriptPubKey,
+    int64_t block_time)
 {
     const CChainParams& chainparams = Params();
     
-    auto pblocktemplate = BlockAssembler(chainparams).CreateNewBlock(scriptPubKey, pwalletMain);
+    auto pblocktemplate = BlockAssembler(chainparams).CreateNewBlock(scriptPubKey, pwalletMain, block_time);
     auto pblock = pblocktemplate->block;
 
     if (pblock->IsProofOfStake()) {
@@ -128,7 +131,7 @@ TestChain100Setup::CreateAndProcessBlock(const std::vector<CMutableTransaction>&
 
         while (!TestBlockValidity(state, chainparams, *pblock, chainActive.Tip(), true, true)) {
             MilliSleep(1000);
-            pblocktemplate = BlockAssembler(chainparams).CreateNewBlock(scriptPubKey, pwalletMain);
+            pblocktemplate = BlockAssembler(chainparams).CreateNewBlock(scriptPubKey, pwalletMain, block_time);
             pblock = pblocktemplate->block;
             state = CValidationState();
         }
