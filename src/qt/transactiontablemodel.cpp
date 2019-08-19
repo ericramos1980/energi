@@ -30,6 +30,7 @@
 #include <boost/foreach.hpp>
 
 static const size_t TX_USABILITY_THRESHOLD = 100000;
+static const size_t TX_USABILITY_DELAY     = 30000;
 
 // Amount column is right-aligned it contains numbers
 static int column_alignments[] = {
@@ -257,6 +258,10 @@ TransactionTableModel::TransactionTableModel(const PlatformStyle *_platformStyle
     connect(walletModel->getOptionsModel(), SIGNAL(displayUnitChanged(int)), this, SLOT(updateDisplayUnit()));
 
     subscribeToCoreSignals();
+
+    refreshTimer.reset(new QTimer(this));
+    connect(refreshTimer.get(), SIGNAL(timeout()), this, SLOT(updateConfirmationsInner()));
+    refreshTimer->setSingleShot(true);
 }
 
 TransactionTableModel::~TransactionTableModel()
@@ -283,9 +288,15 @@ void TransactionTableModel::updateTransaction(const QString &hash, int status, b
 void TransactionTableModel::updateConfirmations()
 {
     if (size_t(priv->size()) > TX_USABILITY_THRESHOLD) {
+        refreshTimer->start(TX_USABILITY_DELAY);
         return;
     }
 
+    updateConfirmationsInner();
+}
+
+void TransactionTableModel::updateConfirmationsInner() 
+{
     priv->updateCachedStatus();
 
     // Blocks came in since last poll.
