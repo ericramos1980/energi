@@ -54,8 +54,6 @@ bool bBIP69Enabled = true;
 
 const char * DEFAULT_WALLET_DAT = "wallet.dat";
 
-const size_t COIN_SELECTION_LIMIT = 10000;
-
 /**
  * Fees smaller than this (in atoms) are considered zero fee (for transaction creation)
  * Override with -mintxfee
@@ -2628,7 +2626,7 @@ void CWallet::AvailableCoins(std::vector<COutput>& vCoins, bool fOnlyConfirmed, 
                                                  ((mine & ISMINE_SPENDABLE) != ISMINE_NO) ||
                                                   (coinControl && coinControl->fAllowWatchOnly && (mine & ISMINE_WATCH_SOLVABLE) != ISMINE_NO),
                                                  (mine & (ISMINE_SPENDABLE | ISMINE_WATCH_SOLVABLE)) != ISMINE_NO));
-                        if (vCoins.size() >= COIN_SELECTION_LIMIT) {
+                        if ((nCapCoinSelection > 0) && (vCoins.size() >= nCapCoinSelection)) {
                             return;
                         }
                 }

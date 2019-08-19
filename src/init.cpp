@@ -491,6 +491,7 @@ std::string HelpMessage(HelpMessageMode mode)
     strUsage += HelpMessageOpt("-usedag", strprintf(_("Whether to operate in full or light DAG mode (default: %u)"), DEFAULT_USEDAG));
     if (mode == HMM_BITCOIN_QT)
         strUsage += HelpMessageOpt("-windowtitle=<name>", _("Wallet window title"));
+    strUsage += HelpMessageOpt("-limitutxoselection=<n>", strprintf(_("Limits how many UTXOs can be selected as candidates of transaction processing, 0 = no limit (default: %d)"), DEFAULT_CAP_UTXO_SELECTION));
 #endif
 
 #if ENABLE_ZMQ

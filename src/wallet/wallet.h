@@ -78,6 +78,8 @@ extern const char * DEFAULT_WALLET_DAT;
 //! if set, all keys will be derived by using BIP39/BIP44
 static const bool DEFAULT_USE_HD_WALLET = true;
 
+static const size_t DEFAULT_CAP_UTXO_SELECTION = 10000;
+
 bool AutoBackupWallet (CWallet* wallet, const std::string& strWalletFile_, std::string& strBackupWarningRet, std::string& strBackupErrorRet);
 
 class CBlockIndex;
@@ -744,6 +746,8 @@ public:
     StakeCandidates setStakeCoins;
     int nLastStakeSetUpdate;
 
+    unsigned int nCapCoinSelection;
+
     CWallet()
     {
         SetNull();
@@ -777,6 +781,8 @@ public:
         nStakeSetUpdateTime = 300; // 5 minutes
         setStakeCoins.clear();
         nLastStakeSetUpdate = 0;
+
+        nCapCoinSelection = GetArg("-limitutxoselection", DEFAULT_CAP_UTXO_SELECTION);
 
         pwalletdbEncryption = NULL;
         nOrderPosNext = 0;

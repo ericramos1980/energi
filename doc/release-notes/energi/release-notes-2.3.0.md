@@ -39,6 +39,7 @@ Major changes:
 * CHANGED: time adjustment according to network is disabled in favor of pure NTP sync
 * CHANGED: coin selection is capped to 10K UTXOs
   - this may affect RPC calls and transaction sending
+  - use -limitutxoselection=0 for legacy behavior
 * CHANGED: PrivateSend is disabled in clients in preparation for Gen 3 migration
 * FIXED: UI performance issues with large UTXO wallets
   - UTXO count is capped to 100K items for display/update purposes
