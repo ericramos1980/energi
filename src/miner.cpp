@@ -71,10 +71,8 @@ int64_t UpdateTime(CBlockHeader* pblock, const Consensus::Params& consensusParam
     auto nPrevTime = pindexPrev->GetBlockTime();
     auto now = GetAdjustedTime();
 
-    if ((nPrevTime < now) || sporkManager.IsSporkActive(SPORK_17_BLOCK_TIME)) {
+    if (sporkManager.IsSporkActive(SPORK_17_BLOCK_TIME)) {
         nNewTime = std::max(nNewTime, nPrevTime+1);
-    } else {
-        nNewTime = std::max(nNewTime, now);
     }
 
     if (nOldTime < nNewTime)

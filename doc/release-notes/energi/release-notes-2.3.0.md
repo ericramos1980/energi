@@ -41,6 +41,7 @@ Major changes:
   - this may affect RPC calls and transaction sending
   - use -limitutxoselection=0 for legacy behavior
 * CHANGED: PrivateSend is disabled in clients in preparation for Gen 3 migration
+* CHANGED: miner strategy to mitigate some rogue stakers without consensus change
 * FIXED: UI performance issues with large UTXO wallets
   - UTXO count is capped to 100K items for display/update purposes
 

@@ -21,6 +21,7 @@
 #include "wallet/walletdb.h"
 #include "wallet/rpcwallet.h"
 
+#include "pos_kernel.h"
 #include "privatesend.h"
 
 #include <algorithm>
@@ -775,7 +776,7 @@ public:
         nMasterKeyMaxID = 0;
 
         // Stake Settings
-        nHashDrift = GetArg("-poshashdrift", 30);
+        nHashDrift = GetArg("-poshashdrift", MAX_POS_BLOCK_AHEAD_TIME);
         nStakeSplitThreshold = MAX_MONEY / COIN;
         nHashInterval = GetArg("-poshashinterval", 10);
         nStakeSetUpdateTime = 300; // 5 minutes

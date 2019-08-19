@@ -13,7 +13,7 @@
 static constexpr CAmount MIN_STAKE_AMOUNT = COIN;
 static constexpr int64_t MAX_POS_BLOCK_AHEAD_TIME = 180;
 static constexpr int64_t MAX_POS_BLOCK_AHEAD_TIME_V13 = 3;
-static constexpr int64_t MAX_POS_BLOCK_AHEAD_SAFETY_MARGIN = 5;
+static constexpr int64_t MAX_POS_BLOCK_AHEAD_SAFETY_MARGIN = 1;
 
 // Compute the hash modifier for proof-of-stake
 bool ComputeNextStakeModifier(const CBlockIndex* pindexPrev, uint64_t& nStakeModifier);
