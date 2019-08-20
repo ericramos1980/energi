@@ -49,6 +49,7 @@ BasicTestingSetup::BasicTestingSetup(const std::string& chainName)
         fPrintToDebugLog = false; // don't want to write to debug.log file
         fCheckBlockIndex = true;
         SelectParams(chainName);
+        CPrivateSend::InitStandardDenominations();
         noui_connect();
 }
 
@@ -122,7 +123,11 @@ TestChain100Setup::CreateAndProcessBlock(
     int64_t block_time)
 {
     const CChainParams& chainparams = Params();
-    
+
+    if (pwalletMain) {
+        pwalletMain->fAutocombine = AUTOCOMBINE_DISABLE;
+    }
+
     auto pblocktemplate = BlockAssembler(chainparams).CreateNewBlock(scriptPubKey, pwalletMain, block_time);
     auto pblock = pblocktemplate->block;
 

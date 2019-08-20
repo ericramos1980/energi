@@ -508,13 +508,13 @@ BOOST_AUTO_TEST_CASE(PoS_header_double_spent) {
 
     UpdateMockTime();
 
-    auto blk = CreateAndProcessBlock(CMutableTransactionList(), CScript());
+    auto blk = CreateAndProcessBlock(CMutableTransactionList(), CScript(), mock_time);
     auto tip = chainActive.Tip();
 
     UpdateMockTime();
-    CreateAndProcessBlock(CMutableTransactionList(), CScript());
+    CreateAndProcessBlock(CMutableTransactionList(), CScript(), mock_time);
     UpdateMockTime();
-    CreateAndProcessBlock(CMutableTransactionList(), CScript());
+    CreateAndProcessBlock(CMutableTransactionList(), CScript(), mock_time);
 
     // Fork case
     {
