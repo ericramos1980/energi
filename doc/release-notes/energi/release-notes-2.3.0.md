@@ -46,6 +46,7 @@ Major changes:
   - UTXO count is capped to 100K items for display/update purposes
 * NEW: stake split & autocombine feature
   - See -stakesplitthreshold, -stakemaxsplit and -stakeautocombine
+  - By default, split & combine target 1000 NRG UTXOs in scope of a single account
 
 Minor changes:
 
