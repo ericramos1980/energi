@@ -3185,7 +3185,7 @@ bool CWallet::SelectStakeCoins(StakeCandidates& setCoins, CAmount nTargetAmount)
         }
 
         //check that it is matured
-        if (out.nDepth < (out.tx->IsCoinBase() ? COINBASE_MATURITY : 10)) {
+        if (out.tx->IsCoinBase() && (out.nDepth < COINBASE_MATURITY)) {
             continue;
         }
 
@@ -4040,7 +4040,7 @@ bool CWallet::CreateCoinStake(const CKeyStore& keystore, CBlock &curr_block, CMu
             stakeTx.vout.emplace_back(tx_in.nValue, scriptPubKeyOut);
 
             if (fAutocombine != AUTOCOMBINE_DISABLE) {
-                CAmount reward = stakeTx.vout[0].nValue;
+                CAmount reward = tx_in.nValue;
                 const CAmount split_threshold = nStakeSplitThreshold * COIN;
                 const CAmount autocombine_target = split_threshold * 2 - 1;
 
@@ -4086,6 +4086,11 @@ bool CWallet::CreateCoinStake(const CKeyStore& keystore, CBlock &curr_block, CMu
                         ac_in = &(GetWalletTx(ac_iter->hash)->tx->vout[ac_iter->n]);
                         ac_amt = ac_in->nValue;
 
+                        // Do not touch already good UTXO
+                        if (ac_amt == split_threshold) {
+                            continue;
+                        }
+
                         if ((reward + ac_amt) < autocombine_target) {
                             break;
                         }
@@ -4105,6 +4110,17 @@ bool CWallet::CreateCoinStake(const CKeyStore& keystore, CBlock &curr_block, CMu
                     ++ac_iter;
                 }
 
+                // Prevent touching a single other stake with no gain
+                if ((stakeTx.vin.size() == 2) &&
+                    (tx_in.nValue == split_threshold)
+                ) {
+                    stakeTx.vin.pop_back();
+                    vin_scripts.pop_back();
+                    reward = tx_in.nValue;
+
+                    LogPrint("stake", "%s : reverting split with no gain\n", __func__);
+                }
+
                 // Automatically split
                 for (int i = 0; (i < nStakeMaxSplit) && (reward > split_threshold); ++i) {
                     stakeTx.vout.emplace_back(split_threshold, scriptPubKeyOut);
@@ -4116,6 +4132,20 @@ bool CWallet::CreateCoinStake(const CKeyStore& keystore, CBlock &curr_block, CMu
 
                 // Ensure proper primary reward is set
                 stakeTx.vout[0].nValue = reward;
+
+                // Safety check
+                CAmount vin_total = 0;
+                for (auto &v : stakeTx.vin) {
+                    vin_total += GetWalletTx(v.prevout.hash)->tx->vout[v.prevout.n].nValue;
+                }
+                CAmount vout_total = 0;
+                for (auto &v : stakeTx.vout) {
+                    vout_total += v.nValue;
+                }
+
+                if (vin_total != vout_total) {
+                    return error("Autocombine value mismatch %lli != %lli!", vin_total, vout_total);
+                }
             }
 
             for (size_t i = 0; i < vin_scripts.size(); ++i) {
