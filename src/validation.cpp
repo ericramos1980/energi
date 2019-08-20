@@ -5056,7 +5056,7 @@ bool PassStakeInputThrottle(CValidationState& state, const COutPoint &out) {
         for (auto iter = mapStakeInputSeen.begin(); iter != mapStakeInputSeen.end();) {
             auto curr = iter++;
 
-            if ((iter->second + STAKE_INPUT_THROTTLE_PERIOD) < now) {
+            if ((curr->second + STAKE_INPUT_THROTTLE_PERIOD) < now) {
                 mapStakeInputSeen.erase(curr);
             }
         }
