@@ -288,7 +288,8 @@ void TransactionTableModel::updateTransaction(const QString &hash, int status, b
 void TransactionTableModel::updateConfirmations()
 {
     if (size_t(priv->size()) > TX_USABILITY_THRESHOLD) {
-        refreshTimer->start(TX_USABILITY_DELAY);
+        //it seems to still cause not acceptable freeze for long periods
+        //refreshTimer->start(TX_USABILITY_DELAY);
         return;
     }
 
