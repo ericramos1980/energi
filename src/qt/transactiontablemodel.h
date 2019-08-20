@@ -10,9 +10,6 @@
 
 #include <QAbstractTableModel>
 #include <QStringList>
-#include <QTimer>
-
-#include <memory>
 
 class PlatformStyle;
 class TransactionRecord;
@@ -93,8 +90,6 @@ private:
     bool fProcessingQueuedTransactions;
     const PlatformStyle *platformStyle;
 
-    std::unique_ptr<QTimer> refreshTimer;
-
     void subscribeToCoreSignals();
     void unsubscribeFromCoreSignals();
 
@@ -114,7 +109,6 @@ public Q_SLOTS:
     /* New transaction, or transaction changed status */
     void updateTransaction(const QString &hash, int status, bool showTransaction);
     void updateConfirmations();
-    void updateConfirmationsInner();
     void updateDisplayUnit();
     /** Updates the column title to "Amount (DisplayUnit)" and emits headerDataChanged() signal for table headers to react. */
     void updateAmountColumnTitle();
