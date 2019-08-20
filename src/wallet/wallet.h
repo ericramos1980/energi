@@ -80,7 +80,7 @@ extern const char * DEFAULT_WALLET_DAT;
 static const bool DEFAULT_USE_HD_WALLET = true;
 
 static const size_t DEFAULT_CAP_UTXO_SELECTION = 10000;
-static const size_t DEFAULT_STAKE_SPLIT_THRESHOLD = MAX_MONEY / COIN;
+static const size_t DEFAULT_STAKE_SPLIT_THRESHOLD = 1000;
 static const size_t DEFAULT_STAKE_MAX_SPLIT = 500;
 
 enum {
@@ -792,7 +792,7 @@ public:
         nStakeSplitThreshold = GetArg("-stakesplitthreshold", DEFAULT_STAKE_SPLIT_THRESHOLD);
         nStakeMaxSplit = GetArg("-stakemaxsplit", DEFAULT_STAKE_MAX_SPLIT);
         fAutocombine = GetArg("-stakeautocombine", DEFAULT_STAKE_AUTOCOMBINE);
-        nStakeSetUpdateTime = 300; // 5 minutes
+        nStakeSetUpdateTime = 60; // 1 minute
         setStakeCoins.clear();
         nLastStakeSetUpdate = 0;
 
