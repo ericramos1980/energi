@@ -44,6 +44,8 @@ Major changes:
 * CHANGED: miner strategy to mitigate some rogue stakers without consensus change
 * FIXED: UI performance issues with large UTXO wallets
   - UTXO count is capped to 100K items for display/update purposes
+* NEW: stake split & autocombine feature
+  - See -stakesplitthreshold, -stakemaxsplit and -stakeautocombine
 
 Minor changes:
 

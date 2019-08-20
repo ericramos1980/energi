@@ -80,6 +80,15 @@ extern const char * DEFAULT_WALLET_DAT;
 static const bool DEFAULT_USE_HD_WALLET = true;
 
 static const size_t DEFAULT_CAP_UTXO_SELECTION = 10000;
+static const size_t DEFAULT_STAKE_SPLIT_THRESHOLD = MAX_MONEY / COIN;
+static const size_t DEFAULT_STAKE_MAX_SPLIT = 500;
+
+enum {
+    AUTOCOMBINE_DISABLE = 0,
+    AUTOCOMBINE_SAME = 1,
+    AUTOCOMBINE_ANY = 2,
+};
+static const int DEFAULT_STAKE_AUTOCOMBINE = AUTOCOMBINE_SAME;
 
 bool AutoBackupWallet (CWallet* wallet, const std::string& strWalletFile_, std::string& strBackupWarningRet, std::string& strBackupErrorRet);
 
@@ -741,6 +750,8 @@ public:
     unsigned int nHashDrift;
     unsigned int nHashInterval;
     uint64_t nStakeSplitThreshold;
+    int nStakeMaxSplit;
+    int fAutocombine;
     int nStakeSetUpdateTime;
     using StakeCandidate = std::tuple<CAmount, const CWalletTx*, unsigned int>;
     using StakeCandidates = std::set<StakeCandidate>;
@@ -777,8 +788,10 @@ public:
 
         // Stake Settings
         nHashDrift = GetArg("-poshashdrift", MAX_POS_BLOCK_AHEAD_TIME);
-        nStakeSplitThreshold = MAX_MONEY / COIN;
         nHashInterval = GetArg("-poshashinterval", 10);
+        nStakeSplitThreshold = GetArg("-stakesplitthreshold", DEFAULT_STAKE_SPLIT_THRESHOLD);
+        nStakeMaxSplit = GetArg("-stakemaxsplit", DEFAULT_STAKE_MAX_SPLIT);
+        fAutocombine = GetArg("-stakeautocombine", DEFAULT_STAKE_AUTOCOMBINE);
         nStakeSetUpdateTime = 300; // 5 minutes
         setStakeCoins.clear();
         nLastStakeSetUpdate = 0;

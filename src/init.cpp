@@ -492,6 +492,9 @@ std::string HelpMessage(HelpMessageMode mode)
     if (mode == HMM_BITCOIN_QT)
         strUsage += HelpMessageOpt("-windowtitle=<name>", _("Wallet window title"));
     strUsage += HelpMessageOpt("-limitutxoselection=<n>", strprintf(_("Limits how many UTXOs can be selected as candidates of transaction processing, 0 = no limit (default: %d)"), DEFAULT_CAP_UTXO_SELECTION));
+    strUsage += HelpMessageOpt("-stakesplitthreshold=<n>", strprintf(_("Splits stake reward by threshold (default: %d)"), DEFAULT_STAKE_SPLIT_THRESHOLD));
+    strUsage += HelpMessageOpt("-stakemaxsplit=<n>", strprintf(_("Sets the number of max inputs & outputs of a stake (default: %d)"), DEFAULT_STAKE_MAX_SPLIT));
+    strUsage += HelpMessageOpt("-stakeautocombine=<n>", strprintf(_("Autocombine feature: 0 - disable, 1 - same account, 2 - any account (default: %d)"), DEFAULT_STAKE_AUTOCOMBINE));
 #endif
 
 #if ENABLE_ZMQ
