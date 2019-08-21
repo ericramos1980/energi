@@ -52,5 +52,6 @@ Minor changes:
 
 * CHANGED: protocol version bumped to 7.2.13 without actual message changes
 * CHANGED: extended migration snapshot format
+* FIXED: stake DoS protection cleanup issue
 * NEW: miner strategy support for SPORK 17
 * NEW: updated checkpoints
