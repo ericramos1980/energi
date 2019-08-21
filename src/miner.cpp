@@ -74,8 +74,11 @@ int64_t UpdateTime(CBlockHeader* pblock, const Consensus::Params& consensusParam
         nNewTime = std::max(nNewTime, nPrevTime+1);
     }
 
-    // Try aggressively, but ensure steady progress
-    nNewTime = std::max(nNewTime, GetAdjustedTime() - 60);
+    // Try aggressively, but ensure steady progress (just in case, should never be triggered)
+    nNewTime = std::max(nNewTime, GetAdjustedTime() - consensusParams.nPowTargetSpacing);
+
+    // If a block goes into the future, try to push children there.
+    nNewTime = std::max(nNewTime, pindexPrev->GetBlockTimeMax() - consensusParams.nPowTargetSpacing);
 
     if (nOldTime < nNewTime)
         pblock->nTime = nNewTime;
