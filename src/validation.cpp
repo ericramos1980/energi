@@ -3564,13 +3564,13 @@ bool ContextualCheckBlockHeader(const CBlockHeader& block, CValidationState& sta
     // POS v1.3 - block time enforcement
     auto bt13_since = sporkManager.GetSporkValue(SPORK_17_BLOCK_TIME);
 
-    if (block.GetBlockTime() >= bt13_since) {
+    if (pindexPrev && (pindexPrev->GetBlockTime() >= bt13_since)) {
         if (block.GetBlockTime() > (nAdjustedTime + MAX_POS_BLOCK_AHEAD_TIME_V13)) {
             return state.TransientError(
                 "time-too-new", "block timestamp too far in the future v1.3");
         }
 
-        if (pindexPrev && block.GetBlockTime() <= pindexPrev->GetBlockTime()) {
+        if (block.GetBlockTime() <= pindexPrev->GetBlockTime()) {
             // NOTE: Even though the requirement is hard, we do not want network splits.
             return state.TransientError(
                 "time-too-old", "block's timestamp is not after the parent");
