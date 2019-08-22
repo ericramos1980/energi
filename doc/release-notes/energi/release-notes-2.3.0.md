@@ -34,7 +34,6 @@ Major changes:
 * NEW: SPORK17 - PoS v1.3 block time soft fork
   - prevents blocks in the future
   - enforces block time to be after it parent
-  - older by block time takes precedence instead of older by receive time
   - new bit 3 is used to indicate miner readiness
 * CHANGED: time adjustment according to network is disabled in favor of pure NTP sync
 * CHANGED: coin selection is capped to 10K UTXOs

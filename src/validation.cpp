@@ -128,9 +128,11 @@ namespace {
             if (pa->nChainWork > pb->nChainWork) return false;
             if (pa->nChainWork < pb->nChainWork) return true;
 
+#if 0
             // ... then by smaller block time => more difficult chain
             if (pa->nTime < pb->nTime) return false;
             if (pa->nTime > pb->nTime) return true;
+#endif
 
             // ... then by earliest time received, ...
             if (pa->nSequenceId < pb->nSequenceId) return false;
