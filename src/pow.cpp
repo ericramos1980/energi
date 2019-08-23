@@ -61,6 +61,12 @@ unsigned int static DarkGravityWave(const CBlockIndex* pindexLast, const CBlockH
             nActualSpacing = pindexLast->GetBlockTime() - pindexLast->pprev->GetBlockTime();
         }
 
+        // PoS v2 - mitigate biased diff
+        if (pblock->IsProofOfStakeV2()) {
+            nActualSpacing = std::max<int64_t>(nActualSpacing, 1);
+            nActualSpacing = std::min<int64_t>(nActualSpacing, (nTargetSpacing*2)-1);
+        } else
+        // PoS v1
         if (nActualSpacing < 0) {
             nActualSpacing = 1;
         }
