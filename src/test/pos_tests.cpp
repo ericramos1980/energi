@@ -25,6 +25,7 @@ struct PoSTestSetup : TestChain100Setup {
     CWallet wallet;
     int64_t mock_time{0};
     int block_shift{0};
+    int TEST_FIRST_POSV2_BLOCK{0};
 
     void UpdateMockTime(int block_count = 1) {
         mock_time += block_count * block_shift;
@@ -60,6 +61,7 @@ struct PoSTestSetup : TestChain100Setup {
         BOOST_CHECK(sporkManager.SetPrivKey(CBitcoinSecret(coinbaseKey).ToString()));
         BOOST_CHECK(sporkManager.UpdateSpork(SPORK_15_FIRST_POS_BLOCK, TEST_FIRST_POS_BLOCK, *connman));
         BOOST_CHECK_EQUAL(nFirstPoSBlock, TEST_FIRST_POS_BLOCK);
+        BOOST_CHECK_EQUAL(nFirstPoSv2Block, 4070908800ULL);
         //int last_pow_height;
 
         mock_time = chainActive.Tip()->GetBlockTimeMax() + 5;
@@ -89,6 +91,8 @@ struct PoSTestSetup : TestChain100Setup {
         pwalletMain = nullptr;
         nFirstPoSBlock = 999999;
         BOOST_CHECK(sporkManager.UpdateSpork(SPORK_15_FIRST_POS_BLOCK, 999999ULL, *connman));
+        nFirstPoSv2Block = 4070908800ULL;
+        BOOST_CHECK(sporkManager.UpdateSpork(SPORK_18_FIRST_POS_V2_BLOCK, 4070908800ULL, *connman));
     }
 };
 
@@ -110,6 +114,21 @@ BOOST_AUTO_TEST_CASE(PoS_transition_test)
     }
 
     BOOST_CHECK(sporkManager.UpdateSpork(SPORK_15_FIRST_POS_BLOCK, value_bak, *connman));
+}
+
+
+BOOST_AUTO_TEST_CASE(PoSv2_stake_modifier)
+{
+    auto tip = chainActive.Tip();
+    uint64_t mod1 = 0, mod2 = 0, mod3 = 0, mod4 = 0;
+
+    ComputeNextStakeModifierV2(tip->GetBlockTime()+1, tip, mod1);
+    ComputeNextStakeModifierV2(tip->GetBlockTime()+1, tip, mod2);
+    ComputeNextStakeModifierV2(tip->GetBlockTime()+1800, tip, mod3);
+    ComputeNextStakeModifierV2(tip->GetBlockTime()+3600, tip, mod4);
+    BOOST_CHECK_EQUAL(mod1, mod2);
+    BOOST_CHECK(mod1 != mod3);
+    BOOST_CHECK(mod3 != mod4);
 }
 
 BOOST_AUTO_TEST_CASE(PoS_check_signature)
@@ -606,6 +625,38 @@ BOOST_AUTO_TEST_CASE(PoS_abandon_stake) {
     if (!vCoins.empty()) {
         CreateAndProcessBlock(CMutableTransactionList(), CScript());
     }
+}
+
+BOOST_AUTO_TEST_CASE(PoSv2_transition_test) {
+    TEST_FIRST_POSV2_BLOCK = chainActive.Height() + 1;
+
+    BOOST_CHECK(sporkManager.UpdateSpork(SPORK_18_FIRST_POS_V2_BLOCK, TEST_FIRST_POSV2_BLOCK, *connman));
+    BOOST_CHECK_EQUAL(nFirstPoSBlock, TEST_FIRST_POS_BLOCK);
+    BOOST_CHECK_EQUAL(nFirstPoSv2Block, TEST_FIRST_POSV2_BLOCK);
+
+    // PoSv2 mode by spork
+    //---
+    for (auto i = 30; i > 0; --i) {
+        auto blk = CreateAndProcessBlock(CMutableTransactionList(), CScript());
+        BOOST_CHECK(blk.IsProofOfStakeV2());
+        BOOST_CHECK(blk.HasStake());
+        UpdateMockTime();
+    }
+
+    // Still, it must continue PoS even after Spork change
+    //---
+    auto value_bak = sporkManager.GetSporkValue(SPORK_18_FIRST_POS_V2_BLOCK);
+    BOOST_CHECK(sporkManager.UpdateSpork(SPORK_18_FIRST_POS_V2_BLOCK, 999999ULL, *connman));
+    BOOST_CHECK_EQUAL(nFirstPoSv2Block, TEST_FIRST_POSV2_BLOCK);
+
+    {
+        auto blk = CreateAndProcessBlock(CMutableTransactionList(), CScript());
+        BOOST_CHECK(blk.IsProofOfStakeV2());
+        BOOST_CHECK(blk.HasStake());
+        UpdateMockTime();
+    }
+
+    BOOST_CHECK(sporkManager.UpdateSpork(SPORK_18_FIRST_POS_V2_BLOCK, value_bak, *connman));
 }
 
 BOOST_AUTO_TEST_SUITE_END()

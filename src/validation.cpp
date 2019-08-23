@@ -97,6 +97,7 @@ bool fAlerts = DEFAULT_ALERTS;
 int64_t nMaxTipAge = DEFAULT_MAX_TIP_AGE;
 bool fEnableReplacement = DEFAULT_ENABLE_REPLACEMENT;
 uint32_t nFirstPoSBlock = 999999;
+uint32_t nFirstPoSv2Block = 4070908800ULL;
 
 int64_t nReserveBalance = 0;
 
@@ -1971,6 +1972,12 @@ int32_t ComputeBlockVersion(const CBlockIndex* pindexPrev, const Consensus::Para
 
     if (pindexPrev == nullptr) {
         // pass
+    } else if (pindexPrev->IsProofOfStakeV2()) {
+        // Once we switch to PoSv2, we continue that way
+        nVersion |= VERSIONBITS_POSV2_BITS;
+    } else if (IsPoSV2EnforcedHeight(pindexPrev->nHeight + 1)) {
+        // Check if enforced by Spork
+        nVersion |= VERSIONBITS_POSV2_BITS;
     } else if (pindexPrev->IsProofOfStake()) {
         // Once we switch to PoS, we continue that way
         nVersion |= VERSIONBITS_POS_BIT;
@@ -2068,6 +2075,12 @@ static bool ConnectBlock(const CBlock& block, CValidationState& state, CBlockInd
     if (is_pos_active && block.IsProofOfWork())
         return state.DoS(100, error("ConnectBlock() : PoS period already active"),
             REJECT_INVALID, "PoS-active");
+
+    bool is_posv2_active = pindex->pprev && pindex->pprev->IsProofOfStakeV2();
+
+    if (block.IsProofOfStakeV2() && !is_posv2_active && !IsPoSV2EnforcedHeight(pindex->nHeight))
+        return state.DoS(100, error("ConnectBlock() : PoSv2 period not active"),
+            REJECT_INVALID, "PoSv2-early");
 
     bool fScriptChecks = true;
     if (!hashAssumeValid.IsNull()) {
@@ -4519,6 +4532,11 @@ bool LoadExternalBlockFile(const CChainParams& chainparams, FILE* fileIn, CDiskB
                     LogPrintf("%s: Detected nFirstPoSBlock = %d\n", __func__, nFirstPoSBlock);
                 }
 
+                if (block.IsProofOfStakeV2() && !IsPoSV2EnforcedHeight(block.nHeight)) {
+                    nFirstPoSv2Block = block.nHeight;
+                    LogPrintf("%s: Detected nFirstPoSv2Block = %d\n", __func__, nFirstPoSv2Block);
+                }
+
                 // process in case the block isn't known yet
                 if (mapBlockIndex.count(hash) == 0 || (mapBlockIndex[hash]->nStatus & BLOCK_HAVE_DATA) == 0) {
                     LOCK(cs_main);
@@ -5012,11 +5030,22 @@ bool IsPoSEnforcedHeight(int nBlockHeight) {
     return nBlockHeight >= int(nFirstPoSBlock);
 }
 
+bool IsPoSV2EnforcedHeight(int nBlockHeight) {
+    return uint32_t(nBlockHeight) >= nFirstPoSv2Block;
+}
+
 void CorrectPoSHeight() {
     LOCK(cs_main);
+    auto pindex = chainActive.Tip();
 
-    for (auto pindex = chainActive.Tip(); pindex && pindex->IsProofOfStake(); pindex = pindex->pprev) {
-        nFirstPoSBlock = std::min<int32_t>(pindex->nHeight, nFirstPoSBlock);
+    for (; pindex && pindex->IsProofOfStakeV2(); pindex = pindex->pprev) {
+        nFirstPoSv2Block = std::min<int64_t>(pindex->nHeight, nFirstPoSv2Block);
+    }
+
+    LogPrint("stake", "Detected nFirstPoSv2Block = %d\n", nFirstPoSv2Block);
+
+    for (; pindex && pindex->IsProofOfStake(); pindex = pindex->pprev) {
+        nFirstPoSBlock = std::min<int64_t>(pindex->nHeight, nFirstPoSBlock);
     }
 
     LogPrint("stake", "Detected nFirstPoSBlock = %d\n", nFirstPoSBlock);

@@ -25,6 +25,7 @@ class CBlockHeader
 {
 public:
     static constexpr uint32_t POS_BIT = 0x10000000UL;
+    static constexpr uint32_t POSV2_BITS = POS_BIT | 0x08000000UL;
 
     // header for  hashing
     int32_t nVersion;
@@ -136,6 +137,11 @@ public:
     bool IsProofOfStake() const
     {
         return (nVersion & CBlockHeader::POS_BIT) != 0;
+    }
+
+    bool IsProofOfStakeV2() const
+    {
+        return (nVersion & CBlockHeader::POSV2_BITS) == CBlockHeader::POSV2_BITS;
     }
 
     bool IsProofOfWork() const
