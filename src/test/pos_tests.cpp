@@ -25,7 +25,7 @@ struct PoSTestSetup : TestChain100Setup {
     CWallet wallet;
     int64_t mock_time{0};
     int block_shift{0};
-    int TEST_FIRST_POSV2_BLOCK{0};
+    uint32_t TEST_FIRST_POSV2_BLOCK{0};
 
     void UpdateMockTime(int block_count = 1) {
         mock_time += block_count * block_shift;
@@ -657,6 +657,56 @@ BOOST_AUTO_TEST_CASE(PoSv2_transition_test) {
     }
 
     BOOST_CHECK(sporkManager.UpdateSpork(SPORK_18_FIRST_POS_V2_BLOCK, value_bak, *connman));
+}
+
+BOOST_AUTO_TEST_CASE(PoSv2_diff_algo) {
+    auto tip = chainActive.Tip();
+    auto prev = *tip;
+    prev.pprev = tip;
+    CBlockHeader curr;
+    prev.nVersion = curr.nVersion = CBlockHeader::POSV2_BITS;
+    arith_uint256 bnNew;
+    arith_uint256 bnReq;
+    bnReq.SetCompact(tip->nBits);
+    bnReq >>= 16;
+    prev.nBits = bnReq.GetCompact();
+
+    auto params = Params(CBaseChainParams::TESTNET).GetConsensus();
+    int64_t nPastBlocks = 24;
+    int64_t nTargetSpacing = params.nPowTargetSpacing;
+    // NOTE: is this accurate? nActualTimespan counts it for (nPastBlocks - 1) blocks only...
+    int64_t nTargetTimespan = nPastBlocks * nTargetSpacing;
+    int64_t nInterval = nTargetTimespan / nTargetSpacing;
+
+    // Time in the past
+    prev.nTime = tip->nTime - 100;
+    bnNew.SetCompact(GetNextWorkRequired(&prev, &curr, params));
+
+    bnReq.SetCompact(prev.nBits);
+    bnReq *= ((nInterval - 1) * nTargetSpacing + 1 + 1);
+    bnReq /= ((nInterval + 1) * nTargetSpacing);
+
+    BOOST_CHECK_EQUAL(bnNew.GetCompact(), bnReq.GetCompact());
+
+    // Time in the middle
+    prev.nTime = tip->nTime + 30;
+    bnNew.SetCompact(GetNextWorkRequired(&prev, &curr, params));
+
+    bnReq.SetCompact(prev.nBits);
+    bnReq *= ((nInterval - 1) * nTargetSpacing + 30 + 30);
+    bnReq /= ((nInterval + 1) * nTargetSpacing);
+
+    BOOST_CHECK_EQUAL(bnNew.GetCompact(), bnReq.GetCompact());
+
+    // Time in the future
+    prev.nTime = tip->nTime + 300;
+    bnNew.SetCompact(GetNextWorkRequired(&prev, &curr, params));
+
+    bnReq.SetCompact(prev.nBits);
+    bnReq *= ((nInterval - 1) * nTargetSpacing + 119 + 119);
+    bnReq /= ((nInterval + 1) * nTargetSpacing);
+
+    BOOST_CHECK_EQUAL(bnNew.GetCompact(), bnReq.GetCompact());
 }
 
 BOOST_AUTO_TEST_SUITE_END()
