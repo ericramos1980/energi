@@ -3925,7 +3925,7 @@ bool CWallet::CreateTransaction(const std::vector<CRecipient>& vecSend, CWalletT
 }
 
 // ppcoin: create coin stake transaction
-bool CWallet::CreateCoinStake(const CKeyStore& keystore, CBlock &curr_block, CMutableTransaction& coinbaseTx)
+bool CWallet::CreateCoinStake(const CBlockIndex *pindex_prev, CBlock &curr_block, CMutableTransaction& coinbaseTx)
 {
     // Choose coins to use
     CAmount nBalance = GetBalance();
@@ -3974,13 +3974,13 @@ bool CWallet::CreateCoinStake(const CKeyStore& keystore, CBlock &curr_block, CMu
 
         //iterates each utxo inside of CheckStakeKernelHash()
         bool fKernelFound = CheckStakeKernelHash(
-                curr_block.nBits, *pcoin_index, *pWalletTxIn,
+                curr_block,
+                *pindex_prev,
+                *pcoin_index,
+                *pWalletTxIn,
                 prevoutStake,
-                curr_block.nTime,
                 nHashDrift,
                 false,
-                curr_block.hashProofOfStake(),
-                curr_block.nStakeModifier(),
                 true);
 
         if (fKernelFound) {
@@ -4010,7 +4010,7 @@ bool CWallet::CreateCoinStake(const CKeyStore& keystore, CBlock &curr_block, CMu
             if (whichType == TX_PUBKEYHASH) // pay to address type
             {
                 // convert to pay to address type
-                if (!keystore.GetPubKey(CKeyID(uint160(vSolutions[0])), curr_block.posPubKey)) {
+                if (!GetPubKey(CKeyID(uint160(vSolutions[0])), curr_block.posPubKey)) {
                     LogPrint("stake", "%s : failed to get key for kernel type=%d\n", __func__, whichType);
                     continue;
                 }

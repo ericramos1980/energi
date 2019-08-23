@@ -245,6 +245,7 @@ static const unsigned int DEFAULT_CHECKLEVEL = 3;
 static const uint64_t MIN_DISK_SPACE_FOR_BLOCK_FILES = 945 * 1024 * 1024;
 
 extern uint32_t nFirstPoSBlock;
+extern uint32_t nFirstPoSv2Block;
 
 /**
  * Process an incoming block. This only returns after the best known valid
@@ -614,6 +615,7 @@ bool LoadMempool();
 
 /** Check if Proof-of-Stake is required for particular height **/
 bool IsPoSEnforcedHeight(int nBlockHeight);
+bool IsPoSV2EnforcedHeight(int nFirstPoSv2Block);
 void CorrectPoSHeight();
 
 bool CheckProof(CValidationState& state, const CBlockIndex &pindex, const Consensus::Params& params);

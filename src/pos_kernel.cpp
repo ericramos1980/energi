@@ -264,6 +264,63 @@ bool ComputeNextStakeModifier(const CBlockIndex* pindexPrev, uint64_t& nStakeMod
     return true;
 }
 
+bool ComputeNextStakeModifierV2(const uint32_t blockTime, const CBlockIndex* pindexPrev, uint64_t& nStakeModifier)
+{
+    nStakeModifier = 0;
+
+    if (!pindexPrev) {
+        return false;
+    }
+
+    /**
+     * This is actually bound to stake maturity period of 1 hour, but testnet uses only 3 minutes.
+     *
+     * The previous block stake is used as difficult to mine entropy as it is expected to be outside
+     * of the interval of prediction.
+     *
+     * The general approach is to use the oldest block in such interval as source of random entropy,
+     * but block time can be manipulated.
+     *
+     * Therefore, the middle block time is used as another source of entropy as extra precaution.
+     *
+     * The problem becomes as follows:
+     * - stakes needs to be mined in before maturity period
+     * - target stakes depend on block hashes inside the maturity period
+     * - there are around 60 blocks = 60 stakes needed
+     * - oldest block hash is not predictable in the future
+     * - all this problem solving needs to be sorted in quite short period of time as the main chain
+     *   progresses rapidly.
+     * - current hash power demand is in Thz
+     */
+    const uint32_t MODIFIER_INTERVAL = 3600;
+    const uint32_t timeMid = blockTime - (MODIFIER_INTERVAL / 2);
+    const uint32_t timeOld = blockTime - (MODIFIER_INTERVAL - MAX_POS_BLOCK_AHEAD_TIME);
+
+    const CBlockIndex* pmiddle = pindexPrev;
+    for (; (pmiddle->nTime > timeMid) && pmiddle->pprev; pmiddle = pmiddle->pprev);
+
+    const CBlockIndex* poldest = pindexPrev;
+    for (; (poldest->nTime > timeOld) && poldest->pprev; poldest = poldest->pprev);
+
+    auto prevout = pindexPrev->StakeInput();
+
+    // From more recent to more oldest
+    CDataStream ss(SER_GETHASH, 0);
+    ss << prevout.hash << prevout.n;
+    ss << pmiddle->GetBlockHash();
+    ss << poldest->GetBlockHash();
+
+    // The first 64 bits
+    nStakeModifier = Hash(ss.begin(), ss.end()).GetCheapHash();
+
+    LogPrint("stake", "%s: new modifier=%llx time=%llu, prevblk=%s\n",
+             __func__, nStakeModifier,
+             blockTime,
+             pindexPrev->GetBlockHash().ToString().c_str());
+
+    return true;
+}
+
 uint256 stakeHash(unsigned int nTimeTx, CDataStream ss, unsigned int prevoutIndex, uint256 prevoutHash, unsigned int nTimeBlockFrom)
 {
     //Pivx will hash in the transaction hash and the index number in order to make sure each hash is unique
@@ -272,8 +329,23 @@ uint256 stakeHash(unsigned int nTimeTx, CDataStream ss, unsigned int prevoutInde
 }
 
 //instead of looping outside and reinitializing variables many times, we will give a nTimeTx and also search interval so that we can do all the hashing here
-bool CheckStakeKernelHash(unsigned int nBits, const CBlockIndex &blockFrom, const CTransaction txPrev, const COutPoint prevout, unsigned int& nTimeTx, unsigned int nHashDrift, bool fCheck, uint256& hashProofOfStake, uint64_t &nStakeModifier, bool fPrintProofOfStake)
-{
+bool CheckStakeKernelHash(
+    CBlockHeader &current,
+    const CBlockIndex &blockPrev,
+    const CBlockIndex &blockFrom,
+    const CTransaction txPrev,
+    const COutPoint prevout,
+    unsigned int nHashDrift,
+    bool fCheck,
+    bool fPrintProofOfStake
+) {
+    // Legacy way of parameter passing
+    unsigned int nBits = current.nBits;
+    unsigned int& nTimeTx = current.nTime;
+    uint256& hashProofOfStake = current.hashProofOfStake();
+    uint64_t &nStakeModifier = current.nStakeModifier();
+    //
+
     //assign new variables to make it easier to read
     CAmount nValueIn = txPrev.vout[prevout.n].nValue;
     unsigned int nTimeBlockFrom = blockFrom.GetBlockTime();
@@ -312,6 +384,15 @@ bool CheckStakeKernelHash(unsigned int nBits, const CBlockIndex &blockFrom, cons
     //grab stake modifier
     //-------------------
     uint64_t nRequiredStakeModifier = 0;
+
+    // This is a six month later fix of the problem stated in the note below.
+    if (current.IsProofOfStakeV2()) {
+        if (!ComputeNextStakeModifierV2(nTimeTx, &blockPrev, nRequiredStakeModifier)) {
+            LogPrintf("CheckStakeKernelHash(): failed to get kernel stake modifier V2 \n");
+            return false;
+        }
+        // pass
+    } else // PoS v1
 
     // NOTE: this must be calculated based on previous-to-tip, but not previous-to-stake block!
     if (!ComputeNextStakeModifier(&blockFrom, nRequiredStakeModifier)) {
@@ -367,6 +448,16 @@ bool CheckStakeKernelHash(unsigned int nBits, const CBlockIndex &blockFrom, cons
 
     for (auto try_time = min_time; try_time < max_time; ++try_time)
     {
+        if (current.IsProofOfStakeV2()) {
+            if (!ComputeNextStakeModifierV2(try_time, &blockPrev, nStakeModifier)) {
+                LogPrintf("CheckStakeKernelHash(): failed to get kernel stake modifier V2 \n");
+                return false;
+            }
+
+            ss = CDataStream(SER_GETHASH, 0);
+            ss << nStakeModifier;
+        }
+
         //hash this iteration
         hashProofOfStake = stakeHash(try_time, ss, prevout.n, prevout.hash, nTimeBlockFrom);
 
@@ -409,6 +500,7 @@ bool CheckProofOfStake(CValidationState &state, const CBlockHeader &header, cons
     uint256 txinHashBlock;
     CTransactionRef txinPrevRef;
     CBlockIndex* pindex_tx = nullptr;
+    CBlockIndex* pindex_prev = nullptr;
 
     if (!GetTransaction(prevout.hash, txinPrevRef, consensus, txinHashBlock, true)) {
         BlockMap::iterator it = mapBlockIndex.find(header.hashPrevBlock);
@@ -450,7 +542,7 @@ bool CheckProofOfStake(CValidationState &state, const CBlockHeader &header, cons
                                 false, "previous PoS header is not known");
         }
 
-        auto pindex_prev = it->second;
+        pindex_prev = it->second;
         const auto pindex_fork = chainActive.FindFork(pindex_prev);
 
         // Just in case, it must never happen.
@@ -522,15 +614,16 @@ bool CheckProofOfStake(CValidationState &state, const CBlockHeader &header, cons
     }
 
     unsigned int nInterval = 0;
-    unsigned int nTime = header.nTime;
-    uint256 hashProofOfStake = header.hashProofOfStake();
-    uint64_t nStakeModifier = header.nStakeModifier();
+    CBlockHeader rwheader = header; // const_cast could be used, but just safety
     
     bool is_valid = CheckStakeKernelHash(
-            header.nBits,
-            *pindex_tx, *txinPrevRef, prevout,
-            nTime, nInterval, true,
-            hashProofOfStake, nStakeModifier,
+            rwheader,
+            *pindex_prev,
+            *pindex_tx,
+            *txinPrevRef,
+            prevout,
+            nInterval,
+            true,
             fDebug);
 
     if (!is_valid) {

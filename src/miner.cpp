@@ -231,7 +231,7 @@ std::unique_ptr<CBlockTemplate> BlockAssembler::CreateNewBlock(
         }
 
         boost::this_thread::interruption_point();
-        bool fStakeFound = pwallet->CreateCoinStake(*pwallet, *pblock, coinbaseTx);
+        bool fStakeFound = pwallet->CreateCoinStake(pindexPrev, *pblock, coinbaseTx);
 
         if (fStakeFound) {
             sign_block = true;

@@ -32,6 +32,7 @@ std::map<int, int64_t> mapSporkDefaults = {
     {SPORK_15_FIRST_POS_BLOCK,               437600ULL},     // ON @mainnet
     {SPORK_16_MASTERNODE_MIN_PROTOCOL,       MIN_PEER_PROTO_VERSION }, // Actual
     {SPORK_17_BLOCK_TIME,                    4070908800ULL}, // OFF by default
+    {SPORK_18_FIRST_POS_V2_BLOCK,            4070908800ULL}, // OFF by default
 };
 SporkCheckpointMap mapSporkCheckpoints GUARDED_BY(cs_main);
 SporkBlacklistMap mapSporkBlacklist GUARDED_BY(cs_main);
@@ -238,7 +239,7 @@ void CSporkManager::ProcessSpork(CNode* pfrom, const std::string& strCommand, CD
     }
 }
 
-void CSporkManager::ExecuteSpork(int nSporkID, int nValue)
+void CSporkManager::ExecuteSpork(int nSporkID, int64_t nValue)
 {
     //correct fork via spork technology
     if(nSporkID == SPORK_12_RECONSIDER_BLOCKS && nValue > 0) {
@@ -274,6 +275,17 @@ void CSporkManager::ExecuteSpork(int nSporkID, int nValue)
             nFirstPoSBlock = nValue;
         } else if (nValue != int(nFirstPoSBlock)) {
             error("SPORK15 conflicts with current chain %d vs. %d", nValue, nFirstPoSBlock);
+        }
+    }
+
+    if (nSporkID == SPORK_18_FIRST_POS_V2_BLOCK) {
+        LOCK(cs_main);
+
+        if ((nValue < int64_t(nFirstPoSv2Block)) &&
+            (nValue > chainActive.Tip()->nHeight)) {
+            nFirstPoSv2Block = nValue;
+        } else if (nValue != int64_t(nFirstPoSv2Block)) {
+            error("SPORK18 conflicts with current chain %d vs. %d", nValue, nFirstPoSv2Block);
         }
     }
 }
@@ -403,6 +415,7 @@ int CSporkManager::GetSporkIDByName(const std::string& strName)
     if (strName == "SPORK_15_FIRST_POS_BLOCK")                  return SPORK_15_FIRST_POS_BLOCK;
     if (strName == "SPORK_16_MASTERNODE_MIN_PROTOCOL")          return SPORK_16_MASTERNODE_MIN_PROTOCOL;
     if (strName == "SPORK_17_BLOCK_TIME")                       return SPORK_17_BLOCK_TIME;
+    if (strName == "SPORK_18_FIRST_POS_V2_BLOCK")               return SPORK_18_FIRST_POS_V2_BLOCK;
 
     LogPrint("spork", "CSporkManager::GetSporkIDByName -- Unknown Spork name '%s'\n", strName);
     return -1;
@@ -423,6 +436,7 @@ std::string CSporkManager::GetSporkNameByID(int nSporkID)
         case SPORK_15_FIRST_POS_BLOCK:                  return "SPORK_15_FIRST_POS_BLOCK";
         case SPORK_16_MASTERNODE_MIN_PROTOCOL:          return "SPORK_16_MASTERNODE_MIN_PROTOCOL";
         case SPORK_17_BLOCK_TIME:                       return "SPORK_17_BLOCK_TIME";
+        case SPORK_18_FIRST_POS_V2_BLOCK:               return "SPORK_18_FIRST_POS_V2_BLOCK";
         default:
             LogPrint("spork", "CSporkManager::GetSporkNameByID -- Unknown Spork ID %d\n", nSporkID);
             return "Unknown";

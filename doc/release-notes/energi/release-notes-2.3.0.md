@@ -1,7 +1,7 @@
 Energi Core version 2.3.0 Release Notes
 =======================================
 
-This is NOT a mandatory upgrade, but it is HIGHLY recommended.
+This is a MANDATORY upgrade.
 
 Energi Core version 2.3.0 is now available from:
 
@@ -23,7 +23,7 @@ your operation system:
 * for macos run the installer
 * for Linux unpack to a separate folder and run from there
 
-**NOTE**: version of Energi Core prior to v2.1.0 must not be used
+**NOTE**: version of Energi Core prior to v2.3.0 must not be used
 
 
 v2.3.0 changelog
@@ -31,6 +31,7 @@ v2.3.0 changelog
 
 Major changes:
 
+* NEW: SPORK18 - PoS v2 stake modifier hard fork
 * NEW: SPORK17 - PoS v1.3 block time soft fork
   - prevents blocks in the future
   - enforces block time to be after it parent

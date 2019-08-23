@@ -987,7 +987,7 @@ public:
 
     bool CreateCollateralTransaction(CMutableTransaction& txCollateral, std::string& strReason);
     bool ConvertList(std::vector<CTxIn> vecTxIn, std::vector<CAmount>& vecAmounts);
-    bool CreateCoinStake(const CKeyStore& keystore, CBlock& curr_block, CMutableTransaction& coinbaseTx);
+    bool CreateCoinStake(const CBlockIndex *pindex_prev, CBlock& curr_block, CMutableTransaction& coinbaseTx);
 
     void ListAccountCreditDebit(const std::string& strAccount, std::list<CAccountingEntry>& entries);
     bool AddAccountingEntry(const CAccountingEntry&);
