@@ -788,7 +788,7 @@ public:
 
         // Stake Settings
         nHashDrift = GetArg("-poshashdrift", MAX_POS_BLOCK_AHEAD_TIME);
-        nHashInterval = GetArg("-poshashinterval", 10);
+        nHashInterval = GetArg("-poshashinterval", 1);
         nStakeSplitThreshold = GetArg("-stakesplitthreshold", DEFAULT_STAKE_SPLIT_THRESHOLD);
         nStakeMaxSplit = GetArg("-stakemaxsplit", DEFAULT_STAKE_MAX_SPLIT);
         fAutocombine = GetArg("-stakeautocombine", DEFAULT_STAKE_AUTOCOMBINE);
