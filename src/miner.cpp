@@ -760,7 +760,7 @@ void PoSMiner(CWallet* pwallet, CThreadInterrupt &interrupt)
 
         if (!CheckProof(state, *pblock, Params().GetConsensus())) {
             if (sporkManager.IsSporkActive(SPORK_17_BLOCK_TIME)) {
-                start_block_time = GetAdjustedTime() + 1;
+                start_block_time = nLastCoinStakeSearchTime + 1;
                 continue;
             }
 
