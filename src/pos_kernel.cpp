@@ -321,6 +321,44 @@ bool ComputeNextStakeModifierV2(const uint32_t blockTime, const CBlockIndex* pin
     return true;
 }
 
+bool CachedNextStakeModifierV2(const uint32_t blockTime, const CBlockIndex* pindexPrev, uint64_t& nStakeModifier) 
+{
+    // This can be done more "correct" way...
+    static uint256 last_parent;
+    static std::map<uint32_t, uint64_t> sm_cache;
+
+    auto parent = pindexPrev->GetBlockHash();
+
+    // Reset cache
+    if (last_parent != parent) {
+        sm_cache.clear();
+        last_parent = parent;
+    }
+
+    // Fast path
+    auto cached = sm_cache.find(blockTime);
+
+    if (cached != sm_cache.end()) {
+        nStakeModifier = cached->second;
+
+        LogPrint("stake", "%s: cached modifier=%llx time=%llu, prevblk=%s\n",
+                __func__, nStakeModifier,
+                blockTime,
+                pindexPrev->GetBlockHash().ToString().c_str());
+        return true;
+    }
+
+    // Slow path
+    if (!ComputeNextStakeModifierV2(blockTime, pindexPrev, nStakeModifier)) {
+        return false;
+    }
+
+    // Cache
+    sm_cache[blockTime] = nStakeModifier;
+
+    return true;
+}
+
 uint256 stakeHash(unsigned int nTimeTx, CDataStream ss, unsigned int prevoutIndex, uint256 prevoutHash, unsigned int nTimeBlockFrom)
 {
     //Pivx will hash in the transaction hash and the index number in order to make sure each hash is unique
@@ -387,7 +425,7 @@ bool CheckStakeKernelHash(
 
     // This is a six month later fix of the problem stated in the note below.
     if (current.IsProofOfStakeV2()) {
-        if (!ComputeNextStakeModifierV2(nTimeTx, &blockPrev, nRequiredStakeModifier)) {
+        if (fCheck && !ComputeNextStakeModifierV2(nTimeTx, &blockPrev, nRequiredStakeModifier)) {
             LogPrintf("CheckStakeKernelHash(): failed to get kernel stake modifier V2 \n");
             return false;
         }
@@ -449,7 +487,7 @@ bool CheckStakeKernelHash(
     for (auto try_time = min_time; try_time < max_time; ++try_time)
     {
         if (current.IsProofOfStakeV2()) {
-            if (!ComputeNextStakeModifierV2(try_time, &blockPrev, nStakeModifier)) {
+            if (!CachedNextStakeModifierV2(try_time, &blockPrev, nStakeModifier)) {
                 LogPrintf("CheckStakeKernelHash(): failed to get kernel stake modifier V2 \n");
                 return false;
             }
