@@ -36,6 +36,8 @@
 
 #include <boost/foreach.hpp>
 
+static const int BALANCE_UPDATE_INTERVAL = 4 * MODEL_UPDATE_DELAY;
+
 WalletModel::WalletModel(const PlatformStyle *platformStyle, CWallet *_wallet, OptionsModel *_optionsModel, QObject *parent) :
     QObject(parent), wallet(_wallet), optionsModel(_optionsModel), addressTableModel(0),
     transactionTableModel(0),
@@ -62,7 +64,7 @@ WalletModel::WalletModel(const PlatformStyle *platformStyle, CWallet *_wallet, O
     // This timer will be fired repeatedly to update the balance
     pollTimer = new QTimer(this);
     connect(pollTimer, SIGNAL(timeout()), this, SLOT(pollBalanceChanged()));
-    pollTimer->setSingleShot(true);
+    pollTimer->start(BALANCE_UPDATE_INTERVAL);
 
     subscribeToCoreSignals();
 }
@@ -198,7 +200,7 @@ void WalletModel::updateTransaction()
     fForceCheckBalanceChanged = true;
 
     // Cancels & restarts on rapid changes
-    pollTimer->start(MODEL_UPDATE_DELAY);
+    pollTimer->start(BALANCE_UPDATE_INTERVAL);
 }
 
 void WalletModel::updateAddressBook(const QString &address, const QString &label,
