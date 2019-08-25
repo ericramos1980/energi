@@ -3,6 +3,8 @@ Energi Core version 2.3.0 Release Notes
 
 This is a MANDATORY upgrade.
 
+**NOTE: a new start is required for upgraded masternodes!**
+
 Energi Core version 2.3.0 is now available from:
 
   https://energi.world/downloads
@@ -32,9 +34,10 @@ v2.3.0 changelog
 Major changes:
 
 * NEW: SPORK18 - PoS v2 stake modifier hard fork
+  - bit 28 is used to indicate hardfork blocks
 * NEW: SPORK17 - PoS v1.3 block time soft fork
   - prevents blocks in the future
-  - enforces block time to be after it parent
+  - enforces block time to be after its parent
   - new bit 3 is used to indicate miner readiness
 * CHANGED: time adjustment according to network is disabled in favor of pure NTP sync
 * CHANGED: coin selection is capped to 10K UTXOs
