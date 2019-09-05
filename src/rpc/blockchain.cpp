@@ -1251,7 +1251,7 @@ UniValue gettxoutsnapshot(const JSONRPCRequest& request)
                 continue;
 
             const std::string destTypeStr{GetTxnOutputType(destType)};
-            const CKeyID p2pkh = boost::get<CKeyID>(addressRet[0]);
+            const std::string destAddrStr{CBitcoinAddress(addressRet[0]).ToString()};
 
             { // hash UTXO. Do it with sha3 keccak256, as a more secure hash than sha2
                 std::vector<unsigned char> vch;
@@ -1259,7 +1259,7 @@ UniValue gettxoutsnapshot(const JSONRPCRequest& request)
 
                 // write buffers directly, not via serializing - so it's simpler to reproduce the hash in ETH
                 ss.write(destTypeStr.data(), destTypeStr.size());
-                ss.write(reinterpret_cast<const char*>(p2pkh.begin()), p2pkh.size());
+                ss.write(destAddrStr.data(), destAddrStr.size());
                 ss << static_cast<uint64_t>(amount); // little-endian byte order
 
                 sph_keccak256(&ctx, vch.data(), vch.size());
@@ -1273,7 +1273,7 @@ UniValue gettxoutsnapshot(const JSONRPCRequest& request)
                      (blacklisted.find(scriptPubKey) != blacklisted.end())
                 ) {
                     UniValue ret(UniValue::VSTR);
-                    ret = CBitcoinAddress(addressRet[0]).ToString();
+                    ret = destAddrStr;
                     blacklistJson.push_back(ret);
                 }
             }
