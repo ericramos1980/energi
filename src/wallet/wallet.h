@@ -88,7 +88,7 @@ enum {
     AUTOCOMBINE_SAME = 1,
     AUTOCOMBINE_ANY = 2,
 };
-static const int DEFAULT_STAKE_AUTOCOMBINE = AUTOCOMBINE_SAME;
+static const int DEFAULT_STAKE_AUTOCOMBINE = AUTOCOMBINE_DISABLE;
 
 bool AutoBackupWallet (CWallet* wallet, const std::string& strWalletFile_, std::string& strBackupWarningRet, std::string& strBackupErrorRet);
 
