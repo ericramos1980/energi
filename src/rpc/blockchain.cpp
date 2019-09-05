@@ -25,6 +25,7 @@
 #include "hash.h"
 #include "script/standard.h"
 #include "base58.h"
+#include "spork.h"
 
 #include <stdint.h>
 
@@ -1279,6 +1280,22 @@ UniValue gettxoutsnapshot(const JSONRPCRequest& request)
         }
 
         if (!hashOnly) {
+            for (auto& item : sporkManager.GetActiveBlacklists()) {
+                auto& bl = item.second;
+
+                txnouttype type;
+                std::vector<CTxDestination> addresses;
+                int nRequired;
+
+                if (!ExtractDestinations(bl.scriptPubKey, type, addresses, nRequired)) {
+                    continue;
+                }
+
+                for (auto& addr: addresses) {
+                    blacklistJson.push_back(CBitcoinAddress(addr).ToString());
+                }
+            }
+
             res.push_back(Pair("snapshot_utxos", utxosJson));
             res.push_back(Pair("snapshot_blacklist", blacklistJson));
         }
